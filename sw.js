@@ -2,8 +2,8 @@
    Lists are stored in localStorage by the page, never in this cache.
    Bump CACHE when shipping a new version so a home-screen install
    drops the old shell and loads the new one after the app is reopened. */
-var CACHE = "re-material-20261002b";
-var ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
+var CACHE = "re-material-20261002d";
+var ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./logo.png", "./favicon.ico", "./favicon-32.png", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ASSETS); }).then(function () { return self.skipWaiting(); }));
