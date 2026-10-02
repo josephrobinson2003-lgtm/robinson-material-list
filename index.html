@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Material List">
 <meta name="description" content="Robinson Electrical LLC – Job Material List">
+<meta name="app-version" content="20261002b">
 <title>Robinson Electrical – Material List</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -38,7 +39,7 @@ input.t.err{border-color:var(--red);box-shadow:0 0 0 3px rgba(198,40,40,.15)}
 .errmsg{color:var(--red);font-size:13px;margin-top:4px;display:none}
 .errmsg.show{display:block}
 textarea.t{min-height:96px;resize:vertical}
-.row{display:flex;align-items:center;gap:8px;padding:8px 10px 8px 14px;border-top:1px solid var(--line);min-height:64px}
+.row{display:flex;align-items:center;gap:8px;padding:8px 10px 8px 14px;border-top:1px solid var(--line);min-height:64px;scroll-margin-bottom:120px}
 .row:first-of-type{border-top:0}
 .row.has{background:#fffbea}
 .row .name{flex:1;min-width:0;font-size:16px;font-weight:500}
@@ -56,6 +57,31 @@ textarea.t{min-height:96px;resize:vertical}
 .orow input.t{flex:1;min-width:0;padding:10px}
 .orow input.q{width:72px;height:46px;text-align:center;font-size:18px;font-weight:600;border:1.5px solid #cfd6e2;border-radius:10px}
 .hint{font-size:13px;color:var(--muted);padding:2px 4px}
+.notice{display:none;background:#fff8e1;border:1px solid #f0d78c;border-radius:12px;padding:12px 14px;margin:10px 0}
+.notice.show{display:block}
+.notice p{margin:0 0 10px;font-size:15px}
+.notice .btn{width:100%;height:48px}
+.actions{display:flex;gap:8px;margin:8px 0 2px;flex-wrap:wrap}
+.actions .btn{flex:1 1 140px;height:48px;font-size:15px;padding:0 8px}
+details.cat > summary{list-style:none;cursor:pointer;background:#eef2f8;color:var(--blue);border-bottom:1px solid transparent;-webkit-user-select:none;user-select:none}
+details.cat > summary::-webkit-details-marker{display:none}
+details.cat > summary::marker{content:""}
+details.cat .sum-in{display:flex;align-items:center;gap:8px;min-height:52px;padding:10px 14px;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.6px}
+details.cat[open] > summary{border-bottom-color:var(--line)}
+details.cat .chev{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid var(--blue);transform:rotate(-90deg);transition:transform .15s ease;flex:none}
+details.cat[open] .chev{transform:rotate(0deg)}
+details.cat .cat-name{flex:1;min-width:0}
+details.cat .badge{background:var(--blue);color:#fff;border-radius:999px;font-size:12px;padding:2px 9px;letter-spacing:0;text-transform:none;min-width:24px;text-align:center;font-weight:700}
+details.cat .badge.zero{background:#c9d2e0}
+.emptycat{padding:12px 14px 14px;color:var(--muted);font-size:14px}
+.done h3.plain{color:var(--navy)}
+.listpick{display:block;width:100%;text-align:left;background:#f7f9fc;border:1.5px solid #c6cfdd;border-radius:12px;padding:12px 14px;margin:0 0 8px;font:inherit;color:inherit;min-height:64px;touch-action:manipulation}
+.listpick:active{background:#e7eef8}
+.listpick.current{border-color:var(--blue);background:#eef3fb}
+.listpick .lt{display:block;font-weight:700;font-size:16px}
+.listpick .ld{display:block;color:var(--muted);font-size:13px;margin-top:2px;font-weight:500}
+.done .sheet{max-height:min(85vh,640px);overflow:auto;-webkit-overflow-scrolling:touch}
+summary:focus-visible,.listpick:focus-visible,.actions .btn:focus-visible{outline:3px solid rgba(47,85,151,.35);outline-offset:2px}
 .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(20,30,50,.08);padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));z-index:10}
 .bar .in{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:10px}
 .bar .count{flex:1;min-width:0}
@@ -85,6 +111,10 @@ footer.foot{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 6
   <div class="title2">Job Material List</div>
 </header>
 <main>
+<div class="notice" id="notice" role="region" aria-label="Saved lists">
+  <p><b>Your lists now save on this phone.</b> If you close the app before sending, the unfinished list is still here when you come back. Tap <b>Previous Lists</b> to open one of the last 3. Each one shows the job address and date. This note only shows once.</p>
+  <button type="button" class="btn new" id="notice_ok">Got it</button>
+</div>
 <form id="f" autocomplete="off" onsubmit="return false">
   <section class="card">
     <h2>Job Info</h2>
@@ -98,7 +128,11 @@ footer.foot{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 6
       <div><label class="f" for="h_labor85">Labor hrs @ $85/hr</label><input class="t" type="number" inputmode="decimal" min="0" step="0.25" id="h_labor85" name="labor85"></div>
     </div>
   </section>
-  <div class="hint">Tap + / &minus; or type a number. Romex steps by 25 ft. Leave at 0 if not used.</div>
+  <div class="hint">Tap a category to open it. Tap + / &minus; or type a number. Wire steps by 25 ft. Conduit steps by 10 ft. Leave at 0 if not used.</div>
+  <div class="actions">
+    <button type="button" class="btn secondary" id="prevlists">Previous Lists</button>
+    <button type="button" class="btn secondary" id="newlistmain">New list</button>
+  </div>
   <div id="cats"></div>
   <section class="card">
     <h2>Other items <span class="badge zero" id="b_other">0</span></h2>
@@ -109,7 +143,7 @@ footer.foot{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 6
     <div class="fields"><div class="full"><textarea class="t" id="h_notes" name="notes" rows="4"></textarea></div></div>
   </section>
 </form>
-<footer class="foot">Robinson Electrical LLC &middot; 314-578-4050 &middot; Nothing is saved on this phone; each visit starts blank.</footer>
+<footer class="foot">Robinson Electrical LLC &middot; 314-578-4050 &middot; Lists save on this phone (last 3).</footer>
 </main>
 
 <div class="bar"><div class="in">
@@ -124,6 +158,14 @@ footer.foot{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 6
     <button type="button" class="btn new" id="newlist">Start new list</button>
     <button type="button" class="btn secondary" id="again">Send again</button>
     <button type="button" class="btn secondary" id="back">Back to this list</button>
+  </div>
+</div>
+<div class="done" id="lists" role="dialog" aria-modal="true" aria-labelledby="lists_title">
+  <div class="sheet">
+    <h3 class="plain" id="lists_title">Previous Lists</h3>
+    <p>Tap a list to open it. The last 3 are kept on this phone, with the job address and date.</p>
+    <div id="lists_body"></div>
+    <button type="button" class="btn secondary" id="lists_close">Close</button>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -530,26 +572,157 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 <script>
 (function(){
 "use strict";
-var CATS = [{"name": "Cans & Fans", "items": [{"id": "qty_5in_halo_can_light", "name": "5in Halo Can Light", "unit": "ea", "step": 1}, {"id": "qty_4in_halo_can_light", "name": "4in Halo Can Light", "unit": "ea", "step": 1}, {"id": "qty_6in_wafer_can_light", "name": "6in Wafer Can Light", "unit": "ea", "step": 1}, {"id": "qty_4in_wafer_can_light", "name": "4in Wafer Can Light", "unit": "ea", "step": 1}, {"id": "qty_wafer_flat_bracket", "name": "Wafer Flat Bracket", "unit": "ea", "step": 1}, {"id": "qty_wafer_slider_bracket", "name": "Wafer Slider Bracket", "unit": "ea", "step": 1}, {"id": "qty_80cfm_panasonic_fan", "name": "80CFM Panasonic Fan", "unit": "ea", "step": 1}, {"id": "qty_110cfm_panasonic_fan", "name": "110CFM Panasonic Fan", "unit": "ea", "step": 1}]}, {"name": "Boxes", "items": [{"id": "qty_single_gang_plastic_box", "name": "Single Gang Plastic Box", "unit": "ea", "step": 1}, {"id": "qty_two_gang_plastic_box", "name": "Two Gang Plastic Box", "unit": "ea", "step": 1}, {"id": "qty_three_gang_plastic_box", "name": "Three Gang Plastic Box", "unit": "ea", "step": 1}, {"id": "qty_four_gang_plastic_box", "name": "Four Gang Plastic Box", "unit": "ea", "step": 1}, {"id": "qty_1900_plastic_box_1_2in_single_mud_ring", "name": "1900 Plastic Box & 1/2in Single Mud Ring", "unit": "ea", "step": 1}, {"id": "qty_fiberglass_bar_hanger_light_box", "name": "Fiberglass Bar Hanger Light Box", "unit": "ea", "step": 1}, {"id": "qty_fiberglass_round_nail_on_box", "name": "Fiberglass Round Nail-On Box", "unit": "ea", "step": 1}, {"id": "qty_pancake_box", "name": "Pancake Box", "unit": "ea", "step": 1}, {"id": "qty_fan_brace_box", "name": "Fan Brace Box", "unit": "ea", "step": 1}, {"id": "qty_fan_pancake_box", "name": "Fan Pancake Box", "unit": "ea", "step": 1}]}, {"name": "Misc Supplies", "items": [{"id": "qty_purple_wire_nuts", "name": "Purple Wire Nuts", "unit": "ea", "step": 1}, {"id": "qty_milwaukee_staples_box_of_600", "name": "Milwaukee Staples (Box of 600)", "unit": "box", "step": 1}]}, {"name": "Romex (ft)", "items": [{"id": "qty_14_2_romex", "name": "14-2 Romex", "unit": "ft", "step": 25}, {"id": "qty_14_3_romex", "name": "14-3 Romex", "unit": "ft", "step": 25}, {"id": "qty_12_2_romex", "name": "12-2 Romex", "unit": "ft", "step": 25}, {"id": "qty_12_3_romex", "name": "12-3 Romex", "unit": "ft", "step": 25}, {"id": "qty_10_3_romex", "name": "10-3 Romex", "unit": "ft", "step": 25}]}, {"name": "Smoke Detectors", "items": [{"id": "qty_kidde_smoke_detector", "name": "Kidde Smoke Detector", "unit": "ea", "step": 1}, {"id": "qty_kidde_smoke_co_combo", "name": "Kidde Smoke/CO Combo", "unit": "ea", "step": 1}, {"id": "qty_kidde_wireless_smoke_detector", "name": "Kidde Wireless Smoke Detector", "unit": "ea", "step": 1}, {"id": "qty_kidde_wireless_smoke_co_combo", "name": "Kidde Wireless Smoke/CO Combo", "unit": "ea", "step": 1}, {"id": "qty_kidde_wireless_bridge_unit", "name": "Kidde Wireless Bridge Unit", "unit": "ea", "step": 1}]}, {"name": "Misc Devices", "items": [{"id": "qty_chime_kit", "name": "Chime Kit", "unit": "ea", "step": 1}, {"id": "qty_dryer_receptacle", "name": "Dryer Receptacle", "unit": "ea", "step": 1}, {"id": "qty_range_receptacle", "name": "Range Receptacle", "unit": "ea", "step": 1}, {"id": "qty_surface_mount_dryer_receptacle", "name": "Surface Mount Dryer Receptacle", "unit": "ea", "step": 1}, {"id": "qty_keyless_fixture", "name": "Keyless Fixture", "unit": "ea", "step": 1}]}, {"name": "Switches", "items": [{"id": "qty_toggle_dimmer_switch", "name": "Toggle Dimmer Switch", "unit": "ea", "step": 1}, {"id": "qty_single_pole_toggle_switch", "name": "Single Pole Toggle Switch", "unit": "ea", "step": 1}, {"id": "qty_3_way_toggle_switch", "name": "3-Way Toggle Switch", "unit": "ea", "step": 1}, {"id": "qty_4_way_toggle_switch", "name": "4-Way Toggle Switch", "unit": "ea", "step": 1}, {"id": "qty_lighted_3_way_switch", "name": "Lighted 3-Way Switch", "unit": "ea", "step": 1}, {"id": "qty_decor_dimmer_switch", "name": "Decor Dimmer Switch", "unit": "ea", "step": 1}, {"id": "qty_decor_single_pole_switch", "name": "Decor Single Pole Switch", "unit": "ea", "step": 1}, {"id": "qty_decor_3_way_switch", "name": "Decor 3-Way Switch", "unit": "ea", "step": 1}, {"id": "qty_decor_4_way_switch", "name": "Decor 4-Way Switch", "unit": "ea", "step": 1}]}, {"name": "Receptacles", "items": [{"id": "qty_tr_duplex_receptacle", "name": "TR Duplex Receptacle", "unit": "ea", "step": 1}, {"id": "qty_ungrounded_receptacle", "name": "Ungrounded Receptacle", "unit": "ea", "step": 1}, {"id": "qty_tr_decor_receptacle", "name": "TR Decor Receptacle", "unit": "ea", "step": 1}, {"id": "qty_tr_gfci_receptacle", "name": "TR GFCI Receptacle", "unit": "ea", "step": 1}, {"id": "qty_tr_wr_gfci_receptacle", "name": "TR WR GFCI Receptacle", "unit": "ea", "step": 1}]}, {"name": "Plates", "items": [{"id": "qty_dryer_range_plate", "name": "Dryer/Range Plate", "unit": "ea", "step": 1}, {"id": "qty_duplex_receptacle_plate", "name": "Duplex Receptacle Plate", "unit": "ea", "step": 1}, {"id": "qty_single_gang_switch_plate", "name": "Single Gang Switch Plate", "unit": "ea", "step": 1}, {"id": "qty_two_gang_switch_plate", "name": "Two Gang Switch Plate", "unit": "ea", "step": 1}, {"id": "qty_three_gang_switch_plate", "name": "Three Gang Switch Plate", "unit": "ea", "step": 1}, {"id": "qty_four_gang_switch_plate", "name": "Four Gang Switch Plate", "unit": "ea", "step": 1}, {"id": "qty_decor_single_gang_plate", "name": "Decor Single Gang Plate", "unit": "ea", "step": 1}, {"id": "qty_decor_two_gang_plate", "name": "Decor Two Gang Plate", "unit": "ea", "step": 1}, {"id": "qty_decor_three_gang_plate", "name": "Decor Three Gang Plate", "unit": "ea", "step": 1}, {"id": "qty_decor_four_gang_plate", "name": "Decor Four Gang Plate", "unit": "ea", "step": 1}]}];
 var EMAIL = "RobinsonElectricalLlc@gmail.com";
 var COMPANY = "Robinson Electrical LLC";
 var PHONE = "314-578-4050";
 var PDF_TITLE = "Robinson Electrical \u2013 Job Material List";
 var NAME_KEY = "re_employee_name";
+var STORE_KEY = "re_saved_lists";
+var NOTICE_KEY = "re_autosave_notice_v1";
+var APP_VERSION = "20261002b";
 var OTHER_ROWS = 8;
+var MAX_LISTS = 3;
 var $ = function(id){ return document.getElementById(id); };
+var lastPdf = null, busy = false, activeId = null, restoring = false;
 
-/* ---------- build UI ---------- */
+function item(id, name, unit, step, note){
+  var it = {id:id, name:name, unit:unit || "ea", step:step || 1};
+  if (note) it.note = note;
+  return it;
+}
+function ea(id, name){ return item(id, name, "ea", 1); }
+
+/* Existing items keep their ids. New categories are the menus; nothing was dropped.
+   There were no breaker items in the previous list, so Breakers is present and empty. */
+var CATS = [
+  {name:"Rough In", items:[
+    ea("qty_single_gang_plastic_box", "Single Gang Plastic Box"),
+    ea("qty_two_gang_plastic_box", "Two Gang Plastic Box"),
+    ea("qty_three_gang_plastic_box", "Three Gang Plastic Box"),
+    ea("qty_four_gang_plastic_box", "Four Gang Plastic Box"),
+    ea("qty_1900_plastic_box_1_2in_single_mud_ring", "1900 Plastic Box & 1/2in Single Mud Ring"),
+    ea("qty_fiberglass_bar_hanger_light_box", "Fiberglass Bar Hanger Light Box"),
+    ea("qty_fiberglass_round_nail_on_box", "Fiberglass Round Nail-On Box"),
+    ea("qty_pancake_box", "Pancake Box"),
+    ea("qty_fan_brace_box", "Fan Brace Box"),
+    ea("qty_fan_pancake_box", "Fan Pancake Box"),
+    item("qty_milwaukee_staples_box_of_600", "Milwaukee Staples (Box of 600)", "box", 1),
+    ea("qty_5in_halo_can_light", "5in Halo Can Light"),
+    ea("qty_4in_halo_can_light", "4in Halo Can Light"),
+    ea("qty_6in_wafer_can_light", "6in Wafer Can Light"),
+    ea("qty_4in_wafer_can_light", "4in Wafer Can Light"),
+    ea("qty_wafer_flat_bracket", "Wafer Flat Bracket"),
+    ea("qty_wafer_slider_bracket", "Wafer Slider Bracket"),
+    ea("qty_80cfm_panasonic_fan", "80CFM Panasonic Fan"),
+    ea("qty_110cfm_panasonic_fan", "110CFM Panasonic Fan")
+  ]},
+  {name:"Trims", items:[
+    ea("qty_toggle_dimmer_switch", "Toggle Dimmer Switch"),
+    ea("qty_single_pole_toggle_switch", "Single Pole Toggle Switch"),
+    ea("qty_3_way_toggle_switch", "3-Way Toggle Switch"),
+    ea("qty_4_way_toggle_switch", "4-Way Toggle Switch"),
+    ea("qty_lighted_3_way_switch", "Lighted 3-Way Switch"),
+    ea("qty_decor_dimmer_switch", "Decor Dimmer Switch"),
+    ea("qty_decor_single_pole_switch", "Decor Single Pole Switch"),
+    ea("qty_decor_3_way_switch", "Decor 3-Way Switch"),
+    ea("qty_decor_4_way_switch", "Decor 4-Way Switch"),
+    ea("qty_tr_duplex_receptacle", "TR Duplex Receptacle"),
+    ea("qty_ungrounded_receptacle", "Ungrounded Receptacle"),
+    ea("qty_tr_decor_receptacle", "TR Decor Receptacle"),
+    ea("qty_tr_gfci_receptacle", "TR GFCI Receptacle"),
+    ea("qty_tr_wr_gfci_receptacle", "TR WR GFCI Receptacle"),
+    ea("qty_surface_mount_dryer_receptacle", "Surface Mount Dryer Receptacle"),
+    ea("qty_surface_mount_range_receptacle", "Surface Mount Range Receptacle"),
+    ea("qty_dryer_receptacle", "Dryer Receptacle"),
+    ea("qty_range_receptacle", "Range Receptacle"),
+    ea("qty_dryer_range_stainless_steel_plate", "Dryer/Range Stainless Steel Plate"),
+    ea("qty_dryer_range_plate", "Dryer/Range Plate"),
+    ea("qty_duplex_receptacle_plate", "Duplex Receptacle Plate"),
+    ea("qty_single_gang_switch_plate", "Single Gang Switch Plate"),
+    ea("qty_two_gang_switch_plate", "Two Gang Switch Plate"),
+    ea("qty_three_gang_switch_plate", "Three Gang Switch Plate"),
+    ea("qty_four_gang_switch_plate", "Four Gang Switch Plate"),
+    ea("qty_decor_single_gang_plate", "Decor Single Gang Plate"),
+    ea("qty_decor_two_gang_plate", "Decor Two Gang Plate"),
+    ea("qty_decor_three_gang_plate", "Decor Three Gang Plate"),
+    ea("qty_decor_four_gang_plate", "Decor Four Gang Plate"),
+    ea("qty_kidde_smoke_detector", "Kidde Smoke Detector"),
+    ea("qty_kidde_smoke_co_combo", "Kidde Smoke/CO Combo"),
+    ea("qty_kidde_wireless_smoke_detector", "Kidde Wireless Smoke Detector"),
+    ea("qty_kidde_wireless_smoke_co_combo", "Kidde Wireless Smoke/CO Combo"),
+    ea("qty_kidde_wireless_bridge_unit", "Kidde Wireless Bridge Unit"),
+    ea("qty_5_6in_halo_can_trim", "5/6in Halo Can Trim"),
+    ea("qty_4in_halo_can_trim", "4in Halo Can Trim"),
+    ea("qty_6in_disk_light", "6in Disk Light"),
+    ea("qty_chime_kit", "Chime Kit"),
+    ea("qty_keyless_fixture", "Keyless Fixture")
+  ]},
+  {name:"Breakers", items:[]},
+  {name:"Conduit", items:[
+    item("qty_1_2in_emt", "1/2in EMT", "ft", 10),
+    ea("qty_1_2in_emt_connector", "1/2in EMT Connector"),
+    ea("qty_1_2in_emt_coupling", "1/2in EMT Coupling"),
+    item("qty_3_4in_emt", "3/4in EMT", "ft", 10),
+    ea("qty_3_4in_emt_connector", "3/4in EMT Connector"),
+    ea("qty_3_4in_emt_coupling", "3/4in EMT Coupling"),
+    item("qty_1_2in_flexible_conduit", "1/2in Flexible Conduit", "ft", 10),
+    item("qty_3_4in_flexible_conduit", "3/4in Flexible Conduit", "ft", 10),
+    item("qty_1_2in_seal_tight", "1/2in Seal Tight", "ft", 10),
+    item("qty_3_4in_seal_tight", "3/4in Seal Tight", "ft", 10),
+    ea("qty_1_2in_flexible_conduit_straight_connector", "1/2in Flexible Conduit Straight Connector"),
+    ea("qty_1_2in_flexible_conduit_90_connector", "1/2in Flexible Conduit 90 Connector"),
+    ea("qty_1_2in_straight_seal_tight_connector", "1/2in Straight Seal Tight Connector"),
+    ea("qty_1_2in_90_seal_tight_connector", "1/2in 90 Seal Tight Connector"),
+    ea("qty_3_4in_straight_seal_tight_connector", "3/4in Straight Seal Tight Connector"),
+    ea("qty_3_4in_90_seal_tight_connector", "3/4in 90 Seal Tight Connector")
+  ]},
+  {name:"Metal Boxes", items:[
+    ea("qty_deep_four_square_box", "Deep Four Square Box"),
+    ea("qty_shallow_four_square_box", "Shallow Four Square Box"),
+    ea("qty_deep_handy_box", "Deep Handy Box"),
+    ea("qty_shallow_handy_box", "Shallow Handy Box"),
+    ea("qty_screw_gun_bracket_16in", "Screw Gun Bracket 16in"),
+    ea("qty_screw_gun_bracket_24in", "Screw Gun Bracket 24in"),
+    ea("qty_metal_stud_four_square_box", "Metal Stud Four Square Box"),
+    ea("qty_single_gang_bell_box", "Single Gang Bell Box"),
+    ea("qty_two_gang_bell_box", "Two Gang Bell Box"),
+    ea("qty_round_bell_box", "Round Bell Box")
+  ]},
+  {name:"Wire", items:[
+    item("qty_14_2_romex", "14-2 Romex", "ft", 25),
+    item("qty_14_3_romex", "14-3 Romex", "ft", 25),
+    item("qty_12_2_romex", "12-2 Romex", "ft", 25),
+    item("qty_12_3_romex", "12-3 Romex", "ft", 25),
+    item("qty_10_3_romex", "10-3 Romex", "ft", 25),
+    item("qty_12_2_mc", "12-2 MC", "ft", 25),
+    item("qty_12_3_mc", "12-3 MC", "ft", 25),
+    item("qty_18_5", "18-5", "ft", 25, "thermostat / low-voltage"),
+    item("qty_18_3", "18-3", "ft", 25, "thermostat / low-voltage")
+  ]},
+  {name:"Misc", items:[
+    ea("qty_purple_wire_nuts", "Purple Wire Nuts"),
+    ea("qty_single_gang_bubble_cover", "Single Gang Bubble Cover"),
+    ea("qty_two_gang_bubble_cover", "Two Gang Bubble Cover")
+  ]}
+];
+
 function el(tag, attrs, html){ var e=document.createElement(tag); if(attrs) for(var k in attrs) e.setAttribute(k, attrs[k]); if(html!=null) e.innerHTML=html; return e; }
 function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+function unitText(it){
+  var u = it.step > 1 ? ("per " + it.unit + " \u00b7 \u00b1" + it.step) : it.unit;
+  return it.note ? (it.note + " \u00b7 " + u) : u;
+}
 
 var catsBox = $("cats");
 CATS.forEach(function(cat, ci){
-  var sec = el("section", {"class":"card"});
-  sec.appendChild(el("h2", null, esc(cat.name) + ' <span class="badge zero" id="b_cat'+ci+'">0</span>'));
+  var sec = el("details", {"class":"card cat", "id":"cat"+ci});
+  var sum = el("summary");
+  sum.innerHTML = '<span class="sum-in"><span class="chev" aria-hidden="true"></span><span class="cat-name">'+esc(cat.name)+'</span><span class="badge zero" id="b_cat'+ci+'">0</span></span>';
+  sec.appendChild(sum);
+  if (!cat.items.length) sec.appendChild(el("div", {"class":"emptycat"}, "No items in this category yet."));
   cat.items.forEach(function(it){
     var r = el("div", {"class":"row", "data-id": it.id});
-    r.innerHTML = '<div class="name">'+esc(it.name)+'<span class="u">'+(it.step>1?('per '+it.unit+' &middot; &plusmn;'+it.step):esc(it.unit))+'</span></div>'+
+    r.innerHTML = '<div class="name">'+esc(it.name)+'<span class="u">'+esc(unitText(it))+'</span></div>'+
       '<div class="step"><button type="button" class="minus" data-d="-1" aria-label="Less '+esc(it.name)+'">&minus;</button>'+
       '<input type="number" inputmode="numeric" pattern="[0-9]*" min="0" step="'+it.step+'" id="'+it.id+'" name="'+it.id+'" placeholder="0" aria-label="'+esc(it.name)+' quantity">'+
       '<button type="button" class="plus" data-d="1" aria-label="More '+esc(it.name)+'">+</button></div>';
@@ -570,8 +743,8 @@ CATS.forEach(function(c){ c.items.forEach(function(it){ ITEM_BY_ID[it.id]=it; })
 
 function num(v){ var n=parseFloat(v); return isFinite(n) && n>0 ? n : 0; }
 function fmtQty(n){ return (Math.round(n*100)/100).toString(); }
+function setCatOpen(ci, open){ var d=$("cat"+ci); if(d) d.open = !!open; }
 
-/* stepper clicks (event delegation) */
 catsBox.addEventListener("click", function(e){
   var b = e.target.closest("button[data-d]"); if(!b) return;
   var row = b.closest(".row"); var it = ITEM_BY_ID[row.getAttribute("data-id")];
@@ -585,13 +758,11 @@ document.addEventListener("input", function(e){
   if (e.target.id === "h_employee") { try{ localStorage.setItem(NAME_KEY, e.target.value.trim()); }catch(_){} }
   update();
 });
-/* clean negative / junk values when leaving a qty box */
 document.addEventListener("change", function(e){
   var t = e.target;
   if (t.type === "number") { var n = num(t.value); t.value = n ? fmtQty(n) : ""; update(); }
 });
 
-/* ---------- state ---------- */
 function collect(){
   var s = {
     date: $("h_date").value, employee: $("h_employee").value.trim(), customer: $("h_customer").value.trim(),
@@ -622,24 +793,225 @@ function update(){
   var bo=$("b_other"); bo.textContent=on; bo.classList.toggle("zero", !on);
   $("cnt").textContent = lines;
   $("cntlbl").textContent = lines===1 ? "item" : "items";
-  var sub=[]; if(pieces) sub.push(fmtQty(pieces)+" pcs"); if(ft) sub.push(fmtQty(ft)+" ft Romex");
+  var sub=[]; if(pieces) sub.push(fmtQty(pieces)+" pcs"); if(ft) sub.push(fmtQty(ft)+" ft");
   $("cntsub").textContent = lines ? sub.join(" \u00b7 ") || "entered" : "No items entered yet";
+  persistActive();
 }
 
 function todayISO(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function usDate(iso){ var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||""); return m ? (m[2]+"/"+m[3]+"/"+m[1]) : (iso||""); }
+function isoFromMs(ms){
+  var d=new Date(ms); if(!ms || isNaN(d.getTime())) return "";
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
 
-function resetAll(){
+function readStore(){
+  try {
+    var raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return {active:null, previous:[]};
+    var data = JSON.parse(raw);
+    if (Array.isArray(data)) return {active:data[0]||null, previous:data.slice(1, MAX_LISTS+1)};
+    if (!data || typeof data !== "object") return {active:null, previous:[]};
+    return {active:data.active || null, previous:Array.isArray(data.previous) ? data.previous : []};
+  } catch(_){ return {active:null, previous:[]}; }
+}
+function writeStore(data){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch(_){}
+}
+function listHasContent(L){
+  if (!L) return false;
+  if ((L.customer||"").trim() || (L.address||"").trim() || (L.description||"").trim() || (L.notes||"").trim()) return true;
+  if (num(L.labor100) || num(L.labor85)) return true;
+  var qty = L.qty || {};
+  for (var k in qty) if (num(qty[k])) return true;
+  var oth = L.others || [];
+  for (var i=0;i<oth.length;i++) if ((oth[i].name||"").trim() || num(oth[i].qty)) return true;
+  return false;
+}
+function snapshotFromForm(){
+  var qty = {};
+  CATS.forEach(function(c){ c.items.forEach(function(it){ var q=num($(it.id).value); if(q) qty[it.id]=fmtQty(q); }); });
+  var oth = [];
+  for (var i=1;i<=OTHER_ROWS;i++){
+    var n=$("other_name_"+i).value, q=num($("other_qty_"+i).value);
+    if (n.trim() || q) oth.push({name:n, qty:q ? fmtQty(q) : ""});
+  }
+  return {
+    id: activeId,
+    savedAt: Date.now(),
+    date: $("h_date").value,
+    employee: $("h_employee").value,
+    customer: $("h_customer").value,
+    address: $("h_address").value,
+    description: $("h_desc").value,
+    labor100: $("h_labor100").value,
+    labor85: $("h_labor85").value,
+    notes: $("h_notes").value,
+    qty: qty,
+    others: oth
+  };
+}
+function contentPool(data){
+  var out=[], seen={};
+  function add(x){ if(!x || !x.id || !listHasContent(x) || seen[x.id]) return; seen[x.id]=1; out.push(x); }
+  if (data){ add(data.active); (data.previous||[]).forEach(add); }
+  return out;
+}
+function persistActive(){
+  if (restoring || !activeId) return;
+  var snap = snapshotFromForm();
+  var data = readStore();
+  var previous = [], seen = {};
+  function add(x){
+    if (!x || !x.id || x.id === snap.id || !listHasContent(x) || seen[x.id]) return;
+    seen[x.id]=1; previous.push(x);
+  }
+  (data.previous||[]).forEach(add);
+  if (data.active && data.active.id !== snap.id) add(data.active);
+  /* A reload can fire pagehide after the fields are already gone. Don't replace a real list with that empty snapshot. */
+  if (!listHasContent(snap) && !(snap.date||"").trim() && data.active && data.active.id === snap.id && listHasContent(data.active)) return;
+  writeStore({active:snap, previous:previous.slice(0, listHasContent(snap) ? MAX_LISTS-1 : MAX_LISTS)});
+}
+function clearInputs(){
   $("f").reset();
   Array.prototype.forEach.call(document.querySelectorAll("#f input, #f textarea"), function(x){ x.value=""; x.classList.remove("err"); });
   $("addr_err").classList.remove("show");
+  lastPdf = null;
+  $("done").classList.remove("show");
+  $("lists").classList.remove("show");
+}
+function clearForm(){
+  restoring = true;
+  clearInputs();
   $("h_date").value = todayISO();
   var nm=""; try{ nm = localStorage.getItem(NAME_KEY) || ""; }catch(_){}
   $("h_employee").value = nm;
-  lastPdf = null;
-  $("done").classList.remove("show");
+  CATS.forEach(function(c, ci){ setCatOpen(ci, false); });
+  restoring = false;
   update();
   window.scrollTo(0,0);
+}
+function applyList(L){
+  restoring = true;
+  clearInputs();
+  $("h_date").value = L.date || todayISO();
+  $("h_employee").value = L.employee || "";
+  $("h_customer").value = L.customer || "";
+  $("h_address").value = L.address || "";
+  $("h_desc").value = L.description || "";
+  $("h_labor100").value = L.labor100 || "";
+  $("h_labor85").value = L.labor85 || "";
+  $("h_notes").value = L.notes || "";
+  var qty = L.qty || {};
+  CATS.forEach(function(c, ci){
+    var any = false;
+    c.items.forEach(function(it){
+      var q = num(qty[it.id]);
+      if (q) { $(it.id).value = fmtQty(q); any = true; }
+    });
+    setCatOpen(ci, any);
+  });
+  var oth = L.others || [];
+  for (var i=1;i<=OTHER_ROWS;i++){
+    var row = oth[i-1];
+    $("other_name_"+i).value = row && row.name ? row.name : "";
+    $("other_qty_"+i).value = row && num(row.qty) ? fmtQty(num(row.qty)) : "";
+  }
+  if ((L.employee||"").trim()) { try { localStorage.setItem(NAME_KEY, L.employee.trim()); } catch(_){} }
+  restoring = false;
+  update();
+}
+function startNewList(){
+  var snap = activeId ? snapshotFromForm() : null;
+  var had = listHasContent(snap);
+  var data = readStore();
+  var previous = [], seen = {};
+  function push(x){
+    if (!x || !x.id || !listHasContent(x) || seen[x.id]) return;
+    seen[x.id]=1; previous.push(x);
+  }
+  if (had) push(snap);
+  (data.previous||[]).forEach(push);
+  if (data.active && (!snap || data.active.id !== snap.id)) push(data.active);
+  var dropped = had && previous.length > MAX_LISTS;
+  previous = previous.slice(0, MAX_LISTS);
+  activeId = "L" + Date.now();
+  writeStore({active:{id:activeId, savedAt:Date.now(), date:"", employee:"", customer:"", address:"", description:"", labor100:"", labor85:"", notes:"", qty:{}, others:[]}, previous:previous});
+  clearForm();
+  if (had && dropped) toast("Saved. The oldest list was removed so only the last 3 are kept.");
+  else if (had) toast("Saved. Open it anytime under Previous Lists.");
+  else toast("New blank list");
+}
+function listTitle(L){
+  var addr = (L.address||"").trim();
+  var cust = (L.customer||"").trim();
+  if (addr) return addr;
+  if (cust) return cust;
+  return "No job address yet";
+}
+function listItemCount(L){
+  var n=0, qty=L.qty||{};
+  for (var k in qty) if (num(qty[k])) n++;
+  (L.others||[]).forEach(function(o){ if ((o.name||"").trim() || num(o.qty)) n++; });
+  return n;
+}
+function renderPrevious(){
+  var items = contentPool(readStore()).slice(0, MAX_LISTS);
+  var box = $("lists_body");
+  box.innerHTML = "";
+  if (!items.length){
+    box.appendChild(el("p", {"class":"emptylists"}, "No saved lists yet. A list is saved automatically as you fill it in."));
+    return;
+  }
+  items.forEach(function(L){
+    var meta = [];
+    var when = L.date || isoFromMs(L.savedAt);
+    if (when) meta.push(usDate(when));
+    var cust = (L.customer||"").trim(), addr = (L.address||"").trim();
+    if (cust && addr) meta.push(cust);
+    var n = listItemCount(L);
+    meta.push(n===1 ? "1 item" : (n+" items"));
+    if (L.id === activeId) meta.push("Currently open");
+    var b = el("button", {"type":"button", "class":"listpick"+(L.id===activeId?" current":""), "data-list":L.id});
+    b.innerHTML = '<span class="lt">'+esc(listTitle(L))+'</span><span class="ld">'+esc(meta.join(" \u00b7 "))+'</span>';
+    box.appendChild(b);
+  });
+}
+function openPrevious(){
+  persistActive();
+  renderPrevious();
+  $("lists").classList.add("show");
+}
+function resumeList(id){
+  persistActive();
+  var pool = contentPool(readStore());
+  var chosen = null;
+  pool.forEach(function(x){ if (x.id===id) chosen = x; });
+  if (!chosen){ toast("That list is no longer saved"); renderPrevious(); return; }
+  var previous = [];
+  pool.forEach(function(x){ if (x.id!==id) previous.push(x); });
+  activeId = chosen.id;
+  writeStore({active:chosen, previous:previous.slice(0, MAX_LISTS)});
+  applyList(chosen);
+  $("lists").classList.remove("show");
+  toast("Opened saved list");
+  window.scrollTo(0,0);
+}
+function boot(){
+  var data = readStore();
+  if (data.active && data.active.id){
+    activeId = data.active.id;
+    if (listHasContent(data.active) || data.active.date || data.active.employee) applyList(data.active);
+    else { clearForm(); }
+  } else {
+    activeId = "L" + Date.now();
+    clearForm();
+  }
+}
+function maybeShowNotice(){
+  var seen = "";
+  try { seen = localStorage.getItem(NOTICE_KEY) || ""; } catch(_){}
+  if (!seen) $("notice").classList.add("show");
 }
 
 /* ---------- PDF ---------- */
@@ -773,8 +1145,7 @@ function mailBody(s){
   return b.join("\n");
 }
 
-/* ---------- send ---------- */
-var lastPdf = null, busy = false;
+
 function toast(msg, ms){ var t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(function(){ t.classList.remove("show"); }, ms||2600); }
 function validate(){
   var a=$("h_address");
@@ -831,22 +1202,42 @@ function send(){
 $("send").addEventListener("click", send);
 $("again").addEventListener("click", function(){ $("done").classList.remove("show"); send(); });
 $("back").addEventListener("click", function(){ $("done").classList.remove("show"); });
-$("newlist").addEventListener("click", function(){ resetAll(); toast("New blank list"); });
+$("newlist").addEventListener("click", function(){ startNewList(); });
+$("newlistmain").addEventListener("click", startNewList);
+$("prevlists").addEventListener("click", openPrevious);
+$("lists_close").addEventListener("click", function(){ $("lists").classList.remove("show"); });
+$("lists").addEventListener("click", function(e){ if (e.target === $("lists")) $("lists").classList.remove("show"); });
+$("lists_body").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-list]");
+  if (!b) return;
+  resumeList(b.getAttribute("data-list"));
+});
+$("notice_ok").addEventListener("click", function(){
+  $("notice").classList.remove("show");
+  try { localStorage.setItem(NOTICE_KEY, "1"); } catch(_){}
+});
+window.addEventListener("pagehide", function(){ persistActive(); });
 
-/* start blank every time, including back/forward cache restores */
-window.addEventListener("pageshow", function(e){ if (e.persisted) resetAll(); });
-resetAll();
+boot();
+maybeShowNotice();
 
-/* test hook (harmless in production) */
 window.__materialApp = {
-  collect: collect, textLines: textLines, mailBody: mailBody, fileName: function(){ return pdfFileName(collect()); }, reset: resetAll,
+  collect: collect, textLines: textLines, mailBody: mailBody, fileName: function(){ return pdfFileName(collect()); },
+  reset: startNewList, version: APP_VERSION,
+  flushSave: persistActive, readStore: readStore,
+  qtyOf: function(id){ var el=$(id); return el ? el.value : ""; },
   pdfBase64: function(){ var p = makePdf(); return p.blob.arrayBuffer().then(function(ab){ var u=new Uint8Array(ab), s=""; for(var i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); return {name:p.name, subject:p.subject, b64:btoa(s)}; }); }
 };
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(function(){
+      return navigator.serviceWorker.register("sw.js");
+    }).then(function(reg){ if (reg && reg.update) reg.update(); }).catch(function(){});
+  });
 }
 })();
+
 </script>
 </body>
 </html>
