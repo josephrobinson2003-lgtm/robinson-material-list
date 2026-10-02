@@ -8,22 +8,22 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Material List">
 <meta name="description" content="Robinson Electrical LLC – Job Material List">
-<meta name="app-version" content="20261002b">
+<meta name="app-version" content="20261002d">
 <title>Robinson Electrical – Material List</title>
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon-192.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 :root{--navy:#1F3864;--blue:#2F5597;--bg:#f5f7fa;--card:#fff;--line:#e3e7ee;--text:#1d2330;--muted:#667085;--accent:#FFC20E;--green:#0a8a4a;--red:#c62828}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:16px;line-height:1.35;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
-header.top{background:var(--navy);color:#fff;padding:14px 16px 12px;padding-top:calc(14px + env(safe-area-inset-top))}
-header.top h1{margin:0;font-size:21px;letter-spacing:.2px;display:flex;align-items:center;gap:8px}
-header.top h1 .bolt{color:var(--accent)}
-header.top .sub{font-size:13px;opacity:.85;margin-top:2px}
-header.top .sub a{color:#fff}
-header.top .title2{font-size:15px;font-weight:600;margin-top:6px;color:#dbe4f3}
+header.top{background:#f6f3ec;color:var(--navy);padding:8px 12px 12px;padding-top:calc(8px + env(safe-area-inset-top))}
+header.top .logo{display:block;width:100%;max-width:640px;height:auto;margin:0 auto}
+header.top .sub{font-size:14px;margin-top:2px;color:var(--blue);text-align:center}
+header.top .sub a{color:var(--blue)}
+header.top .title2{font-size:16px;font-weight:700;margin-top:8px;color:var(--navy);text-align:center}
 main{max-width:640px;margin:0 auto;padding:10px 10px 0}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden}
 .card h2{margin:0;font-size:15px;text-transform:uppercase;letter-spacing:.6px;background:#eef2f8;color:var(--blue);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
@@ -80,6 +80,14 @@ details.cat .badge.zero{background:#c9d2e0}
 .listpick.current{border-color:var(--blue);background:#eef3fb}
 .listpick .lt{display:block;font-weight:700;font-size:16px}
 .listpick .ld{display:block;color:var(--muted);font-size:13px;margin-top:2px;font-weight:500}
+.thumbs{display:flex;flex-wrap:wrap;gap:8px}
+.thumb{position:relative;width:96px;height:96px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#eef2f8;flex:none}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block;background:#fff}
+.thumbph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;font-weight:700}
+.thumbx{position:absolute;top:4px;right:4px;width:28px;height:28px;border:0;border-radius:999px;background:rgba(20,24,32,.78);color:#fff;font-size:18px;line-height:1;padding:0}
+.attach{display:flex;align-items:center;justify-content:center;width:100%;height:48px;margin-top:4px;cursor:pointer}
+.filepick{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.photohint{font-size:13px;color:var(--muted);margin:8px 0 0}
 .done .sheet{max-height:min(85vh,640px);overflow:auto;-webkit-overflow-scrolling:touch}
 summary:focus-visible,.listpick:focus-visible,.actions .btn:focus-visible{outline:3px solid rgba(47,85,151,.35);outline-offset:2px}
 .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(20,30,50,.08);padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));z-index:10}
@@ -106,9 +114,9 @@ footer.foot{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 6
 </head>
 <body>
 <header class="top">
-  <h1><span class="bolt">&#9889;</span>Robinson Electrical LLC</h1>
-  <div class="sub">St. Louis, MO &middot; <a href="tel:+13145784050">314-578-4050</a></div>
+  <img class="logo" src="logo.png" width="1600" height="525" alt="Robinson Electrical LLC">
   <div class="title2">Job Material List</div>
+  <div class="sub">St. Louis, MO &middot; <a href="tel:+13145784050">314-578-4050</a></div>
 </header>
 <main>
 <div class="notice" id="notice" role="region" aria-label="Saved lists">
@@ -139,8 +147,16 @@ footer.foot{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 6
     <div id="others"></div>
   </section>
   <section class="card">
-    <h2>Notes</h2>
-    <div class="fields"><div class="full"><textarea class="t" id="h_notes" name="notes" rows="4"></textarea></div></div>
+    <h2>Notes <span class="badge zero" id="b_notes">0</span></h2>
+    <div class="fields">
+      <div class="full"><textarea class="t" id="h_notes" name="notes" rows="4"></textarea></div>
+      <div class="full">
+        <div class="thumbs" id="thumbs"></div>
+        <label class="btn secondary attach" for="note_photos">Add photo or GIF</label>
+        <input class="filepick" id="note_photos" type="file" accept="image/*,.gif" multiple>
+        <p class="photohint">Camera, gallery, or a GIF. Pictures stay with this list and show on the PDF.</p>
+      </div>
+    </div>
   </section>
 </form>
 <footer class="foot">Robinson Electrical LLC &middot; 314-578-4050 &middot; Lists save on this phone (last 3).</footer>
@@ -579,11 +595,14 @@ var PDF_TITLE = "Robinson Electrical \u2013 Job Material List";
 var NAME_KEY = "re_employee_name";
 var STORE_KEY = "re_saved_lists";
 var NOTICE_KEY = "re_autosave_notice_v1";
-var APP_VERSION = "20261002b";
+var APP_VERSION = "20261002d";
 var OTHER_ROWS = 8;
 var MAX_LISTS = 3;
 var $ = function(id){ return document.getElementById(id); };
 var lastPdf = null, busy = false, activeId = null, restoring = false;
+var photoMeta = [], notePhotos = [], photoGen = 0, failNextPhotoSave = false;
+var logoDataUrl = "", logoReady = Promise.resolve();
+var MAX_PHOTOS = 8, MAX_GIF_BYTES = 4 * 1024 * 1024;
 
 function item(id, name, unit, step, note){
   var it = {id:id, name:name, unit:unit || "ea", step:step || 1};
@@ -592,8 +611,7 @@ function item(id, name, unit, step, note){
 }
 function ea(id, name){ return item(id, name, "ea", 1); }
 
-/* Existing items keep their ids. New categories are the menus; nothing was dropped.
-   There were no breaker items in the previous list, so Breakers is present and empty. */
+/* Existing items keep their ids. New categories are the menus; nothing was dropped. */
 var CATS = [
   {name:"Rough In", items:[
     ea("qty_single_gang_plastic_box", "Single Gang Plastic Box"),
@@ -657,7 +675,26 @@ var CATS = [
     ea("qty_chime_kit", "Chime Kit"),
     ea("qty_keyless_fixture", "Keyless Fixture")
   ]},
-  {name:"Breakers", items:[]},
+  {name:"Breakers", items:[
+    ea("qty_15amp_single", "15Amp Single"),
+    ea("qty_20amp_single", "20Amp Single"),
+    ea("qty_15amp_tandem", "15Amp Tandem"),
+    ea("qty_20amp_tandem", "20Amp Tandem"),
+    ea("qty_2_pole_20amp", "2 Pole 20Amp"),
+    ea("qty_2_pole_30amp", "2 Pole 30Amp"),
+    ea("qty_2_pole_40amp", "2 Pole 40Amp"),
+    ea("qty_2_pole_50amp", "2 Pole 50Amp"),
+    ea("qty_2_pole_60amp", "2 Pole 60Amp"),
+    ea("qty_2_pole_100amp", "2 Pole 100Amp"),
+    ea("qty_15amp_afci", "15Amp AFCI"),
+    ea("qty_20amp_afci", "20Amp AFCI"),
+    ea("qty_20amp_gfci", "20Amp GFCI"),
+    ea("qty_2_pole_20amp_gfci", "2 Pole 20Amp GFCI"),
+    ea("qty_2_pole_30amp_gfci", "2 Pole 30Amp GFCI"),
+    ea("qty_2_pole_50amp_gfci", "2 Pole 50Amp GFCI"),
+    ea("qty_35k_surge_protection", "35K Surge Protection"),
+    ea("qty_65k_surge_protection", "65K Surge Protection")
+  ]},
   {name:"Conduit", items:[
     item("qty_1_2in_emt", "1/2in EMT", "ft", 10),
     ea("qty_1_2in_emt_connector", "1/2in EMT Connector"),
@@ -768,7 +805,9 @@ function collect(){
     date: $("h_date").value, employee: $("h_employee").value.trim(), customer: $("h_customer").value.trim(),
     address: $("h_address").value.trim(), description: $("h_desc").value.trim(),
     labor100: num($("h_labor100").value), labor85: num($("h_labor85").value),
-    notes: $("h_notes").value.trim(), groups: [], others: [], totalQty: 0, lines: 0
+    notes: $("h_notes").value.trim(), groups: [], others: [], totalQty: 0, lines: 0,
+    photos: notePhotos.filter(function(p){ return p.pdfDataUrl; }).map(function(p){ return {name: p.name || "photo", dataUrl: p.pdfDataUrl}; }),
+    photoCount: photoMeta.length
   };
   CATS.forEach(function(c){
     var g = {name:c.name, items:[]};
@@ -815,11 +854,17 @@ function readStore(){
     return {active:data.active || null, previous:Array.isArray(data.previous) ? data.previous : []};
   } catch(_){ return {active:null, previous:[]}; }
 }
+var storeWarned = false;
 function writeStore(data){
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch(_){}
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); storeWarned = false; return true; }
+  catch(_){
+    if (!storeWarned) { storeWarned = true; toast("This phone couldn't save the list. Storage may be full.", 4000); }
+    return false;
+  }
 }
 function listHasContent(L){
   if (!L) return false;
+  if (L.photos && L.photos.length) return true;
   if ((L.customer||"").trim() || (L.address||"").trim() || (L.description||"").trim() || (L.notes||"").trim()) return true;
   if (num(L.labor100) || num(L.labor85)) return true;
   var qty = L.qty || {};
@@ -848,7 +893,8 @@ function snapshotFromForm(){
     labor85: $("h_labor85").value,
     notes: $("h_notes").value,
     qty: qty,
-    others: oth
+    others: oth,
+    photos: photoMeta.map(function(p){ return {id:p.id, name:p.name, type:p.type}; })
   };
 }
 function contentPool(data){
@@ -883,6 +929,7 @@ function clearInputs(){
 function clearForm(){
   restoring = true;
   clearInputs();
+  resetPhotos();
   $("h_date").value = todayISO();
   var nm=""; try{ nm = localStorage.getItem(NAME_KEY) || ""; }catch(_){}
   $("h_employee").value = nm;
@@ -894,6 +941,7 @@ function clearForm(){
 function applyList(L){
   restoring = true;
   clearInputs();
+  resetPhotos();
   $("h_date").value = L.date || todayISO();
   $("h_employee").value = L.employee || "";
   $("h_customer").value = L.customer || "";
@@ -902,6 +950,10 @@ function applyList(L){
   $("h_labor100").value = L.labor100 || "";
   $("h_labor85").value = L.labor85 || "";
   $("h_notes").value = L.notes || "";
+  photoMeta = (L.photos || []).filter(function(p){ return p && p.id; }).map(function(p){
+    return {id:p.id, name:p.name || "photo", type:p.type || ""};
+  });
+  renderThumbs();
   var qty = L.qty || {};
   CATS.forEach(function(c, ci){
     var any = false;
@@ -920,6 +972,7 @@ function applyList(L){
   if ((L.employee||"").trim()) { try { localStorage.setItem(NAME_KEY, L.employee.trim()); } catch(_){} }
   restoring = false;
   update();
+  photosReady();
 }
 function startNewList(){
   var snap = activeId ? snapshotFromForm() : null;
@@ -936,8 +989,9 @@ function startNewList(){
   var dropped = had && previous.length > MAX_LISTS;
   previous = previous.slice(0, MAX_LISTS);
   activeId = "L" + Date.now();
-  writeStore({active:{id:activeId, savedAt:Date.now(), date:"", employee:"", customer:"", address:"", description:"", labor100:"", labor85:"", notes:"", qty:{}, others:[]}, previous:previous});
+  writeStore({active:{id:activeId, savedAt:Date.now(), date:"", employee:"", customer:"", address:"", description:"", labor100:"", labor85:"", notes:"", qty:{}, others:[], photos:[]}, previous:previous});
   clearForm();
+  gcPhotos();
   if (had && dropped) toast("Saved. The oldest list was removed so only the last 3 are kept.");
   else if (had) toast("Saved. Open it anytime under Previous Lists.");
   else toast("New blank list");
@@ -971,6 +1025,8 @@ function renderPrevious(){
     if (cust && addr) meta.push(cust);
     var n = listItemCount(L);
     meta.push(n===1 ? "1 item" : (n+" items"));
+    var pc = (L.photos || []).length;
+    if (pc) meta.push(pc===1 ? "1 photo" : (pc+" photos"));
     if (L.id === activeId) meta.push("Currently open");
     var b = el("button", {"type":"button", "class":"listpick"+(L.id===activeId?" current":""), "data-list":L.id});
     b.innerHTML = '<span class="lt">'+esc(listTitle(L))+'</span><span class="ld">'+esc(meta.join(" \u00b7 "))+'</span>';
@@ -1014,6 +1070,199 @@ function maybeShowNotice(){
   if (!seen) $("notice").classList.add("show");
 }
 
+function newPhotoId(){ return "P" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function isGifFile(file){ return /gif/i.test(file.type || "") || /\.gif$/i.test(file.name || ""); }
+function isImageFile(file){
+  return /^image\//i.test(file.type || "") || isGifFile(file) || /\.(jpe?g|png|webp|heic|heif|bmp)$/i.test(file.name || "");
+}
+function blobToDataUrl(blob){
+  return new Promise(function(res, rej){
+    var fr = new FileReader();
+    fr.onload = function(){ res(fr.result); };
+    fr.onerror = function(){ rej(fr.error || new Error("read")); };
+    fr.readAsDataURL(blob);
+  });
+}
+function openDb(){
+  return new Promise(function(res, rej){
+    if (!window.indexedDB) { rej(new Error("no idb")); return; }
+    var req = indexedDB.open("re_material_files", 1);
+    req.onupgradeneeded = function(){
+      var db = req.result;
+      if (!db.objectStoreNames.contains("photos")) db.createObjectStore("photos", {keyPath:"id"});
+    };
+    req.onsuccess = function(){ res(req.result); };
+    req.onerror = function(){ rej(req.error || new Error("idb")); };
+  });
+}
+function idbPut(rec){
+  return openDb().then(function(db){
+    return new Promise(function(res, rej){
+      var tx = db.transaction("photos", "readwrite");
+      tx.objectStore("photos").put(rec);
+      tx.oncomplete = function(){ res(); };
+      tx.onerror = function(){ rej(tx.error || new Error("put")); };
+      tx.onabort = function(){ rej(tx.error || new Error("put")); };
+    });
+  });
+}
+function idbGet(id){
+  return openDb().then(function(db){
+    return new Promise(function(res, rej){
+      var tx = db.transaction("photos", "readonly");
+      var req = tx.objectStore("photos").get(id);
+      req.onsuccess = function(){ res(req.result || null); };
+      req.onerror = function(){ rej(req.error || new Error("get")); };
+    });
+  });
+}
+function idbDel(id){
+  return openDb().then(function(db){
+    return new Promise(function(res){
+      var tx = db.transaction("photos", "readwrite");
+      tx.objectStore("photos").delete(id);
+      tx.oncomplete = function(){ res(); };
+      tx.onerror = function(){ res(); };
+      tx.onabort = function(){ res(); };
+    });
+  }).catch(function(){});
+}
+function gcPhotos(){
+  var data = readStore();
+  var keep = {};
+  function take(L){ if (!L || !L.photos) return; L.photos.forEach(function(p){ if (p && p.id) keep[p.id] = 1; }); }
+  take(data.active);
+  (data.previous || []).forEach(take);
+  photoMeta.forEach(function(p){ keep[p.id] = 1; });
+  return openDb().then(function(db){
+    return new Promise(function(res){
+      var tx = db.transaction("photos", "readwrite");
+      var req = tx.objectStore("photos").openCursor();
+      req.onsuccess = function(){
+        var cur = req.result;
+        if (!cur) return;
+        if (!keep[cur.value.id]) cur.delete();
+        cur.continue();
+      };
+      tx.oncomplete = function(){ res(); };
+      tx.onerror = function(){ res(); };
+      tx.onabort = function(){ res(); };
+    });
+  }).catch(function(){});
+}
+function renderThumbs(){
+  var byId = {};
+  notePhotos.forEach(function(p){ byId[p.id] = p; });
+  var box = $("thumbs");
+  if (!box) return;
+  box.innerHTML = "";
+  photoMeta.forEach(function(m){
+    var d = el("div", {"class":"thumb"});
+    var p = byId[m.id];
+    if (p && p.displayUrl) d.appendChild(el("img", {src: p.displayUrl, alt: m.name || "Note photo"}));
+    else d.appendChild(el("div", {"class":"thumbph"}, "Photo"));
+    d.appendChild(el("button", {"type":"button", "class":"thumbx", "data-photo": m.id, "aria-label":"Remove photo"}, "\u00d7"));
+    box.appendChild(d);
+  });
+  var b = $("b_notes");
+  if (b) { b.textContent = String(photoMeta.length); b.classList.toggle("zero", !photoMeta.length); }
+}
+function resetPhotos(){
+  photoGen++;
+  notePhotos.forEach(function(p){ if (p.displayUrl) { try { URL.revokeObjectURL(p.displayUrl); } catch(_){} } });
+  notePhotos = [];
+  photoMeta = [];
+  renderThumbs();
+}
+function rememberPhoto(rec, dataUrl){
+  photoMeta.push({id: rec.id, name: rec.name, type: rec.type});
+  notePhotos.push({id: rec.id, name: rec.name, type: rec.type, displayUrl: URL.createObjectURL(rec.display), pdfDataUrl: dataUrl});
+  renderThumbs();
+  update();
+}
+function prepareImage(file){
+  return new Promise(function(res, rej){
+    if (!file || !isImageFile(file)) { rej(new Error("type")); return; }
+    var gif = isGifFile(file);
+    if (gif && file.size > MAX_GIF_BYTES) { rej(new Error("big")); return; }
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function(){
+      try {
+        var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+        if (!w || !h) throw new Error("decode");
+        var scale = Math.min(1, 1600 / Math.max(w, h));
+        var cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+        var canvas = document.createElement("canvas");
+        canvas.width = cw; canvas.height = ch;
+        var ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, cw, ch);
+        ctx.drawImage(img, 0, 0, cw, ch);
+        canvas.toBlob(function(jpeg){
+          URL.revokeObjectURL(url);
+          if (!jpeg) { rej(new Error("compress")); return; }
+          res({name: (file.name || "photo").slice(0, 80), type: gif ? "image/gif" : "image/jpeg", display: gif ? file : jpeg, pdf: jpeg});
+        }, "image/jpeg", 0.72);
+      } catch (err) {
+        URL.revokeObjectURL(url);
+        rej(err && err.message ? err : new Error("decode"));
+      }
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); rej(new Error("decode")); };
+    img.src = url;
+  });
+}
+function addPhotoFile(file){
+  if (photoMeta.length >= MAX_PHOTOS) { toast("This list can hold 8 photos."); return Promise.resolve(); }
+  return prepareImage(file).then(function(pre){
+    if (failNextPhotoSave) { failNextPhotoSave = false; throw new Error("quota"); }
+    var rec = {id: newPhotoId(), listId: activeId, name: pre.name, type: pre.type, display: pre.display, pdf: pre.pdf};
+    return idbPut(rec).then(function(){
+      return blobToDataUrl(pre.pdf).then(function(dataUrl){ rememberPhoto(rec, dataUrl); });
+    });
+  }).catch(function(err){
+    var m = err && err.message;
+    if (m === "big") toast("That GIF is too big to keep on this phone.", 4000);
+    else if (m === "type") toast("Choose a photo or a GIF.");
+    else if (m === "decode") toast("Couldn't read that picture. Try a JPG or GIF.", 4000);
+    else toast("Couldn't save that photo. This phone may be out of room.", 4000);
+  });
+}
+function photosReady(){
+  var gen = photoGen;
+  var missing = photoMeta.filter(function(m){
+    return !notePhotos.some(function(p){ return p.id === m.id && p.pdfDataUrl; });
+  });
+  if (!missing.length) return Promise.resolve();
+  return Promise.all(missing.map(function(m){
+    return idbGet(m.id).then(function(rec){
+      if (!rec || !rec.pdf) return null;
+      return blobToDataUrl(rec.pdf).then(function(dataUrl){
+        var display = rec.display || rec.pdf;
+        return {id: rec.id, name: rec.name || m.name, type: rec.type || m.type, displayUrl: URL.createObjectURL(display), pdfDataUrl: dataUrl};
+      });
+    }).catch(function(){ return null; });
+  })).then(function(items){
+    if (gen !== photoGen) return;
+    var fresh = {};
+    notePhotos.forEach(function(p){ fresh[p.id] = p; });
+    items.forEach(function(p){ if (p) fresh[p.id] = p; });
+    var next = [];
+    photoMeta.forEach(function(m){ if (fresh[m.id]) next.push(fresh[m.id]); });
+    notePhotos.forEach(function(p){ if (next.indexOf(p) < 0 && p.displayUrl) { try { URL.revokeObjectURL(p.displayUrl); } catch(_){} } });
+    notePhotos = next;
+    renderThumbs();
+  });
+}
+function preloadLogo(){
+  if (!window.fetch) return;
+  logoReady = fetch("logo.png").then(function(r){
+    if (!r.ok) throw new Error("logo");
+    return r.blob();
+  }).then(blobToDataUrl).then(function(u){ logoDataUrl = u; }).catch(function(){});
+}
+
 /* ---------- PDF ---------- */
 var WINANSI_EXTRA = "\u20ac\u201a\u0192\u201e\u2026\u2020\u2021\u02c6\u2030\u0160\u2039\u0152\u017d\u2018\u2019\u201c\u201d\u2022\u2013\u2014\u02dc\u2122\u0161\u203a\u0153\u017e\u0178";
 function pdfSafe(s){
@@ -1029,12 +1278,36 @@ function buildPdf(s){
   var W=612, H=792, L=40, R=W-40, y=0, page=1;
   var NAVY=[31,56,100], BLUE=[47,85,151], GRAY=[90,98,112], LINE=[210,216,226], SHADE=[238,242,248];
   function head(cont){
-    doc.setFillColor.apply(doc,NAVY); doc.rect(0,0,W,58,"F");
-    doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(18);
-    doc.text(PDF_TITLE, L, 28);
+    if (!cont && logoDataUrl){
+      var drew = false;
+      try {
+        var props = doc.getImageProperties(logoDataUrl);
+        var maxW = R - L, maxH = 112;
+        var lw = maxW, lh = props.height * (lw / props.width);
+        if (lh > maxH) { lh = maxH; lw = props.width * (lh / props.height); }
+        doc.addImage(logoDataUrl, "PNG", L + (maxW - lw) / 2, 18, lw, lh);
+        y = 18 + lh + 12;
+        drew = true;
+      } catch (e) { y = 28; }
+      if (drew){
+        doc.setTextColor.apply(doc, NAVY); doc.setFont("helvetica","bold"); doc.setFontSize(13);
+        doc.text("Job Material List", W / 2, y, {align:"center"});
+        y += 14;
+        doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor.apply(doc, GRAY);
+        doc.text(COMPANY + "  \u00b7  " + PHONE + "  \u00b7  St. Louis, MO", W / 2, y, {align:"center"});
+        y += 8;
+        doc.setDrawColor.apply(doc, NAVY); doc.setLineWidth(1.5); doc.line(L, y, R, y); doc.setLineWidth(0.5);
+        doc.setTextColor(0,0,0);
+        y += 16;
+        return;
+      }
+    }
+    doc.setFillColor.apply(doc,NAVY); doc.rect(0,0,W,46,"F");
+    doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(14);
+    doc.text(cont ? "Job Material List (continued)" : PDF_TITLE, L, 22);
     doc.setFont("helvetica","normal"); doc.setFontSize(10);
-    doc.text(COMPANY + " \u00b7 " + PHONE + " \u00b7 St. Louis, MO" + (cont ? "   \u00b7   (continued)" : ""), L, 45);
-    doc.setTextColor(0,0,0); y = 78;
+    doc.text(COMPANY + " \u00b7 " + PHONE, L, 36);
+    doc.setTextColor(0,0,0); y = 64;
   }
   function foot(){ doc.setFontSize(8.5); doc.setTextColor.apply(doc,GRAY); doc.setFont("helvetica","normal");
     doc.text("Job: " + pdfSafe(s.address).slice(0,70), L, H-22); doc.text("Page " + page, R, H-22, {align:"right"}); doc.setTextColor(0,0,0); }
@@ -1098,14 +1371,33 @@ function buildPdf(s){
     y += 8;
   }
 
-  /* notes */
-  if (s.notes){
+  /* notes and attached pictures (GIF uses its first frame) */
+  if (s.notes || (s.photos && s.photos.length)){
     secBar("Notes", false);
-    doc.setFont("helvetica","normal"); doc.setFontSize(10.5);
-    var nl = doc.splitTextToSize(pdfSafe(s.notes), R-L-12);
-    y += 4;
-    nl.forEach(function(line){ need(14); doc.text(line, L+6, y+11); y += 14; });
-    y += 10;
+    if (s.notes){
+      doc.setFont("helvetica","normal"); doc.setFontSize(10.5);
+      var nl = doc.splitTextToSize(pdfSafe(s.notes), R-L-12);
+      y += 4;
+      nl.forEach(function(line){ need(14); doc.text(line, L+6, y+11); y += 14; });
+      y += 6;
+    }
+    (s.photos || []).forEach(function(p){
+      if (!p || !p.dataUrl) return;
+      try {
+        var ip = doc.getImageProperties(p.dataUrl);
+        var maxW = R - L, maxH = 230;
+        var iw = maxW, ih = ip.height * (iw / ip.width);
+        if (ih > maxH) { ih = maxH; iw = ip.width * (ih / ip.height); }
+        need(ih + 18);
+        doc.addImage(p.dataUrl, "JPEG", L + (maxW - iw) / 2, y, iw, ih);
+        y += ih + 4;
+        doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor.apply(doc, GRAY);
+        doc.text(pdfSafe(p.name || "photo"), L, y + 8);
+        doc.setTextColor(0,0,0);
+        y += 14;
+      } catch (e) {}
+    });
+    y += 8;
   }
 
   /* plain-text item list (one line per item) for the invoicing parser */
@@ -1141,6 +1433,11 @@ function mailBody(s){
   s.groups.forEach(function(g){ b.push(g.name.toUpperCase()); g.items.forEach(function(it){ b.push(it.name + " \u2014 " + fmtQty(it.qty) + " " + it.unit); }); b.push(""); });
   if (s.others.length){ b.push("OTHER ITEMS"); s.others.forEach(function(o){ b.push(o.name + " \u2014 " + fmtQty(o.qty) + " ea"); }); b.push(""); }
   if (s.notes){ b.push("NOTES"); b.push(s.notes); b.push(""); }
+  if (s.photoCount){
+    var pnames = (s.photos || []).map(function(p){ return p.name; }).filter(Boolean);
+    b.push("Photos: " + s.photoCount + (pnames.length ? " (" + pnames.join(", ") + ")" : "") + " included in the PDF.");
+    b.push("");
+  }
   b.push("(PDF downloaded on the phone: please attach \"" + pdfFileName(s) + "\" if it isn't attached.)");
   return b.join("\n");
 }
@@ -1181,6 +1478,7 @@ function send(){
   if (busy) return;
   if (!validate()) return;
   busy = true; $("send").disabled = true;
+  Promise.all([logoReady, photosReady()]).then(function(){
   var p;
   try { p = makePdf(); lastPdf = p; }
   catch(err){ busy=false; $("send").disabled=false; alert("Could not make the PDF: " + err.message); return; }
@@ -1198,6 +1496,7 @@ function send(){
   } else {
     fallbackMail(p); busy=false; $("send").disabled=false;
   }
+  }).catch(function(err){ busy=false; $("send").disabled=false; alert("Could not make the PDF: " + (err && err.message ? err.message : "error")); });
 }
 $("send").addEventListener("click", send);
 $("again").addEventListener("click", function(){ $("done").classList.remove("show"); send(); });
@@ -1212,13 +1511,35 @@ $("lists_body").addEventListener("click", function(e){
   if (!b) return;
   resumeList(b.getAttribute("data-list"));
 });
+$("note_photos").addEventListener("change", function(){
+  var files = Array.prototype.slice.call(this.files || []);
+  this.value = "";
+  var chain = Promise.resolve();
+  files.forEach(function(f){ chain = chain.then(function(){ return addPhotoFile(f); }); });
+});
+$("thumbs").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-photo]");
+  if (!b) return;
+  var id = b.getAttribute("data-photo");
+  photoMeta = photoMeta.filter(function(p){ return p.id !== id; });
+  notePhotos = notePhotos.filter(function(p){
+    if (p.id !== id) return true;
+    if (p.displayUrl) { try { URL.revokeObjectURL(p.displayUrl); } catch(_){} }
+    return false;
+  });
+  idbDel(id);
+  renderThumbs();
+  update();
+});
 $("notice_ok").addEventListener("click", function(){
   $("notice").classList.remove("show");
   try { localStorage.setItem(NOTICE_KEY, "1"); } catch(_){}
 });
 window.addEventListener("pagehide", function(){ persistActive(); });
 
+preloadLogo();
 boot();
+gcPhotos();
 maybeShowNotice();
 
 window.__materialApp = {
@@ -1226,7 +1547,14 @@ window.__materialApp = {
   reset: startNewList, version: APP_VERSION,
   flushSave: persistActive, readStore: readStore,
   qtyOf: function(id){ var el=$(id); return el ? el.value : ""; },
-  pdfBase64: function(){ var p = makePdf(); return p.blob.arrayBuffer().then(function(ab){ var u=new Uint8Array(ab), s=""; for(var i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); return {name:p.name, subject:p.subject, b64:btoa(s)}; }); }
+  pdfBase64: function(){
+    return Promise.all([logoReady, photosReady()]).then(function(){
+      var p = makePdf();
+      return p.blob.arrayBuffer().then(function(ab){ var u=new Uint8Array(ab), s=""; for(var i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); return {name:p.name, subject:p.subject, b64:btoa(s)}; });
+    });
+  },
+  photoCount: function(){ return photoMeta.length; },
+  failNextPhotoSave: function(){ failNextPhotoSave = true; }
 };
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
