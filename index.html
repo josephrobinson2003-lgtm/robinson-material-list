@@ -6,10 +6,10 @@
 <meta name="theme-color" content="#1F3864">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Material List">
-<meta name="description" content="Robinson Electrical LLC – Job Material List">
-<meta name="app-version" content="20261002d">
-<title>Robinson Electrical – Material List</title>
+<meta name="apple-mobile-web-app-title" content="Robinson Electrical">
+<meta name="description" content="Robinson Electrical materials, timecards, and job photos">
+<meta name="app-version" content="20261111a">
+<title>Robinson Electrical</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -109,16 +109,36 @@ summary:focus-visible,.listpick:focus-visible,.actions .btn:focus-visible{outlin
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));background:#1d2330;color:#fff;padding:10px 16px;border-radius:10px;font-size:15px;z-index:30;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;text-align:center}
 .toast.show{opacity:1}
 footer.foot{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 6px}
+.apptabs{display:flex;gap:8px;max-width:640px;margin:0 auto;padding:10px 10px 0}
+.apptab{flex:1;min-height:44px;border-radius:12px;border:1.5px solid #c6cfdd;background:#fff;color:var(--navy);font-weight:700;font:inherit}
+.apptab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.crew{max-width:640px;margin:0 auto;padding:10px 10px 24px}
+.pilot{background:#fff8e1;border:1px solid #f0d78c;border-radius:12px;padding:10px 12px;margin:10px 0}
+.statusline{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0}
+.statusline b{display:block;color:var(--navy)}
+.statusline span,.noticebody p,.visit p{color:var(--muted)}
+.noticebody p{margin:0 0 10px}
+.warn{color:#8a5a00;font-weight:600}
+.visit{border-top:1px solid var(--line);padding:10px 0}
+.pill{display:inline-block;background:#fff3cd;border-radius:999px;padding:2px 8px;font-size:12px;color:#6a4b00}
+.checkline{display:flex;gap:8px;align-items:center;font-weight:600}
+h3{margin:12px 0 6px;font-size:15px}
 @media (max-width:360px){.step button{width:44px;height:44px}.step input{width:56px;height:44px}.row .name{font-size:15px}}
 </style>
 </head>
 <body>
 <header class="top">
   <img class="logo" src="logo.png" width="1600" height="525" alt="Robinson Electrical LLC">
-  <div class="title2">Job Material List</div>
+  <div class="title2">Robinson Electrical</div>
+  <div class="sub" id="section_label">Job Material List</div>
   <div class="sub">St. Louis, MO &middot; <a href="tel:+13145784050">314-578-4050</a></div>
 </header>
-<main>
+<nav class="apptabs" aria-label="Sections">
+  <button type="button" class="apptab on" data-tab="materials" aria-pressed="true">Materials</button>
+  <button type="button" class="apptab" data-tab="timecards" aria-pressed="false">Timecards</button>
+  <button type="button" class="apptab" data-tab="photos" aria-pressed="false">Job photos</button>
+</nav>
+<main id="materials_panel">
 <div class="notice" id="notice" role="region" aria-label="Saved lists">
   <p><b>Your lists now save on this phone.</b> If you close the app before sending, the unfinished list is still here when you come back. Tap <b>Previous Lists</b> to open one of the last 3. Each one shows the job address and date. This note only shows once.</p>
   <button type="button" class="btn new" id="notice_ok">Got it</button>
@@ -130,7 +150,7 @@ footer.foot{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 6
       <div><label class="f" for="h_date">Date</label><input class="t" type="date" id="h_date" name="date"></div>
       <div><label class="f" for="h_employee">Employee</label><input class="t" type="text" id="h_employee" name="employee" autocomplete="name" autocapitalize="words"></div>
       <div class="full"><label class="f" for="h_customer">Customer</label><input class="t" type="text" id="h_customer" name="customer" autocapitalize="words"></div>
-      <div class="full"><label class="f" for="h_address">Job Address <span class="req">*</span></label><input class="t" type="text" id="h_address" name="address" autocapitalize="words" required><div class="errmsg" id="addr_err">Job address is required before sending.</div></div>
+      <div class="full"><label class="f" for="h_address">Job Address <span class="req">*</span></label><input class="t" type="text" id="h_address" name="address" list="shared_jobs" autocapitalize="words" required><datalist id="shared_jobs"></datalist><div class="hint">Jobs you type here are the same list used for time and photos on this phone.</div><div class="errmsg" id="addr_err">Job address is required before sending.</div></div>
       <div class="full"><label class="f" for="h_desc">Job Description</label><textarea class="t" id="h_desc" name="description" rows="2" style="min-height:64px"></textarea></div>
       <div><label class="f" for="h_labor100">Labor hrs @ $100/hr</label><input class="t" type="number" inputmode="decimal" min="0" step="0.25" id="h_labor100" name="labor100"></div>
       <div><label class="f" for="h_labor85">Labor hrs @ $85/hr</label><input class="t" type="number" inputmode="decimal" min="0" step="0.25" id="h_labor85" name="labor85"></div>
@@ -161,8 +181,9 @@ footer.foot{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 6
 </form>
 <footer class="foot">Robinson Electrical LLC &middot; 314-578-4050 &middot; Lists save on this phone (last 3).</footer>
 </main>
+<div id="crew_panels"></div>
 
-<div class="bar"><div class="in">
+<div class="bar" id="material_bar"><div class="in">
   <div class="count"><b id="cnt">0</b> <span id="cntlbl">items</span><small id="cntsub">No items entered yet</small></div>
   <button type="button" class="btn" id="send">Send &#9993;</button>
 </div></div>
@@ -595,7 +616,7 @@ var PDF_TITLE = "Robinson Electrical \u2013 Job Material List";
 var NAME_KEY = "re_employee_name";
 var STORE_KEY = "re_saved_lists";
 var NOTICE_KEY = "re_autosave_notice_v1";
-var APP_VERSION = "20261002d";
+var APP_VERSION = "20261111a";
 var OTHER_ROWS = 8;
 var MAX_LISTS = 3;
 var $ = function(id){ return document.getElementById(id); };
@@ -625,14 +646,19 @@ var CATS = [
     ea("qty_fan_brace_box", "Fan Brace Box"),
     ea("qty_fan_pancake_box", "Fan Pancake Box"),
     item("qty_milwaukee_staples_box_of_600", "Milwaukee Staples (Box of 600)", "box", 1),
+    ea("qty_stack_its_cable_stackers", "Stack-Its (cable stackers)"),
+    ea("qty_single_gang_cut_in_box", "Single Gang Cut-In Box"),
+    ea("qty_two_gang_cut_in_box", "Two Gang Cut-In Box"),
     ea("qty_5in_halo_can_light", "5in Halo Can Light"),
+    ea("qty_5in_halo_cut_in_remodel_can", "5in Halo Cut-In / Remodel Can"),
     ea("qty_4in_halo_can_light", "4in Halo Can Light"),
     ea("qty_6in_wafer_can_light", "6in Wafer Can Light"),
     ea("qty_4in_wafer_can_light", "4in Wafer Can Light"),
     ea("qty_wafer_flat_bracket", "Wafer Flat Bracket"),
     ea("qty_wafer_slider_bracket", "Wafer Slider Bracket"),
     ea("qty_80cfm_panasonic_fan", "80CFM Panasonic Fan"),
-    ea("qty_110cfm_panasonic_fan", "110CFM Panasonic Fan")
+    ea("qty_110cfm_panasonic_fan", "110CFM Panasonic Fan"),
+    ea("qty_broan_50_cfm_bath_fan", "Broan 50 CFM Bath Fan")
   ]},
   {name:"Trims", items:[
     ea("qty_toggle_dimmer_switch", "Toggle Dimmer Switch"),
@@ -656,6 +682,7 @@ var CATS = [
     ea("qty_dryer_range_stainless_steel_plate", "Dryer/Range Stainless Steel Plate"),
     ea("qty_dryer_range_plate", "Dryer/Range Plate"),
     ea("qty_duplex_receptacle_plate", "Duplex Receptacle Plate"),
+    ea("qty_single_gang_blank_cover", "Single Gang Blank Cover"),
     ea("qty_single_gang_switch_plate", "Single Gang Switch Plate"),
     ea("qty_two_gang_switch_plate", "Two Gang Switch Plate"),
     ea("qty_three_gang_switch_plate", "Three Gang Switch Plate"),
@@ -670,10 +697,12 @@ var CATS = [
     ea("qty_kidde_wireless_smoke_co_combo", "Kidde Wireless Smoke/CO Combo"),
     ea("qty_kidde_wireless_bridge_unit", "Kidde Wireless Bridge Unit"),
     ea("qty_5_6in_halo_can_trim", "5/6in Halo Can Trim"),
+    ea("qty_5_6in_halo_high_lumen_can_trim", "5/6in Halo High-Lumen Can Trim"),
     ea("qty_4in_halo_can_trim", "4in Halo Can Trim"),
     ea("qty_6in_disk_light", "6in Disk Light"),
     ea("qty_chime_kit", "Chime Kit"),
-    ea("qty_keyless_fixture", "Keyless Fixture")
+    ea("qty_keyless_fixture", "Keyless Fixture"),
+    ea("qty_pull_chain_fixture", "Pull-Chain Fixture")
   ]},
   {name:"Breakers", items:[
     ea("qty_15amp_single", "15Amp Single"),
@@ -723,7 +752,8 @@ var CATS = [
     ea("qty_metal_stud_four_square_box", "Metal Stud Four Square Box"),
     ea("qty_single_gang_bell_box", "Single Gang Bell Box"),
     ea("qty_two_gang_bell_box", "Two Gang Bell Box"),
-    ea("qty_round_bell_box", "Round Bell Box")
+    ea("qty_round_bell_box", "Round Bell Box"),
+    ea("qty_octagon_box", "Octagon Box")
   ]},
   {name:"Wire", items:[
     item("qty_14_2_romex", "14-2 Romex", "ft", 25),
@@ -731,6 +761,9 @@ var CATS = [
     item("qty_12_2_romex", "12-2 Romex", "ft", 25),
     item("qty_12_3_romex", "12-3 Romex", "ft", 25),
     item("qty_10_3_romex", "10-3 Romex", "ft", 25),
+    item("qty_8_2_nmb_romex", "8-2 NM-B Romex", "ft", 25),
+    item("qty_6_3_nmb_romex", "6-3 NM-B Romex", "ft", 25),
+    item("qty_omni_wire", "Omni-Wire", "ft", 25),
     item("qty_12_2_mc", "12-2 MC", "ft", 25),
     item("qty_12_3_mc", "12-3 MC", "ft", 25),
     item("qty_18_5", "18-5", "ft", 25, "thermostat / low-voltage"),
@@ -739,7 +772,8 @@ var CATS = [
   {name:"Misc", items:[
     ea("qty_purple_wire_nuts", "Purple Wire Nuts"),
     ea("qty_single_gang_bubble_cover", "Single Gang Bubble Cover"),
-    ea("qty_two_gang_bubble_cover", "Two Gang Bubble Cover")
+    ea("qty_two_gang_bubble_cover", "Two Gang Bubble Cover"),
+    ea("qty_4in_to_3in_adapter", "4in-to-3in Adapter")
   ]}
 ];
 
@@ -892,6 +926,7 @@ function snapshotFromForm(){
     labor100: $("h_labor100").value,
     labor85: $("h_labor85").value,
     notes: $("h_notes").value,
+    jobId: (window.RobinsonJobs && window.RobinsonJobs.idFor($("h_address").value)) || "",
     qty: qty,
     others: oth,
     photos: photoMeta.map(function(p){ return {id:p.id, name:p.name, type:p.type}; })
@@ -1567,5 +1602,6 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
 })();
 
 </script>
+<script type="module" src="js/crew-ui.js"></script>
 </body>
 </html>

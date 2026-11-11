@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>Robinson Electrical can suggest a job while you are using the app. It does not keep a driving route.</string>
+  <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+  <string>If you turn on job-site suggestions for today, Robinson Electrical notices arrival and departure at saved jobs, including while the phone is locked. Turn it off when you are done. Suggestions are not hours.</string>
+  <key>UIBackgroundModes</key>
+  <array>
+    <string>location</string>
+  </array>
+</dict>
+</plist>
