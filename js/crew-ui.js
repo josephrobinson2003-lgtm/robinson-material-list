@@ -1,4 +1,5 @@
 import { unconfiguredBackend } from "./backend.js";
+import { materialPayload, postBackend, readDeviceConfig, saveDeviceConfig } from "./device-config.js";
 import { readableLines, toCsv, buildEmployeeExport } from "./export-contract.js";
 import { jobIdForLabel } from "./ids.js";
 import { loadJobBook, rememberJob, saveJobBook } from "./jobs.js";
@@ -53,6 +54,13 @@ export async function startCrewApp() {
   await drainNativeEvents();
   draw();
   wireMaterials();
+  window.RobinsonBackend = {
+    submitMaterial(list) {
+      const config = readDeviceConfig(localStorage);
+      if (!config.configured) return Promise.resolve({ ok: false, reason: "not-configured" });
+      return postBackend(config, "/api/materials", materialPayload(list));
+    }
+  };
   window.RobinsonJobs = {
     idFor: jobIdForLabel,
     remember(label) {
@@ -137,6 +145,14 @@ function draw() {
         <button type="button" class="btn secondary" id="tc_csv">Download my hours (CSV)</button>
         <button type="button" class="btn secondary" id="tc_pdf">Download my hours (PDF)</button>
       </div></section>
+      <section class="card"><h2>Server</h2>
+        <p class="hint">${readDeviceConfig(localStorage).configured ? "A server address and token are saved on this phone. They are not sent anywhere until you confirm a day or a material list." : "No server is configured. Time and photos stay on this phone."}</p>
+        <div class="fields">
+          <div class="full"><label class="f" for="cfg_url">Backend web app URL</label><input class="t" id="cfg_url" value="${esc(readDeviceConfig(localStorage).url)}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div>
+          <div class="full"><label class="f" for="cfg_token">Employee token</label><input class="t" id="cfg_token" type="password" value="" placeholder="${readDeviceConfig(localStorage).hasToken ? "Token saved. Paste a new one to replace it." : "Paste the token Joe gives you"}" autocomplete="off"></div>
+        </div>
+        <button type="button" class="btn secondary" id="cfg_save">Save server setup</button>
+      </section>
     </section>
     <section id="photos_panel" class="crew" hidden>
       <p class="pilot">Job photos are not connected. Employees do not sign in to Microsoft.</p>
@@ -196,8 +212,35 @@ function draw() {
   $("tc_confirm").addEventListener("click", async () => {
     const result = confirmDay(state, today, new Date());
     timeMessage = result.ok ? "Your day is confirmed. It is still only saved on this phone." : "Review the list before confirming.";
-    if (result.ok) state = result.state;
+    if (result.ok) {
+      state = result.state;
+      try {
+        const remote = await postBackend(readDeviceConfig(localStorage), "/api/timecards/confirm", {
+          dutyDate: today,
+          confirmedAt: new Date().toISOString(),
+          entries: buildEmployeeExport(state).entries.concat(buildEmployeeExport(state).outsidePayWeek || []).filter((row) => row.dutyDate === today && row.confirmationState === "confirmed" && !row.superseded)
+        });
+        timeMessage = remote.acknowledged
+          ? "Your day is confirmed and the server accepted it. Sunday email is sent by the server, not this phone."
+          : "Your day is confirmed on this phone. The server is not connected, so nothing was emailed.";
+      } catch (err) {
+        timeMessage = "Your day is confirmed on this phone. The server did not answer.";
+      }
+    }
     await persist(); draw(); restoreTab();
+  });
+  $("cfg_save").addEventListener("click", async () => {
+    const saved = saveDeviceConfig(localStorage, { url: $("cfg_url").value.trim(), token: $("cfg_token").value.trim() });
+    timeMessage = saved.ok ? "Server setup saved on this phone." : "Enter the https web app address and the token from Joe.";
+    if (saved.ok) {
+      try {
+        const health = await postBackend(readDeviceConfig(localStorage), "/api/health", {});
+        timeMessage = health.ok ? "The server answered. Sunday email still runs there, not on this phone." : "Saved on this phone. The server did not answer.";
+      } catch (err) {
+        timeMessage = "Saved on this phone. The server did not answer.";
+      }
+    }
+    draw(); restoreTab();
   });
   $("tc_off").addEventListener("click", async () => {
     const result = confirmDidNotWork(state, today, new Date());

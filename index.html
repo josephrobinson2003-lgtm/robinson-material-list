@@ -1515,7 +1515,7 @@ function send(){
   busy = true; $("send").disabled = true;
   Promise.all([logoReady, photosReady()]).then(function(){
   var p;
-  try { p = makePdf(); lastPdf = p; }
+  try { p = makePdf(); lastPdf = p; if (window.RobinsonBackend && window.RobinsonBackend.submitMaterial) window.RobinsonBackend.submitMaterial(p.state); }
   catch(err){ busy=false; $("send").disabled=false; alert("Could not make the PDF: " + err.message); return; }
   var file = null;
   try { file = new File([p.blob], p.name, {type:"application/pdf"}); } catch(_){}

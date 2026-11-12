@@ -2,8 +2,8 @@
    Lists are stored in localStorage by the page, never in this cache.
    Bump CACHE when shipping a new version so a home-screen install
    drops the old shell and loads the new one after the app is reopened. */
-var CACHE = "re-material-20261112b";
-var ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./logo.png", "./favicon.ico", "./favicon-32.png", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./js/chicago-time.js", "./js/ids.js", "./js/timecard-model.js", "./js/geofence-policy.js", "./js/export-contract.js", "./js/employee-boundary.js", "./js/backend.js", "./js/sync-queue.js", "./js/jobs.js", "./js/exif.js", "./js/job-photos.js", "./js/photo-paths.js", "./js/photo-backend.js", "./js/storage.js", "./js/native-bridge.js", "./js/secure-store.js", "./js/privacy-notice.js", "./js/tracking-status.js", "./js/pay-rules.js", "./js/crew-ui.js"];
+var CACHE = "re-material-20261112c";
+var ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./logo.png", "./favicon.ico", "./favicon-32.png", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./js/chicago-time.js", "./js/ids.js", "./js/timecard-model.js", "./js/geofence-policy.js", "./js/export-contract.js", "./js/employee-boundary.js", "./js/backend.js", "./js/device-config.js", "./js/sync-queue.js", "./js/jobs.js", "./js/exif.js", "./js/job-photos.js", "./js/photo-paths.js", "./js/photo-backend.js", "./js/storage.js", "./js/native-bridge.js", "./js/secure-store.js", "./js/privacy-notice.js", "./js/tracking-status.js", "./js/pay-rules.js", "./js/crew-ui.js"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ASSETS); }).then(function () { return self.skipWaiting(); }));
