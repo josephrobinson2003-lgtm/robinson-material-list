@@ -3,6 +3,7 @@
 import { createId, jobIdForLabel, normalizeJobLabel } from "./ids.js";
 import { dutyDateOf, formatChicagoIso } from "./chicago-time.js";
 import { assessGeofenceEvent } from "./geofence-policy.js";
+import { allocateTravel } from "./pay-rules.js";
 import { enqueue } from "./sync-queue.js";
 
 export function emptyState() {
@@ -367,6 +368,8 @@ export function reviewDay(state, dutyDate) {
   if (suggestions.length) blockers.push("review-suggestions");
   if (missingEnd.length) blockers.push("missing-end");
   if (overlapPairs.length) blockers.push("overlap");
+  const allocation = allocateTravel(active.map((item) => ({ ...item.row, entryId: item.entry.entryId })));
+  for (const item of visits) item.travel = allocation.get(item.entry.entryId) || null;
   return {
     dutyDate,
     visits,

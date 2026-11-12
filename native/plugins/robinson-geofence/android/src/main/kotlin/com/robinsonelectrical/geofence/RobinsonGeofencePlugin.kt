@@ -36,6 +36,10 @@ class RobinsonGeofencePlugin : Plugin() {
             call.reject("location-denied")
             return
         }
+        if (!backgroundLocationGranted()) {
+            call.reject("background-location-not-granted")
+            return
+        }
         val dutyDate = call.getString("dutyDate")
         val regions = call.getArray("regions")
         if (dutyDate.isNullOrBlank() || regions == null) {
@@ -109,6 +113,10 @@ class RobinsonGeofencePlugin : Plugin() {
 
     private fun fineLocationGranted(): Boolean {
         return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun backgroundLocationGranted(): Boolean {
+        return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun pendingIntent(): PendingIntent {

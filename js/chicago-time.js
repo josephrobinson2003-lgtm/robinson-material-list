@@ -1,5 +1,5 @@
 /** America/Chicago wall time, including daylight-saving changes.
- * Payroll week boundaries are intentionally not decided here. */
+ * The pay week is Monday through Saturday. Sunday is the report send day. */
 
 export const TIME_ZONE = "America/Chicago";
 
@@ -114,6 +114,43 @@ export function formatChicagoDay(dutyDate) {
     day: "numeric",
     year: "numeric"
   }).format(parsed.date);
+}
+
+const WEEKDAY_FROM_MONDAY = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
+
+export function weekdayOfDutyDate(dutyDate) {
+  const noon = chicagoWallToUtc(dutyDate, "12:00");
+  if (!noon.ok) return "";
+  return chicagoParts(noon.date).weekday;
+}
+
+/** Monday–Saturday block that contains a workday. Sunday is not inside a pay week. */
+export function payWeekContaining(dutyDate) {
+  const weekday = weekdayOfDutyDate(dutyDate);
+  if (!weekday || weekday === "Sun") {
+    return { inPayWeek: false, weekStart: null, weekEnd: null, sendOn: null, weekStartRule: "monday-saturday" };
+  }
+  const weekStart = addCalendarDays(dutyDate, -WEEKDAY_FROM_MONDAY[weekday]);
+  const weekEnd = addCalendarDays(weekStart, 5);
+  return {
+    inPayWeek: true,
+    weekStart,
+    weekEnd,
+    sendOn: addCalendarDays(weekStart, 6),
+    weekStartRule: "monday-saturday"
+  };
+}
+
+/** The Monday–Saturday report due on the Sunday after that week.
+ * On Sunday this is the week that just ended. On Monday–Saturday it is the open week. */
+export function reportWeek(asOf) {
+  const duty = dutyDateOf(asOf);
+  const anchor = weekdayOfDutyDate(duty) === "Sun" ? addCalendarDays(duty, -1) : duty;
+  return payWeekContaining(anchor);
+}
+
+export function isInPayWeek(dutyDate, week) {
+  return !!dutyDate && !!week && week.inPayWeek !== false && dutyDate >= week.weekStart && dutyDate <= week.weekEnd;
 }
 
 export function addCalendarDays(dutyDate, days) {

@@ -14,7 +14,7 @@ import {
   confirmJob, deletePin, editEntry, emptyState, manualStart, rejectSuggestion, reviewDay,
   savePin, setEmployeeName, setJobDraft, setLocationOptIn, stopInterval, switchOrInsert
 } from "./timecard-model.js";
-import { formatChicagoDay, formatChicagoLabel, dutyDateOf } from "./chicago-time.js";
+import { formatChicagoDay, formatChicagoLabel, dutyDateOf, reportWeek } from "./chicago-time.js";
 import { trackingLabel } from "./tracking-status.js";
 
 const secure = createWebSecureStore();
@@ -100,18 +100,19 @@ function draw() {
   const root = $("crew_panels");
   if (!root) return;
   const today = dutyDateOf(new Date());
+  const week = reportWeek(new Date());
   const review = reviewDay(state, today);
   const track = trackingLabel(tracking);
   const auth = microsoftAuthStatus();
   root.innerHTML = `
     <section id="timecards_panel" class="crew" hidden>
-      <p class="pilot">Pilot on this phone. Do not use these hours for payroll or billing yet.</p>
-      <div class="statusline"><b>${esc(track.title)}</b><span>${esc(track.detail)}</span></div>
+      <p class="pilot">Pay week is Monday through Saturday. The report is sent on Sunday. Breaks are paid. Travel between jobs is added to the next job. Sunday email is not sending yet.</p>
+      <div class="statusline"><b>${esc(track.title)}</b><span>${esc(track.detail)} On the Android app, suggestions watch saved jobs only while you leave them on for today, including with the screen locked. That is not a driving route.</span></div>
       <section class="card"><h2>Privacy</h2><div class="fields"><div class="full noticebody">${PRIVACY_PARAGRAPHS.map((p) => "<p>" + esc(p) + "</p>").join("")}
         <button type="button" class="btn secondary" id="privacy_ok">${state.privacyNoticeAcknowledged ? "Notice read" : "I have read this"}</button></div></div></section>
       <section class="card"><h2>Your time</h2><div class="fields">
         <div class="full"><label class="f" for="tc_name">Your name</label><input class="t" id="tc_name" value="${esc(state.employeeName)}" autocomplete="name"></div>
-        <div class="full hint">Today is ${esc(formatChicagoDay(today))}. This phone is one person. Joe and the employee each confirm only their own day.</div>
+        <div class="full hint">Today is ${esc(formatChicagoDay(today))}. Report week ${esc(week.weekStart)} through ${esc(week.weekEnd)}, sent Sunday ${esc(week.sendOn)}. This phone is one person. Joe and the employee each confirm only their own day.</div>
         <div class="full"><label class="f" for="tc_job">Job</label><input class="t" id="tc_job" list="shared_jobs" value="${esc(state.jobDraft)}"></div>
         <label class="checkline"><input type="checkbox" id="tc_optin" ${state.locationOptIn ? "checked" : ""}> Allow a location suggestion when I tap the button</label>
       </div>
@@ -120,7 +121,6 @@ function draw() {
         <button type="button" class="btn secondary" id="tc_suggest">Suggest job from where I am</button>
         <button type="button" class="btn new" id="tc_start">Start work</button>
         <button type="button" class="btn secondary" id="tc_break">Break</button>
-        <button type="button" class="btn secondary" id="tc_travel">Travel</button>
         <button type="button" class="btn secondary" id="tc_stop">Stop</button>
         <button type="button" class="btn secondary" id="tc_arm">Arm job-site suggestions</button>
         <button type="button" class="btn secondary" id="tc_spot">Save this spot for matching</button>
@@ -131,7 +131,7 @@ function draw() {
         <button type="button" class="btn" id="tc_confirm" ${(review.canConfirm && !dayAlreadyConfirmed(review)) ? "" : "disabled"}>${dayAlreadyConfirmed(review) ? "Day confirmed" : "Confirm my day"}</button>
         <button type="button" class="btn secondary" id="tc_off">I didn't work this day</button>
       </div>
-      <p class="hint">Saved on this phone. Not uploaded. Sunday email is not set up.</p>
+      <p class="hint">Saved on this phone. Not uploaded. The Monday–Saturday report is not emailed yet.</p>
       <div class="actions">
         <button type="button" class="btn secondary" id="tc_json">Download my hours (JSON)</button>
         <button type="button" class="btn secondary" id="tc_csv">Download my hours (CSV)</button>
@@ -176,7 +176,6 @@ function draw() {
   $("ph_suggest").addEventListener("click", () => suggestJob("photos"));
   $("tc_start").addEventListener("click", () => startKind("work"));
   $("tc_break").addEventListener("click", () => startKind("break"));
-  $("tc_travel").addEventListener("click", () => startKind("travel"));
   $("tc_stop").addEventListener("click", async () => {
     const result = stopInterval(state, new Date());
     timeMessage = result.ok ? "Stopped. Still provisional until you confirm the day." : "Nothing is open to stop.";
@@ -185,7 +184,7 @@ function draw() {
   });
   $("tc_spot").addEventListener("click", () => saveCurrentSpot());
   $("tc_arm").addEventListener("click", async () => {
-    const result = await armTracking(state.pins || []);
+    const result = await armTracking(state.pins || [], dutyDateOf(new Date()));
     timeMessage = result.ok ? "Armed." : "Job-site suggestions stay off in this browser. " + (result.reason || "");
     draw(); restoreTab();
   });
@@ -252,9 +251,10 @@ function reviewHtml(review) {
     <h3>Job visits</h3>
     ${review.visits.length ? review.visits.map(rowHtml).join("") : "<p>No job visits yet.</p>"}
     <h3>Breaks</h3>
+    <p>Breaks are paid. They stay in the day's hours.</p>
     ${review.breaks.length ? review.breaks.map(rowHtml).join("") : "<p>No breaks recorded. Add one if you took a break.</p>"}
     <h3>Travel</h3>
-    ${review.travel.length ? review.travel.map(rowHtml).join("") : "<p>No travel recorded.</p>"}
+    <p>The time between leaving one job and arriving at the next is added to the next job. The drive to the first job and the drive home are not counted.</p>
     <h3>Saved spots</h3>
     ${(state.pins || []).map((pin) => '<p>' + esc(pin.jobLabel) + ' <button type="button" class="btn secondary" data-drop-pin="' + esc(pin.jobId) + '">Remove spot</button></p>').join("") || "<p>No saved spots.</p>"}
   </div></div></section>`;
@@ -273,14 +273,18 @@ function dayAlreadyConfirmed(review) {
 }
 
 function rowHtml(item) {
-  const row = item.row;
+  const row = item.travel ? { ...item.row, ...item.travel } : item.row;
   let label = "Provisional";
   if (row.status === "suggested") label = "Suggested — not hours yet";
   else if (!row.start || !row.end) label = "Open — end missing";
   else if (revisionConfirmed(item.entry.entryId, row.revision)) label = "Confirmed";
   const note = row.kind === "work" ? '<label class="f">Work note, optional</label><input class="t" maxlength="200" data-note="' + esc(item.entry.entryId) + '" value="' + esc(row.workNote || "") + '">' : "";
   const choice = row.status === "suggested" ? '<div class="actions"><button type="button" class="btn secondary" data-accept="' + esc(item.entry.entryId) + '">Accept suggestion</button><input class="t" placeholder="Why remove it"><button type="button" class="btn secondary" data-reject="' + esc(item.entry.entryId) + '">Remove</button></div>' : "";
-  return `<article class="visit"><b>${esc(row.jobLabel)}</b> <span class="pill">${esc(label)}</span><p>${esc(row.kind)} · ${esc(row.start ? formatChicagoLabel(row.start) : "start not set")} to ${esc(row.end ? formatChicagoLabel(row.end) : "end not set")}</p>${row.lowAccuracy ? "<p>Location was coarse or unavailable.</p>" : ""}${note}${choice}<p class="hint">${esc(statusWord(row.syncStatus))}</p></article>`;
+  const travelLine = row.travelMinutes ? "<p>" + esc(row.travelMinutes) + " min travel from " + esc(row.travelFromJobLabel || "the previous job") + " is included on this job.</p>" : "";
+  const when = row.intervalStart && row.intervalStart !== row.start
+    ? esc(formatChicagoLabel(row.intervalStart)) + " to " + esc(row.end ? formatChicagoLabel(row.end) : "end not set") + " (on site " + esc(formatChicagoLabel(row.onSiteStart || row.start)) + ")"
+    : esc(row.start ? formatChicagoLabel(row.start) : "start not set") + " to " + esc(row.end ? formatChicagoLabel(row.end) : "end not set");
+  return `<article class="visit"><b>${esc(row.jobLabel)}</b> <span class="pill">${esc(label)}</span><p>${esc(row.kind)} · ${when}</p>${travelLine}${row.kind === "break" ? "<p>Paid break.</p>" : ""}${row.lowAccuracy ? "<p>Location was coarse or unavailable.</p>" : ""}${note}${choice}<p class="hint">${esc(statusWord(row.syncStatus))}</p></article>`;
 }
 
 function photoHtml() {

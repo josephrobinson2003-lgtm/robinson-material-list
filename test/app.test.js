@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { chicagoWallToUtc, dutyDateOf, chicagoOffsetMinutes } from "../js/chicago-time.js";
+import { chicagoWallToUtc, dutyDateOf, chicagoOffsetMinutes, payWeekContaining, reportWeek } from "../js/chicago-time.js";
 import { jobIdForLabel } from "../js/ids.js";
 import { rememberJob, emptyJobBook, publicJob } from "../js/jobs.js";
 import { readJpegCaptureTime, filenameDateFromCapture } from "../js/exif.js";
@@ -9,7 +9,7 @@ import {
   emptyState, manualStart, stopInterval, switchOrInsert, confirmDay, confirmDidNotWork,
   reviewDay, editEntry, applyGeofenceEvent, setLocationOptIn, markArmed, acceptSuggestion
 } from "../js/timecard-model.js";
-import { buildEmployeeExport, confirmedCurrentIntervals, findForbiddenKeys } from "../js/export-contract.js";
+import { buildEmployeeExport, confirmedCurrentIntervals, confirmedPaidMinutes, findForbiddenKeys } from "../js/export-contract.js";
 import { handleEmployeeRead, handleEmployeeWrite, handleOwnerExport } from "../js/employee-boundary.js";
 import { flushQueue } from "../js/sync-queue.js";
 import { unconfiguredBackend, createBackend } from "../js/backend.js";
@@ -63,12 +63,78 @@ test("daily review blocks confirmation until the worker fixes the day", () => {
   const current = confirmedCurrentIntervals(doc);
   assert.ok(current.some((row) => row.kind === "work" && row.workNote === "Receptacles done"));
   assert.ok(current.some((row) => row.kind === "break"));
-  assert.equal(current.every((row) => row.payTreatment === "unconfigured"), true);
+  assert.equal(current.every((row) => row.kind !== "break" || row.payTreatment === "paid"), true);
+  assert.equal(doc.breaksSubtracted, false);
+  assert.equal(doc.weekStartRule, "monday-saturday");
   assert.equal(findForbiddenKeys(doc).length, 0);
   assert.equal(JSON.stringify(doc).includes("latitude"), false);
   const edited = editEntry(state, state.entries[0].entryId, { workNote: "Corrected" }, end);
   const after = buildEmployeeExport(edited.state, end);
   assert.equal(confirmedCurrentIntervals(after).some((row) => row.entryId === state.entries[0].entryId), false);
+});
+
+test("Monday through Saturday is the report week and Sunday is the send day", () => {
+  const wednesday = payWeekContaining("2026-11-11");
+  assert.equal(wednesday.weekStart, "2026-11-09");
+  assert.equal(wednesday.weekEnd, "2026-11-14");
+  assert.equal(wednesday.sendOn, "2026-11-15");
+  assert.equal(payWeekContaining("2026-11-09").weekStart, "2026-11-09");
+  assert.equal(payWeekContaining("2026-11-14").weekEnd, "2026-11-14");
+  assert.equal(payWeekContaining("2026-11-15").inPayWeek, false);
+  const sundayReport = reportWeek(new Date("2026-11-15T18:00:00Z"));
+  assert.equal(sundayReport.weekStart, "2026-11-09");
+  assert.equal(sundayReport.weekEnd, "2026-11-14");
+  assert.equal(sundayReport.sendOn, "2026-11-15");
+  const spring = payWeekContaining("2026-03-11");
+  assert.equal(spring.weekStart, "2026-03-09");
+  assert.equal(spring.weekEnd, "2026-03-14");
+  assert.equal(spring.sendOn, "2026-03-15");
+});
+
+test("travel between jobs is added to the next job and breaks stay paid", () => {
+  const day = "2026-11-11T";
+  let state = manualStart(emptyState(), { jobLabel: "Job A", at: new Date(day + "14:00:00Z") }).state;
+  state = stopInterval(state, new Date(day + "16:00:00Z")).state;
+  state = manualStart(state, { jobLabel: "Job B", at: new Date(day + "16:30:00Z") }).state;
+  state = stopInterval(state, new Date(day + "18:00:00Z")).state;
+  state = manualStart(state, { jobLabel: "Job A", kind: "break", at: new Date(day + "18:00:00Z") }).state;
+  state = stopInterval(state, new Date(day + "18:15:00Z")).state;
+  state = confirmDay(state, "2026-11-11", new Date(day + "19:00:00Z")).state;
+  const doc = buildEmployeeExport(state, new Date(day + "19:00:00Z"));
+  const jobB = doc.entries.find((row) => row.jobLabel === "Job B" && !row.superseded);
+  const jobA = doc.entries.find((row) => row.jobLabel === "Job A" && row.kind === "work" && !row.superseded);
+  const pause = doc.entries.find((row) => row.kind === "break" && !row.superseded);
+  assert.equal(jobA.travelMinutes, 0);
+  assert.equal(jobB.travelMinutes, 30);
+  assert.equal(jobB.travelFromJobLabel, "Job A");
+  assert.equal(jobB.billableMinutes, jobB.elapsedMinutes + 30);
+  assert.equal(pause.payTreatment, "paid");
+  assert.equal(doc.breaksSubtracted, false);
+  const withoutBreak = jobA.billableMinutes + jobB.billableMinutes;
+  assert.equal(confirmedPaidMinutes(doc), withoutBreak + pause.billableMinutes);
+  let nextDay = manualStart(emptyState(), { jobLabel: "Job C", at: new Date("2026-11-12T14:00:00Z") }).state;
+  nextDay = stopInterval(nextDay, new Date("2026-11-12T15:00:00Z")).state;
+  nextDay = confirmDay(nextDay, "2026-11-12", new Date("2026-11-12T16:00:00Z")).state;
+  const thursday = buildEmployeeExport(nextDay, new Date("2026-11-12T16:00:00Z"));
+  assert.equal(thursday.entries.find((row) => row.jobLabel === "Job C" && !row.superseded).travelMinutes, 0);
+  let paused = manualStart(emptyState(), { jobLabel: "Job A", at: new Date(day + "14:00:00Z") }).state;
+  paused = stopInterval(paused, new Date(day + "16:00:00Z")).state;
+  paused = manualStart(paused, { jobLabel: "Job A", kind: "break", at: new Date(day + "16:00:00Z") }).state;
+  paused = stopInterval(paused, new Date(day + "16:15:00Z")).state;
+  paused = manualStart(paused, { jobLabel: "Job B", at: new Date(day + "16:45:00Z") }).state;
+  paused = stopInterval(paused, new Date(day + "18:00:00Z")).state;
+  paused = confirmDay(paused, "2026-11-11", new Date(day + "19:00:00Z")).state;
+  const split = buildEmployeeExport(paused, new Date(day + "19:00:00Z"));
+  const nextJob = split.entries.find((row) => row.jobLabel === "Job B" && !row.superseded);
+  const paidBreak = split.entries.find((row) => row.kind === "break" && !row.superseded);
+  assert.equal(nextJob.travelMinutes, 30);
+  assert.equal(confirmedPaidMinutes(split), nextJob.billableMinutes + paidBreak.billableMinutes + split.entries.find((row) => row.jobLabel === "Job A" && row.kind === "work" && !row.superseded).billableMinutes);
+  let sunday = manualStart(emptyState(), { jobLabel: "Sunday Job", at: new Date("2026-11-08T18:00:00Z") }).state;
+  sunday = stopInterval(sunday, new Date("2026-11-08T19:00:00Z")).state;
+  sunday = confirmDay(sunday, "2026-11-08", new Date("2026-11-08T20:00:00Z")).state;
+  const report = buildEmployeeExport(sunday, new Date("2026-11-11T18:00:00Z"));
+  assert.equal(report.entries.length, 0);
+  assert.equal(report.outsidePayWeek.length > 0, true);
 });
 
 test("did not work adds no hours", () => {
@@ -233,6 +299,7 @@ test("website tracking and token storage stay unavailable", async () => {
   assert.match(swift, /CLCircularRegion/);
   assert.equal(swift.includes("startUpdatingLocation"), false);
   assert.match(kotlin, /GeofencingRequest/);
+  assert.match(kotlin, /background-location-not-granted/);
   assert.equal(manifest.includes("READ_CONTACTS"), false);
   assert.equal(manifest.includes("READ_MEDIA_IMAGES"), false);
 });

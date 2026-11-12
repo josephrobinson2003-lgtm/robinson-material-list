@@ -14,7 +14,7 @@ export async function geofenceCapabilities() {
   return { ...webTrackingStatus(), ...status, deviceTested: false };
 }
 
-export async function armTracking(pins) {
+export async function armTracking(pins, dutyDate) {
   const native = getNativeGeofence();
   if (!native) {
     return {
@@ -25,7 +25,7 @@ export async function armTracking(pins) {
   }
   const regions = regionsForArm(pins, (await native.getCapabilities()).platform);
   if (!regions.ok) return { ok: false, reason: regions.reason, backgroundGeofence: true };
-  return native.armForToday({ regions: regions.regions });
+  return native.armForToday({ regions: regions.regions, dutyDate });
 }
 
 export function suggestJobFromFix(pins, fix) {

@@ -3,8 +3,11 @@ collected:
   location:
     transmittedOffDevice: false
     purpose: "Match a saved job while the worker has armed suggestions for today"
+    prominentDisclosure: "Suggestions watch saved jobs only while they are armed for today, including with the screen locked. This is not a driving route."
+    backgroundPermission: ACCESS_BACKGROUND_LOCATION
     routeHistory: false
     offDuty: false
+    playConsoleSubmitted: false
   photos:
     access: "System photo picker for files the person selects. No broad gallery permission."
     upload: "Not connected. Local copy remains until Microsoft Graph acknowledges an upload."
