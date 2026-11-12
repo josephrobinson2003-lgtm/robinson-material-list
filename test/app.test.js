@@ -14,7 +14,8 @@ import { handleEmployeeRead, handleEmployeeWrite, handleOwnerExport } from "../j
 import { flushQueue } from "../js/sync-queue.js";
 import { unconfiguredBackend, createBackend } from "../js/backend.js";
 import { planPhoto, uploadPhoto, photoManifest } from "../js/job-photos.js";
-import { buildAuthorizeUrl, graphUploadUrl, microsoftAuthStatus, verifyJobFolder } from "../js/microsoft-auth.js";
+import { assertInsideJobPhotos, photoFileName } from "../js/photo-paths.js";
+import { handlePhotoRequest, photoServiceStatus } from "../js/photo-backend.js";
 import { createWebSecureStore } from "../js/secure-store.js";
 import { geofenceCapabilities } from "../js/native-bridge.js";
 import { webTrackingStatus } from "../js/tracking-status.js";
@@ -194,7 +195,7 @@ test("photos keep local bytes and do not claim an upload", async () => {
   assert.equal(filenameDateFromCapture(readJpegCaptureTime(bytes)), "2026-11-01");
   assert.equal(readJpegCaptureTime(new Uint8Array([0xff, 0xd8, 0xff, 0xd9])), null);
   const planned = await planPhoto({
-    employeeId: "emp_1", job, stageId: "rough-in", bytes, addedAt: new Date("2026-11-11T15:00:00Z"), photos: []
+    employeeId: "emp_1", job, contractor: "BluSky", stageId: "rough-in", bytes, addedAt: new Date("2026-11-11T15:00:00Z"), photos: []
   });
   assert.equal(planned.photo.status, "saved-on-phone");
   assert.equal(planned.photo.captureTimeKnown, true);
@@ -202,12 +203,12 @@ test("photos keep local bytes and do not claim an upload", async () => {
   assert.equal(planned.photo.placeKnown, false);
   assert.match(planned.photo.fileName, /123 Main St - Rough-In - 2026-11-01 - /);
   const again = await planPhoto({
-    employeeId: "emp_1", job, stageId: "rough-in", bytes, addedAt: new Date(), photos: [planned.photo]
+    employeeId: "emp_1", job, contractor: "BluSky", stageId: "rough-in", bytes, addedAt: new Date(), photos: [planned.photo]
   });
   assert.equal(again.reason, "duplicate");
   const missing = jpegWithDate(null);
   const unknown = await planPhoto({
-    employeeId: "emp_1", job, stageId: "trim", bytes: missing, addedAt: new Date("2026-11-11T16:00:00Z"), photos: []
+    employeeId: "emp_1", job, contractor: "Other", stageId: "trim", bytes: missing, addedAt: new Date("2026-11-11T16:00:00Z"), photos: []
   });
   assert.equal(unknown.photo.captureTimeKnown, false);
   assert.equal(unknown.photo.filenameDateSource, "added-on-phone");
@@ -228,20 +229,52 @@ test("photos keep local bytes and do not claim an upload", async () => {
   });
   assert.equal(sent.photo.status, "uploaded");
   assert.equal(sent.photo.bytesKeptLocally, true);
+  let blockedSent = false;
   const blocked = await uploadPhoto(planned.photo, {
     configured: true,
-    folder: { verified: true, driveId: "drive", folderId: "accounting", jobId: job.jobId, stage: "rough-in", path: "Accounting" },
-    async send() { throw new Error("should not send"); }
+    path: "Accounting/secret.jpg",
+    async send() { blockedSent = true; return { acknowledged: true }; }
   });
+  assert.equal(blockedSent, false);
   assert.equal(blocked.reason, "accounting-blocked");
   assert.equal(photoManifest([planned.photo], "emp_2").photos.length, 0);
-  assert.equal(microsoftAuthStatus().configured, false);
-  assert.equal(buildAuthorizeUrl({}).reason, "microsoft-auth-not-configured");
-  const auth = buildAuthorizeUrl({ clientId: "test-client", redirectUri: "https://localhost/back", challenge: "abc", state: "xyz" });
-  assert.equal(auth.ok, true);
-  assert.match(auth.url, /Files\.ReadWrite/);
-  assert.equal(auth.url.includes("client_secret"), false);
-  assert.equal(graphUploadUrl({ driveId: "d", folderId: "f", fileName: "../Accounting.jpg" }).ok, false);
+  assert.equal(photoServiceStatus().employeeMicrosoftSignIn, false);
+});
+
+test("job photo paths stay inside Job Photos and names are automatic", () => {
+  const named = photoFileName({ jobLabel: "123 Main St", stageLabel: "Rough-In", dateStamp: "2026-11-01", uniqueId: "abc12345" });
+  assert.equal(named, "123 Main St - Rough-In - 2026-11-01 - abc12345.jpg");
+  const directory = { a: { employeeId: "emp_a" } };
+  const saved = handlePhotoRequest({
+    method: "POST",
+    token: "a",
+    tokenDirectory: directory,
+    graphConfigured: true,
+    upload: {
+      contractor: "Scout Roe Construction",
+      jobAddress: "123 Main St",
+      stageId: "rough-in",
+      dateStamp: "2026-11-01",
+      uniqueId: "abc12345",
+      fileName: "../../Accounting/secret.jpg"
+    }
+  });
+  assert.equal(saved.status, 202);
+  assert.equal(saved.fileName, named);
+  assert.equal(saved.path, "Job Photos/Scout Roe Construction/123 Main St/Rough-In/" + named);
+  assert.equal(JSON.stringify(saved).includes("refreshToken"), false);
+  assert.equal(handlePhotoRequest({
+    method: "POST", token: "a", tokenDirectory: directory, graphConfigured: true,
+    upload: { contractor: "../Accounting", jobAddress: "123 Main St", stageId: "trim", dateStamp: "2026-11-01", uniqueId: "abc12345" }
+  }).status, 403);
+  for (const path of ["Accounting/invoices.pdf", "Job Photos/../Accounting/secret.jpg", "/Job Photos/BluSky/1/Rough-In/a.jpg", "Job Photos/Horn Restoration/1/Payroll/a.jpg"]) {
+    assert.equal(assertInsideJobPhotos(path).ok, false, path);
+  }
+  assert.equal(assertInsideJobPhotos("Job Photos/Other/99 Oak/Finished/99 Oak - Finished - 2026-11-01 - abc12345.jpg").ok, true);
+  assert.equal(handlePhotoRequest({ method: "DELETE", token: "a", tokenDirectory: directory, graphConfigured: true, path: "Job Photos/BluSky/1/Rough-In" }).status, 403);
+  const offline = handlePhotoRequest({ method: "GET", token: "a", tokenDirectory: directory, graphConfigured: false, path: "Job Photos/BluSky/1/Rough-In" });
+  assert.equal(offline.status, 503);
+  assert.equal(offline.photos.length, 0);
 });
 
 test("employees cannot read each other or the owner rollup", () => {
@@ -324,4 +357,3 @@ function jpegWithDate(date) {
   return jpeg;
 }
 
-void verifyJobFolder;

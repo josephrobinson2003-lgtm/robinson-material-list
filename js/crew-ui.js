@@ -2,8 +2,8 @@ import { unconfiguredBackend } from "./backend.js";
 import { readableLines, toCsv, buildEmployeeExport } from "./export-contract.js";
 import { jobIdForLabel } from "./ids.js";
 import { loadJobBook, rememberJob, saveJobBook } from "./jobs.js";
-import { photoManifest, planPhoto, uploadPhoto, STAGES } from "./job-photos.js";
-import { microsoftAuthStatus } from "./microsoft-auth.js";
+import { photoManifest, planPhoto, uploadPhoto, STAGES, KNOWN_CONTRACTORS } from "./job-photos.js";
+import { photoServiceStatus } from "./photo-backend.js";
 import { armTracking, geofenceCapabilities, getNativeGeofence, suggestJobFromFix } from "./native-bridge.js";
 import { PRIVACY_PARAGRAPHS } from "./privacy-notice.js";
 import { createWebSecureStore } from "./secure-store.js";
@@ -103,7 +103,7 @@ function draw() {
   const week = reportWeek(new Date());
   const review = reviewDay(state, today);
   const track = trackingLabel(tracking);
-  const auth = microsoftAuthStatus();
+  const auth = photoServiceStatus();
   root.innerHTML = `
     <section id="timecards_panel" class="crew" hidden>
       <p class="pilot">Pay week is Monday through Saturday. The report is sent on Sunday. Breaks are paid. Travel between jobs is added to the next job. Sunday email is not sending yet.</p>
@@ -139,11 +139,16 @@ function draw() {
       </div></section>
     </section>
     <section id="photos_panel" class="crew" hidden>
-      <p class="pilot">Pilot. Job photos are not connected to OneDrive.</p>
-      <div class="statusline"><b>Not connected</b><span>${esc(auth.reason === "microsoft-auth-not-configured" ? "Microsoft sign-in is not set up. Upload stays off. Photos you add stay on this phone." : auth.reason)}</span></div>
-      <section class="card"><h2>Job photos</h2>
+      <p class="pilot">Job photos are not connected. Employees do not sign in to Microsoft.</p>
+      <div class="statusline"><b>Not connected</b><span>Joe connects the private photo server once. Browsing and upload stay off until then. Pictures you pick stay on this phone.</span></div>
+      <section class="card"><h2>Look up a past job</h2>
+        <p class="hint">Contractor, then job address, then Rough-In, Trim, or Finished. No photos are loaded while the server is off. Nothing here can be deleted or renamed.</p>
+        <p id="ph_browse">${esc(auth.reason === "not-connected" ? "Past photos are not loaded." : "")}</p>
+      </section>
+      <section class="card"><h2>Add photos</h2>
         <div class="fields">
-          <div class="full"><label class="f" for="ph_job">Confirmed job</label><input class="t" id="ph_job" list="shared_jobs" value="${esc(state.jobDraft)}"></div>
+          <div class="full"><label class="f" for="ph_contractor">Contractor</label><select class="t" id="ph_contractor">${KNOWN_CONTRACTORS.map((name) => '<option value="' + esc(name) + '">' + esc(name) + "</option>").join("")}</select></div>
+          <div class="full"><label class="f" for="ph_job">Job address</label><input class="t" id="ph_job" list="shared_jobs" value="${esc(state.jobDraft)}"></div>
           <div class="full"><label class="f" for="ph_stage">Stage</label><select class="t" id="ph_stage">${STAGES.map((stage) => '<option value="' + stage.id + '">' + esc(stage.label) + "</option>").join("")}</select></div>
         </div>
         <div class="actions">
@@ -153,7 +158,7 @@ function draw() {
           <input class="filepick" id="ph_files" type="file" accept="image/*" multiple>
           <button type="button" class="btn" id="ph_upload">Upload</button>
         </div>
-        <p class="hint">Add photos uses the phone's picker for pictures you choose. It does not open the whole camera roll, and where you are now is not treated as the place an older photo was taken.</p>
+        <p class="hint">Add photos uses the phone's picker for pictures you choose. It does not open the whole camera roll, and where you are now is not treated as the place an older photo was taken. The file name is chosen for you.</p>
         <p class="hint">${esc(photoMessage)}</p>
         <div id="ph_list">${photoHtml()}</div>
       </section>
@@ -416,7 +421,15 @@ async function addFiles(fileList) {
   let duplicates = 0;
   for (const file of Array.from(fileList || [])) {
     const bytes = new Uint8Array(await file.arrayBuffer());
-    const planned = await planPhoto({ employeeId: state.employeeId, job, stageId: stage, bytes, addedAt: new Date(), photos: state.photos });
+    const planned = await planPhoto({
+    employeeId: state.employeeId,
+    job,
+    contractor: $("ph_contractor").value,
+    stageId: stage,
+    bytes,
+    addedAt: new Date(),
+    photos: state.photos
+  });
     if (!planned.ok && planned.reason === "duplicate") { duplicates += 1; continue; }
     if (!planned.ok) { photoMessage = "Could not keep that photo (" + planned.reason + ")."; continue; }
     try {

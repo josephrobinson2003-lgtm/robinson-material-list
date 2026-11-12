@@ -3,13 +3,9 @@
 import { createId } from "./ids.js";
 import { dutyDateOf } from "./chicago-time.js";
 import { filenameDateFromCapture, readJpegCaptureTime } from "./exif.js";
-import { graphUploadUrl, verifyJobFolder } from "./microsoft-auth.js";
+import { assertInsideJobPhotos, jobPhotoPath, photoFileName as buildPhotoFileName, stageById } from "./photo-paths.js";
 
-export const STAGES = [
-  { id: "rough-in", label: "Rough-In" },
-  { id: "trim", label: "Trim" },
-  { id: "finished", label: "Finished" }
-];
+export { STAGES, KNOWN_CONTRACTORS } from "./photo-paths.js";
 
 export async function contentHash(bytes) {
   const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
@@ -20,16 +16,14 @@ export async function contentHash(bytes) {
   return "fnv-" + data.length + "-" + data[0];
 }
 
-export function photoFileName({ jobLabel, stageLabel, dateStamp, uniqueId }) {
-  const address = String(jobLabel || "Job").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
-  const stage = stageLabel || "Stage";
-  const date = dateStamp || "date-unknown";
-  return address + " - " + stage + " - " + date + " - " + uniqueId + ".jpg";
+export function photoFileName(input) {
+  return buildPhotoFileName(input);
 }
 
-export async function planPhoto({ employeeId, job, stageId, bytes, addedAt, photos }) {
+export async function planPhoto({ employeeId, job, contractor, stageId, bytes, addedAt, photos }) {
   if (!job || !job.jobId || !job.confirmed) return { ok: false, reason: "job-not-confirmed" };
-  const stage = STAGES.find((item) => item.id === stageId);
+  if (!contractor) return { ok: false, reason: "contractor-required" };
+  const stage = stageById(stageId);
   if (!stage) return { ok: false, reason: "stage-required" };
   const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || []);
   if (!data.length) return { ok: false, reason: "empty-file" };
@@ -45,6 +39,7 @@ export async function planPhoto({ employeeId, job, stageId, bytes, addedAt, phot
   const photo = {
     photoId,
     employeeId,
+    contractor,
     jobId: job.jobId,
     jobLabel: job.jobLabel,
     stage: stage.id,
@@ -72,21 +67,25 @@ export async function uploadPhoto(photo, transport) {
   if (!transport || transport.configured !== true) {
     return { ok: false, photo: { ...photo, status: "saved-on-phone", uploadedAt: null }, reason: "not-connected" };
   }
-  const folderOk = verifyJobFolder(transport.folder);
-  if (!folderOk.ok) {
-    return { ok: false, photo: { ...photo, status: "saved-on-phone", lastError: folderOk.reason }, reason: folderOk.reason };
+  const placed = jobPhotoPath({
+    contractor: photo.contractor,
+    jobAddress: photo.jobLabel,
+    stageLabel: photo.stageLabel,
+    fileName: photo.fileName
+  });
+  if (!placed.ok) {
+    return { ok: false, photo: { ...photo, status: "saved-on-phone", lastError: placed.reason, bytesKeptLocally: true }, reason: placed.reason };
   }
-  if (transport.folder.jobId !== photo.jobId || transport.folder.stage !== photo.stage) {
-    return { ok: false, photo: { ...photo, status: "failed", lastError: "folder-job-mismatch", bytesKeptLocally: true }, reason: "folder-job-mismatch" };
+  if (transport.path) {
+    const override = assertInsideJobPhotos(transport.path);
+    if (!override.ok || override.path !== placed.path) {
+      return { ok: false, photo: { ...photo, status: "saved-on-phone", lastError: override.reason || "outside-job-photos", bytesKeptLocally: true }, reason: override.reason || "outside-job-photos" };
+    }
   }
-  const target = graphUploadUrl({ driveId: transport.folder.driveId, folderId: transport.folder.folderId, fileName: photo.fileName });
-  if (!target.ok) {
-    return { ok: false, photo: { ...photo, status: "failed", lastError: target.reason, bytesKeptLocally: true }, reason: target.reason };
-  }
-  const pending = { ...photo, status: "pending-upload", attempts: (photo.attempts || 0) + 1 };
+  const pending = { ...photo, status: "pending-upload", path: placed.path, attempts: (photo.attempts || 0) + 1 };
   let ack;
   try {
-    ack = await transport.send({ photo: pending, url: target.url, method: target.method });
+    ack = await transport.send({ path: placed.path, fileName: photo.fileName, employeeId: photo.employeeId });
   } catch {
     return { ok: false, photo: { ...pending, status: "failed", lastError: "send-failed", bytesKeptLocally: true }, reason: "send-failed" };
   }

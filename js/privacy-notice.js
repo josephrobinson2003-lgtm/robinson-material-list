@@ -8,7 +8,7 @@ export const PRIVACY_PARAGRAPHS = [
   "This website cannot watch the job while the phone is locked. That needs the installed app, which is not published and has not been tested on a crew phone.",
   "Time entries on this website stay in this phone's browser storage. That is not the iPhone Keychain or Android keystore, and it is not advertised as encrypted. A sign-in token is not saved here.",
   "Breaks are paid time and are not taken out of the day. Travel from one job to the next is added to the next job. The drive to the first job and the drive home are not counted. Wages, bid prices, and profit are not in this app. The $100 and $85 boxes on a material list are the existing billing-hour fields, not your pay.",
-  "Photos you add for a job stay on this phone until a private Microsoft upload is set up. That upload is not set up. Saved on this phone does not mean uploaded.",
+  "Job photos live in a Job Photos folder, separate from Accounting. You do not sign in to Microsoft. Joe connects that folder once on the private server. Until then, photos you pick stay on this phone and are not uploaded. You cannot delete or rename them.",
   "The app does not read your contacts, and it has no ad tracker. Material-list pictures are only files you choose.",
   "Current location can suggest which job you are on. It does not show where an older gallery photo was taken.",
   "Joe has not set how long entries stay on the phone. The app does not delete them on a schedule. You can remove a job spot you saved.",
