@@ -723,6 +723,10 @@ function bindTabs() {
 }
 
 if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    const header = document.getElementById("app_header");
+    if (header) header.classList.toggle("holiday-paused", document.visibilityState !== "visible");
+  });
   document.addEventListener("click", (event) => {
     const button = event.target.closest && event.target.closest(".privacy-reopen");
     if (!button) return;

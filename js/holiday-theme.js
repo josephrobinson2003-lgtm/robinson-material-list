@@ -200,7 +200,7 @@ function scallops(colors) {
   let out = "";
   for (let i = 0; i < 16; i += 1) {
     const x = i * 75;
-    out += '<polygon points="' + x + ",0 " + (x + 75) + ",0 " + (x + 37) + ',68" fill="' + colors[i % colors.length] + '"/>';
+    out += '<g class="wave" style="animation-delay:' + (i * 0.12) + 's"><polygon points="' + x + ",0 " + (x + 75) + ",0 " + (x + 37) + ',68" fill="' + colors[i % colors.length] + '"/></g>';
   }
   return out;
 }
@@ -209,7 +209,7 @@ const PATRIOTIC = ["#b4232a", "#f7f7fb", "#1F3864"];
 
 function flag(x, y, w, h) {
   const stripe = h / 13;
-  let out = '<g transform="translate(' + x + " " + y + ')">';
+  let out = '<g transform="translate(' + x + " " + y + ')"><g class="flag-wave">';
   for (let i = 0; i < 13; i += 1) {
     out += '<rect y="' + (i * stripe) + '" width="' + w + '" height="' + (stripe + 0.6) + '" fill="' + (i % 2 ? "#f7f7fb" : "#b4232a") + '"/>';
   }
@@ -217,32 +217,36 @@ function flag(x, y, w, h) {
   out += '<circle cx="' + (w * 0.12) + '" cy="' + (stripe * 1.8) + '" r="' + (stripe * 0.7) + '" fill="#fff"/>';
   out += '<circle cx="' + (w * 0.28) + '" cy="' + (stripe * 3.4) + '" r="' + (stripe * 0.7) + '" fill="#fff"/>';
   out += '<circle cx="' + (w * 0.14) + '" cy="' + (stripe * 5.1) + '" r="' + (stripe * 0.7) + '" fill="#fff"/>';
-  out += "</g>";
+  out += "</g></g>";
   return out;
 }
 
-function heart(x, y, s, color) {
-  return '<path fill="' + color + '" transform="translate(' + x + " " + y + ") scale(" + s + ')" d="M0 18 C0 -8 28 -12 28 10 C28 32 0 48 0 48 C0 48 -28 32 -28 10 C-28 -12 0 -8 0 18 Z"/>';
+function heart(x, y, s, color, delay) {
+  return '<g transform="translate(' + x + " " + y + ") scale(" + s + ')"><g class="float-up" style="animation-delay:' + (delay || 0) + 's"><path fill="' + color + '" d="M0 18 C0 -8 28 -12 28 10 C28 32 0 48 0 48 C0 48 -28 32 -28 10 C-28 -12 0 -8 0 18 Z"/></g></g>';
 }
 
-function shamrock(x, y, s) {
-  return '<g transform="translate(' + x + " " + y + ") scale(" + s + ')" fill="#1f7a3a"><path d="M0 0 C22 -8 30 -36 8 -40 C-6 -26 0 -8 0 0 C-22 -8 -40 -6 -42 12 C-22 16 -8 6 0 0 C-12 22 -8 42 12 44 C16 22 6 10 0 0 C20 14 42 10 44 -8 C24 -12 10 -4 0 0 Z"/><rect x="-3" y="6" width="6" height="28" rx="3"/></g>';
+function shamrock(x, y, s, delay) {
+  return '<g transform="translate(' + x + " " + y + ") scale(" + s + ')"><g class="drift" style="animation-delay:' + (delay || 0) + 's" fill="#1f7a3a"><path d="M0 0 C22 -8 30 -36 8 -40 C-6 -26 0 -8 0 0 C-22 -8 -40 -6 -42 12 C-22 16 -8 6 0 0 C-12 22 -8 42 12 44 C16 22 6 10 0 0 C20 14 42 10 44 -8 C24 -12 10 -4 0 0 Z"/><rect x="-3" y="6" width="6" height="28" rx="3"/></g></g>';
 }
 
-function egg(x, y, fill) {
-  return '<ellipse cx="' + x + '" cy="' + y + '" rx="46" ry="62" fill="' + fill + '" stroke="#1F3864" stroke-width="4"/>';
+function egg(x, y, fill, delay) {
+  return '<ellipse class="bob" style="animation-delay:' + (delay || 0) + 's" cx="' + x + '" cy="' + y + '" rx="46" ry="62" fill="' + fill + '" stroke="#1F3864" stroke-width="4"/>';
 }
 
-function pumpkin(x, y, s) {
-  return '<g transform="translate(' + x + " " + y + ") scale(" + s + ')"><ellipse cx="0" cy="8" rx="34" ry="28" fill="#e07a1f"/><ellipse cx="-16" cy="8" rx="16" ry="26" fill="#c4652a"/><ellipse cx="16" cy="8" rx="16" ry="26" fill="#f4a259"/><rect x="-4" y="-28" width="8" height="16" rx="2" fill="#2f6b32"/></g>';
+function pumpkin(x, y, s, glow) {
+  return '<g transform="translate(' + x + " " + y + ") scale(" + s + ')"><ellipse cx="0" cy="8" rx="34" ry="28" fill="#e07a1f"/><ellipse cx="-16" cy="8" rx="16" ry="26" fill="#c4652a"/><ellipse cx="16" cy="8" rx="16" ry="26" fill="#f4a259"/>' +
+    (glow ? '<ellipse class="glow" cx="0" cy="8" rx="12" ry="10" fill="#ffe08a"/>' : "") +
+    '<rect x="-4" y="-28" width="8" height="16" rx="2" fill="#2f6b32"/></g>';
 }
 
-function leaf(x, y, color, rot) {
-  return '<path fill="' + color + '" transform="translate(' + x + " " + y + ") rotate(" + rot + ')" d="M0 0 C28 -48 62 -16 46 24 C34 52 8 46 0 28 C-12 48 -40 50 -48 22 C-58 -16 -28 -48 0 0 Z"/>';
+function leaf(x, y, color, rot, drift) {
+  const body = '<path fill="' + color + '" d="M0 0 C28 -48 62 -16 46 24 C34 52 8 46 0 28 C-12 48 -40 50 -48 22 C-58 -16 -28 -48 0 0 Z"/>';
+  return '<g transform="translate(' + x + " " + y + ") rotate(" + rot + ')">' +
+    (drift != null ? '<g class="drift" style="animation-delay:' + drift + 's">' + body + "</g>" : body) + "</g>";
 }
 
-function star(x, y, r, color) {
-  return '<polygon fill="' + color + '" points="' + [
+function star(x, y, r, color, delay) {
+  return '<polygon class="twinkle" style="animation-delay:' + (delay || 0) + 's" fill="' + color + '" points="' + [
     [x, y - r],
     [x + r * 0.28, y - r * 0.32],
     [x + r, y - r * 0.28],
@@ -256,27 +260,27 @@ function star(x, y, r, color) {
   ].map((pair) => pair.join(",")).join(" ") + '"/>';
 }
 
-function burst(x, y, color) {
-  return '<g class="burst" transform="translate(' + x + " " + y + ')"><circle r="8" fill="' + color + '"/>' +
+function burst(x, y, color, delay) {
+  return '<g transform="translate(' + x + " " + y + ')"><g class="burst" style="animation-delay:' + (delay || 0) + 's"><circle r="8" fill="' + color + '"/>' +
     [0, 45, 90, 135].map((deg) => '<rect x="-3" y="-46" width="6" height="34" rx="3" fill="' + color + '" transform="rotate(' + deg + ')"/>').join("") +
-    "</g>";
+    "</g></g>";
 }
 
 function nameBanner(label, fill, ink) {
-  return bannerSvg('<rect width="1200" height="72" fill="' + fill + '"/><text x="600" y="48" text-anchor="middle" font-family="Georgia, serif" font-size="40" font-weight="700" fill="' + ink + '">' + label + "</text>");
+  return bannerSvg('<rect width="1200" height="72" fill="' + fill + '"/><text class="banner-shimmer" x="600" y="48" text-anchor="middle" font-family="Georgia, serif" font-size="40" font-weight="700" fill="' + ink + '">' + label + "</text>");
 }
 
 function lights() {
   let bulbs = '<path d="M20 28 H1180" fill="none" stroke="#1f7a3a" stroke-width="6"/>';
   const colors = ["#b4232a", "#FFC20E", "#1F3864", "#f7f7fb"];
   for (let i = 0; i < 12; i += 1) {
-    bulbs += '<circle class="bulb" cx="' + (50 + i * 95) + '" cy="28" r="16" fill="' + colors[i % colors.length] + '"/>';
+    bulbs += '<circle class="bulb" style="animation-delay:' + (i * 0.18) + 's" cx="' + (50 + i * 95) + '" cy="28" r="16" fill="' + colors[i % colors.length] + '"/>';
   }
   return bannerSvg(bulbs);
 }
 
 const BANNERS = {
-  "new-year": bannerSvg('<rect width="1200" height="72" fill="#1F3864"/>' + burst(160, 36, "#FFC20E") + burst(420, 40, "#f7f7fb") + burst(680, 34, "#FFC20E") + burst(960, 40, "#f7f7fb")),
+  "new-year": bannerSvg('<rect width="1200" height="72" fill="#1F3864"/>' + burst(160, 36, "#FFC20E", 0) + burst(420, 40, "#f7f7fb", 0.8) + burst(680, 34, "#FFC20E", 1.6) + burst(960, 40, "#f7f7fb", 2.4)),
   mlk: nameBanner("Martin Luther King Jr. Day", "#1F3864", "#FFC20E"),
   valentines: bannerSvg(scallops(["#c23b56", "#f7f7fb", "#e89aaf"])),
   presidents: bannerSvg(scallops(PATRIOTIC)),
@@ -294,32 +298,41 @@ const BANNERS = {
 };
 
 const SCENES = {
-  "new-year": sceneSvg(burst(1040, 80, "#FFC20E") + burst(1240, 50, "#f7f7fb") + burst(1400, 110, "#FFC20E") + burst(1160, 150, "#1F3864")),
+  "new-year": sceneSvg(burst(1040, 80, "#FFC20E", 0.4) + burst(1240, 50, "#f7f7fb", 1.2) + burst(1400, 110, "#FFC20E", 2) + burst(1160, 150, "#1F3864", 2.8)),
   mlk: sceneSvg(""),
-  valentines: sceneSvg(heart(1040, 16, 1.8, "#c23b56") + heart(1240, 55, 1.2, "#e89aaf")),
-  presidents: sceneSvg(flag(1000, 10, 220, 130) + star(1260, 36, 26, "#FFC20E")),
-  "st-patricks": sceneSvg(shamrock(1040, 88, 1.8) + shamrock(1220, 110, 1.2)),
-  easter: sceneSvg(egg(1020, 88, "#f4d35e") + egg(1130, 96, "#f7f7fb") + egg(1240, 84, "#9fd3ea")),
+  valentines: sceneSvg(heart(1040, 16, 1.8, "#c23b56", 0) + heart(1240, 55, 1.2, "#e89aaf", 1.4)),
+  presidents: sceneSvg(flag(1000, 10, 220, 130) + star(1260, 36, 26, "#FFC20E", 0.4)),
+  "st-patricks": sceneSvg(shamrock(1040, 88, 1.8, 0) + shamrock(1220, 110, 1.2, 1.6)),
+  easter: sceneSvg(egg(1020, 88, "#f4d35e", 0) + egg(1130, 96, "#f7f7fb", 0.4) + egg(1240, 84, "#9fd3ea", 0.8)),
   "memorial-day": sceneSvg(flag(980, 8, 210, 124) + '<g transform="translate(1220 18)"><circle cx="36" cy="34" r="32" fill="#b4232a"/><circle cx="36" cy="34" r="11" fill="#1d2330"/><rect x="30" y="62" width="12" height="36" fill="#1f7a3a"/></g>'),
   juneteenth: sceneSvg(star(1120, 90, 64, "#e0b33a") + '<path fill="#bb3a2f" d="M980 150 a150 64 0 0 1 300 0 z"/>'),
-  "july-4": sceneSvg(flag(980, 8, 200, 118) + star(1220, 40, 34, "#1F3864") + star(1340, 100, 26, "#b4232a") + star(1440, 36, 22, "#1F3864")),
+  "july-4": sceneSvg(flag(980, 8, 200, 118) + star(1220, 40, 34, "#1F3864", 0.2) + star(1340, 100, 26, "#b4232a", 0.7) + star(1440, 36, 22, "#1F3864", 1.1)),
   "labor-day": sceneSvg(""),
   "peoples-day": sceneSvg(""),
-  halloween: sceneSvg(pumpkin(1080, 78, 2) + '<g fill="#1d2330"><path d="M1000 24 l48 18 l-32 10 z M1040 6 l22 32 l-28 4 z"/><path d="M1260 30 l50 18 l-34 10 z M1300 10 l22 34 l-30 4 z"/></g>' + pumpkin(1280, 100, 1.35)),
+  halloween: sceneSvg(
+    pumpkin(1080, 90, 2, true) + pumpkin(1280, 112, 1.35, true) +
+    '<g transform="translate(1040 18)"><g class="bat"><g class="wing"><path fill="#1d2330" d="M0 8 L-36 -8 L-18 10 Z"/></g><g class="wing"><path fill="#1d2330" d="M0 8 L36 -8 L18 10 Z"/></g><ellipse cx="0" cy="10" rx="8" ry="5" fill="#1d2330"/></g></g>' +
+    '<g transform="translate(1320 8)"><g class="bat" style="animation-delay:1.2s"><g class="wing"><path fill="#1d2330" d="M0 8 L-28 -6 L-14 10 Z"/></g><g class="wing"><path fill="#1d2330" d="M0 8 L28 -6 L14 10 Z"/></g><ellipse cx="0" cy="10" rx="6" ry="4" fill="#1d2330"/></g></g>'
+  ),
   veterans: sceneSvg(flag(990, 8, 240, 140)),
   thanksgiving: sceneSvg(
     '<g transform="translate(1000 12)"><ellipse cx="70" cy="70" rx="44" ry="32" fill="#8c3b16"/><circle cx="114" cy="54" r="15" fill="#6b3a12"/><path fill="#c4652a" d="M114 42 l10 -14 l8 14 z"/>' +
     leaf(4, 62, "#c4652a", -30) + leaf(-8, 34, "#d4a017", 20) + leaf(24, 18, "#8c3b16", -10) + "</g>" +
-    pumpkin(1240, 110, 1.45) + leaf(1480, 80, "#d4a017", 16) +
+    pumpkin(1240, 110, 1.45) + leaf(1460, 70, "#d4a017", 16, 0) + leaf(1180, 24, "#c4652a", -12, 1.5) +
     pumpkin(180, 470, 1.6) + pumpkin(420, 480, 1.35) + pumpkin(1360, 455, 1.55)
   ),
   christmas: sceneSvg(
     '<path d="M980 150 Q1120 20 1260 24 Q1400 30 1520 170" fill="none" stroke="#1f7a3a" stroke-width="8"/>' +
-    '<circle class="bulb" cx="1040" cy="78" r="16" fill="#b4232a"/><circle class="bulb" cx="1140" cy="36" r="16" fill="#FFC20E"/>' +
-    '<circle class="bulb" cx="1260" cy="24" r="16" fill="#1F3864"/><circle class="bulb" cx="1380" cy="55" r="16" fill="#b4232a"/>' +
-    '<circle class="bulb" cx="1480" cy="120" r="16" fill="#FFC20E"/>' +
+    '<circle class="bulb" style="animation-delay:.2s" cx="1040" cy="78" r="16" fill="#b4232a"/><circle class="bulb" style="animation-delay:.5s" cx="1140" cy="36" r="16" fill="#FFC20E"/>' +
+    '<circle class="bulb" style="animation-delay:.8s" cx="1260" cy="24" r="16" fill="#1F3864"/><circle class="bulb" style="animation-delay:1.1s" cx="1380" cy="55" r="16" fill="#b4232a"/>' +
+    '<circle class="bulb" style="animation-delay:1.4s" cx="1480" cy="120" r="16" fill="#FFC20E"/>' +
     '<g transform="translate(70 0)"><path fill="#b4232a" d="M30 78 C24 18 96 -8 132 36 L104 86 Z"/><rect x="8" y="74" width="112" height="22" rx="10" fill="#f7f7fb"/><circle cx="132" cy="34" r="16" fill="#f7f7fb"/></g>' +
-    '<g fill="#f7f7fb"><circle cx="760" cy="40" r="10"/><circle cx="900" cy="90" r="8"/><circle cx="700" cy="120" r="7"/><circle cx="1500" cy="200" r="9"/><circle cx="600" cy="70" r="6"/></g>'
+    '<g fill="#f7f7fb">' +
+    '<g transform="translate(1040 16)"><circle class="snow" r="10"/></g>' +
+    '<g transform="translate(1220 8)"><circle class="snow" style="animation-delay:1.4s" r="8"/></g>' +
+    '<g transform="translate(1380 28)"><circle class="snow" style="animation-delay:2.6s" r="11"/></g>' +
+    '<g transform="translate(1500 12)"><circle class="snow" style="animation-delay:.7s" r="7"/></g>' +
+    "</g>"
   )
 };
 

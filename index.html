@@ -42,11 +42,33 @@ header.top[data-holiday="christmas"]{background:#e3f2e6}
 header.top .logo{display:block;width:100%;height:auto;margin:0 auto;position:relative;z-index:1}
 .logo-theme{position:absolute;inset:0;z-index:2;pointer-events:none}
 .logo-theme svg{width:100%;height:100%;display:block}
-.holiday-svg .bulb{animation:twinkle 1.8s ease-in-out infinite}
-.holiday-svg .burst{transform-box:fill-box;transform-origin:center}
-@keyframes twinkle{50%{opacity:.45}}
+.holiday-svg .bulb,.holiday-svg .twinkle{animation:twinkle 1.8s ease-in-out infinite}
+.holiday-svg .burst{animation:firework 3.6s ease-out infinite;transform-box:fill-box;transform-origin:center}
+.holiday-svg .wave{animation:sway 2.8s ease-in-out infinite;transform-box:fill-box;transform-origin:top center}
+.holiday-svg .flag-wave{animation:flagwave 3.2s ease-in-out infinite;transform-box:fill-box;transform-origin:left center}
+.holiday-svg .snow{animation:snowfall 7s linear infinite}
+.holiday-svg .drift{animation:leafdrift 8s ease-in-out infinite}
+.holiday-svg .float-up{animation:rise 6.5s ease-in-out infinite}
+.holiday-svg .bob{animation:bob 2.8s ease-in-out infinite}
+.holiday-svg .bat{animation:batfly 7s ease-in-out infinite}
+.holiday-svg .wing{animation:flap .45s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.holiday-svg .glow{animation:flicker 1.6s ease-in-out infinite}
+.holiday-banner .banner-shimmer{animation:shimmer 4.8s ease-in-out infinite}
+header.holiday-paused .holiday-svg *,header.holiday-paused .banner-shimmer{animation-play-state:paused}
+@keyframes twinkle{50%{opacity:.35}}
+@keyframes firework{0%{transform:scale(.25);opacity:0}18%{opacity:1}42%{transform:scale(1);opacity:1}70%{transform:scale(1.08);opacity:0}100%{transform:scale(.25);opacity:0}}
+@keyframes sway{0%,100%{transform:rotate(0deg)}50%{transform:rotate(4deg)}}
+@keyframes flagwave{0%,100%{transform:skewX(0deg)}50%{transform:skewX(-6deg)}}
+@keyframes snowfall{0%{transform:translateY(-4px);opacity:0}20%{opacity:.95}100%{transform:translateY(26px);opacity:0}}
+@keyframes leafdrift{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(22px) rotate(18deg);opacity:.35}}
+@keyframes rise{0%{transform:translateY(6px);opacity:.65}100%{transform:translateY(-18px);opacity:1}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes batfly{0%,100%{transform:translateX(0)}50%{transform:translateX(14px)}}
+@keyframes flap{50%{transform:scaleY(.55)}}
+@keyframes flicker{0%,100%{opacity:.3}50%{opacity:.95}}
+@keyframes shimmer{0%,100%{opacity:1}50%{opacity:.72}}
 @media (prefers-reduced-motion: reduce){
-  .holiday-svg .bulb,.holiday-svg .burst{animation:none}
+  .holiday-svg .bulb,.holiday-svg .twinkle,.holiday-svg .burst,.holiday-svg .wave,.holiday-svg .flag-wave,.holiday-svg .snow,.holiday-svg .drift,.holiday-svg .float-up,.holiday-svg .bob,.holiday-svg .bat,.holiday-svg .wing,.holiday-svg .glow,.holiday-banner .banner-shimmer{animation:none}
 }
 .textlink{background:none;border:0;padding:0;color:var(--blue);font:inherit;font-weight:700;text-decoration:underline}
 .connectedline{margin:0;padding:12px 14px;font-weight:700;color:var(--navy)}

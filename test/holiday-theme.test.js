@@ -121,6 +121,29 @@ test("theme override accepts a name, auto, or off", () => {
     assert.equal(markup.includes("$"), false, id);
   }
   assert.equal(nextPreviewTheme("christmas"), "new-year");
+  const motion = {
+    christmas: ["snow", "bulb"],
+    "new-year": ["burst"],
+    veterans: ["wave", "flag-wave"],
+    thanksgiving: ["drift"],
+    halloween: ["bat", "wing", "glow"],
+    valentines: ["float-up"],
+    "st-patricks": ["drift"],
+    easter: ["bob"],
+    mlk: ["banner-shimmer"],
+    "july-4": ["twinkle", "flag-wave"]
+  };
+  for (const id of Object.keys(motion)) {
+    const markup = themeDecor(id) + themeBanner(id);
+    for (const name of motion[id]) assert.match(markup, new RegExp('class="[^"]*\\b' + name + '\\b'), id + " " + name);
+  }
   const css = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-  assert.match(css, /prefers-reduced-motion:\s*reduce/);
+  const reduced = css.match(/@media \(prefers-reduced-motion:\s*reduce\)\{([^}]+)\}/);
+  assert.ok(reduced, "reduced-motion block");
+  assert.match(reduced[1], /animation:\s*none/);
+  for (const name of ["bulb", "twinkle", "burst", "wave", "flag-wave", "snow", "drift", "float-up", "bob", "bat", "wing", "glow", "banner-shimmer"]) {
+    assert.match(reduced[1], new RegExp("\\." + name + "(?:,|\\{)"));
+  }
+  assert.match(css, /holiday-paused/);
+  assert.match(css, /animation-play-state:\s*paused/);
 });
