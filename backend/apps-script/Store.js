@@ -11,6 +11,7 @@ function ensureSpreadsheet_() {
   }
   ensureTab_(book, "Timecards", TIMECARD_HEADERS);
   ensureTab_(book, "Materials", MATERIAL_HEADERS);
+  ensureTab_(book, "Scopes", SCOPE_HEADERS);
   return book.getId();
 }
 
@@ -71,6 +72,17 @@ function cleanupSheetProvisional_() {
   sheet.appendRow(TIMECARD_HEADERS);
   cleaned.kept.forEach(function (row) { appendRow_("Timecards", TIMECARD_HEADERS, row); });
   return cleaned.removed;
+}
+
+function saveScope_(record) {
+  var rows = readSheet_("Scopes", SCOPE_HEADERS).filter(function (row) {
+    return row.jobId !== record.jobId;
+  });
+  rows.push(record);
+  var sheet = openTab_("Scopes", SCOPE_HEADERS);
+  sheet.clearContents();
+  sheet.appendRow(SCOPE_HEADERS);
+  rows.forEach(function (row) { appendRow_("Scopes", SCOPE_HEADERS, row); });
 }
 
 function readEmployees_() {

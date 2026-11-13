@@ -25,6 +25,8 @@ let tracking = null;
 let suggestion = null;
 let photoMessage = "";
 let timeMessage = "";
+let scopeView = null;
+let scopeMessage = "";
 let blobStore = null;
 let bookStore = null;
 
@@ -178,6 +180,18 @@ function draw() {
         <p class="hint">${esc(photoMessage)}</p>
         <div id="ph_list">${photoHtml()}</div>
       </section>
+    </section>
+    <section id="scope_panel" class="crew" hidden>
+      <p class="pilot">Bid tasks only. Prices are not shown.</p>
+      <section class="card"><h2>Scope</h2>
+        <p class="hint">${esc(scopeMessage || "Find the bid from where you are, or pick the job.")}</p>
+        ${scopeHtml()}
+        <div class="actions">
+          <button type="button" class="btn secondary" id="scope_find">Find bid from where I am</button>
+        </div>
+        <h3>Or pick a job</h3>
+        <div id="scope_jobs">${jobs.jobs.map((job) => '<button type="button" class="listpick" data-scope-job="' + esc(job.jobId) + '">' + esc(job.jobLabel) + "</button>").join("") || "<p>No jobs saved on this phone yet.</p>"}</div>
+      </section>
     </section>`;
   $("tc_name").addEventListener("change", async () => {
     state = setEmployeeName(state, $("tc_name").value).state;
@@ -252,6 +266,10 @@ function draw() {
   $("tc_csv").addEventListener("click", () => download("timecard.csv", toCsv(buildEmployeeExport(state)), "text/csv"));
   $("tc_pdf").addEventListener("click", () => downloadPdf());
   $("ph_files").addEventListener("change", (event) => addFiles(event.target.files));
+  $("scope_find").addEventListener("click", () => findScopeFromHere());
+  root.querySelectorAll("[data-scope-job]").forEach((button) => button.addEventListener("click", () => {
+    findScopeByJob(button.getAttribute("data-scope-job"), button.textContent);
+  }));
   $("ph_upload").addEventListener("click", async () => {
     photoMessage = "Not connected. Photos stay on this phone. Nothing was uploaded.";
     for (let i = 0; i < state.photos.length; i += 1) {
@@ -333,6 +351,70 @@ function rowHtml(item) {
     ? esc(formatChicagoLabel(row.intervalStart)) + " to " + esc(row.end ? formatChicagoLabel(row.end) : "end not set") + " (on site " + esc(formatChicagoLabel(row.onSiteStart || row.start)) + ")"
     : esc(row.start ? formatChicagoLabel(row.start) : "start not set") + " to " + esc(row.end ? formatChicagoLabel(row.end) : "end not set");
   return `<article class="visit"><b>${esc(row.jobLabel)}</b> <span class="pill">${esc(label)}</span><p>${esc(row.kind)} · ${when}</p>${travelLine}${row.kind === "break" ? "<p>Paid break.</p>" : ""}${row.lowAccuracy ? "<p>Location was coarse or unavailable.</p>" : ""}${note}${choice}<p class="hint">${esc(statusWord(row.syncStatus))}</p></article>`;
+}
+
+function scopeHtml() {
+  if (!scopeView || !scopeView.tasks || !scopeView.tasks.length) {
+    return "<p><b>No bid scope for this job</b></p>";
+  }
+  return "<p><b>" + esc(scopeView.address) + "</b></p><ol>" + scopeView.tasks.map((task) => {
+    return '<li class="scope-task"><input type="checkbox" disabled aria-label="Task"><span>' + esc(task) + "</span></li>";
+  }).join("") + "</ol>";
+}
+
+async function findScopeFromHere() {
+  if (!state.locationOptIn) {
+    scopeMessage = "Turn on location suggestions on Timecards, or pick the job below.";
+    scopeView = null;
+    draw(); show("scope");
+    return;
+  }
+  if (!navigator.geolocation) {
+    scopeMessage = "This phone did not provide location. Pick the job below.";
+    scopeView = null;
+    draw(); show("scope");
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    await loadScope({
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude,
+      accuracyMeters: pos.coords.accuracy
+    });
+  }, () => {
+    scopeMessage = "Location was denied. Pick the job below.";
+    scopeView = null;
+    draw(); show("scope");
+  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+}
+
+async function findScopeByJob(jobId) {
+  await loadScope({ jobId: jobId });
+}
+
+async function loadScope(query) {
+  const config = readDeviceConfig(localStorage);
+  if (!config.configured) {
+    scopeView = null;
+    scopeMessage = "No bid scope for this job. The server is not connected.";
+    draw(); show("scope");
+    return;
+  }
+  try {
+    const remote = await postBackend(config, "/api/scope", query);
+    const scope = remote.data && remote.data.scope;
+    if (scope && scope.tasks && scope.tasks.length) {
+      scopeView = { jobId: scope.jobId, address: scope.address, tasks: scope.tasks };
+      scopeMessage = "Matched " + scope.address + ".";
+    } else {
+      scopeView = null;
+      scopeMessage = "No bid scope for this job.";
+    }
+  } catch (err) {
+    scopeView = null;
+    scopeMessage = "No bid scope for this job. The server did not answer.";
+  }
+  draw(); show("scope");
 }
 
 function photoHtml() {
@@ -526,11 +608,15 @@ function show(tab) {
   const label = $("section_label");
   const time = $("timecards_panel");
   const photos = $("photos_panel");
+  const scope = $("scope_panel");
   if (materials) materials.hidden = tab !== "materials";
   if (bar) bar.hidden = tab !== "materials";
   if (time) time.hidden = tab !== "timecards";
   if (photos) photos.hidden = tab !== "photos";
-  if (label) label.textContent = tab === "photos" ? "Job photos" : (tab === "timecards" ? "Timecards" : "Job Material List");
+  if (scope) scope.hidden = tab !== "scope";
+  if (label) {
+    label.textContent = tab === "photos" ? "Job photos" : (tab === "timecards" ? "Timecards" : (tab === "scope" ? "Scope" : "Job Material List"));
+  }
   document.querySelectorAll(".apptab").forEach((button) => {
     const on = button.getAttribute("data-tab") === tab;
     button.classList.toggle("on", on);

@@ -11,6 +11,8 @@ var MATERIAL_HEADERS = [
   "customer", "description", "notes", "itemsJson", "savedAt"
 ];
 
+var SCOPE_HEADERS = ["jobId", "address", "lat", "lng", "contractor", "tasksJson", "updatedAt"];
+
 var FORBIDDEN_KEYS = {
   payRate: true, wage: true, wages: true, loadedCost: true, loadedLabor: true,
   actualCost: true, bidAmount: true, bidPrice: true, bid: true, bids: true,
@@ -290,16 +292,138 @@ function sanitizeConfirmedEntry(row, employee, confirmedAt) {
   };
 }
 
+function jobIdForLabel(label) {
+  var norm = String(label || "").trim().replace(/\s+/g, " ").toLowerCase();
+  if (!norm) return "";
+  var h = 0x811c9dc5;
+  for (var i = 0; i < norm.length; i++) {
+    h ^= norm.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  var hex = (h >>> 0).toString(16);
+  while (hex.length < 8) hex = "0" + hex;
+  return "job_" + hex;
+}
+
+function sanitizeScopeTasks(input) {
+  var lines = Object.prototype.toString.call(input) === "[object Array]" ? input : String(input || "").split(/\r?\n/);
+  var tasks = [];
+  for (var i = 0; i < lines.length; i++) {
+    var text = String(lines[i] == null ? "" : lines[i]).replace(/[ \t]+/g, " ").trim();
+    if (!text) continue;
+    if (isFinancialLine(text)) continue;
+    text = text.replace(/\$\s*\d[\d,]*(?:\.\d+)?/g, "");
+    text = text.replace(/\s{2,}/g, " ").replace(/[\s,;:\-–—]+$/g, "").trim();
+    if (!text || isFinancialLine(text)) continue;
+    tasks.push(text.slice(0, 240));
+  }
+  return tasks;
+}
+
+function isFinancialLine(text) {
+  return /^(sub\s*total|grand\s*total|total|markup|tax|price|unit\s*price|labor\s*rate|labour\s*rate|labor\s*hours|labour\s*hours|margin)\b/i.test(text);
+}
+
+function publicScope(row) {
+  if (!row) return null;
+  var tasks = [];
+  try { tasks = JSON.parse(row.tasksJson || "[]"); } catch (err) { tasks = []; }
+  return {
+    jobId: String(row.jobId || ""),
+    address: String(row.address || ""),
+    tasks: sanitizeScopeTasks(tasks)
+  };
+}
+
+function buildScopeRecord(input, geo) {
+  var address = String((input && input.address) || "").trim().replace(/\s+/g, " ");
+  if (!address) return { ok: false, reason: "address-required" };
+  var tasks = sanitizeScopeTasks((input && (input.tasks || input.text)) || "");
+  if (!tasks.length) return { ok: false, reason: "no-tasks" };
+  var jobId = (input && input.jobId) || jobIdForLabel(address);
+  var lat = geo && isFinite(Number(geo.lat)) ? Number(geo.lat) : "";
+  var lng = geo && isFinite(Number(geo.lng)) ? Number(geo.lng) : "";
+  return {
+    ok: true,
+    record: {
+      jobId: jobId,
+      address: address,
+      lat: lat,
+      lng: lng,
+      contractor: String((input && input.contractor) || "").slice(0, 120),
+      tasksJson: JSON.stringify(tasks),
+      updatedAt: new Date().toISOString()
+    },
+    publicView: { jobId: jobId, address: address, tasks: tasks }
+  };
+}
+
+function scopeDistance(aLat, aLng, bLat, bLng) {
+  var toRad = function (deg) { return deg * Math.PI / 180; };
+  var dLat = toRad(bLat - aLat);
+  var dLng = toRad(bLng - aLng);
+  var lat1 = toRad(aLat);
+  var lat2 = toRad(bLat);
+  var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return 2 * 6371000 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+function matchScope(rows, query) {
+  query = query || {};
+  if (query.jobId) {
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i] && rows[i].jobId === query.jobId) return { row: rows[i], reason: "job-id" };
+    }
+    return { row: null, reason: "no-scope" };
+  }
+  var lat = Number(query.lat);
+  var lng = Number(query.lng);
+  var accuracy = Number(query.accuracyMeters);
+  if (!isFinite(lat) || !isFinite(lng)) return { row: null, reason: "no-fix" };
+  if (!isFinite(accuracy) || accuracy > 150) return { row: null, reason: "low-accuracy" };
+  var hits = [];
+  for (var j = 0; j < rows.length; j++) {
+    var row = rows[j];
+    if (!row || !isFinite(Number(row.lat)) || !isFinite(Number(row.lng))) continue;
+    if (scopeDistance(lat, lng, Number(row.lat), Number(row.lng)) + accuracy <= 150) hits.push(row);
+  }
+  if (hits.length === 1) return { row: hits[0], reason: "one-saved-job" };
+  if (hits.length > 1) return { row: null, reason: "ambiguous" };
+  return { row: null, reason: "none-nearby" };
+}
+
+function scopeQuery(req) {
+  var body = (req && req.body) || {};
+  var query = (req && req.query) || {};
+  return {
+    jobId: body.jobId || query.jobId || "",
+    lat: body.lat != null ? body.lat : query.lat,
+    lng: body.lng != null ? body.lng : query.lng,
+    accuracyMeters: body.accuracyMeters != null ? body.accuracyMeters : query.accuracyMeters
+  };
+}
+
+function bodyWithoutMatchFix(body) {
+  if (!body) return body;
+  var copy = {};
+  Object.keys(body).forEach(function (key) {
+    if (key === "lat" || key === "lng" || key === "latitude" || key === "longitude" || key === "accuracyMeters") return;
+    copy[key] = body[key];
+  });
+  return copy;
+}
+
 function handleRequest(req, deps) {
   var path = (req && req.path) || "/api/health";
   if (path.charAt(0) !== "/") path = "/" + path;
   if (path === "/api/health" || path === "/health") {
     return { status: 200, ok: true, photos: !!(deps && deps.graphConfigured && deps.graphConfigured()), email: "not-sent-by-health", timezone: "America/Chicago" };
   }
+  if (path === "/api/scope/upsert") return upsertScopeRequest(req, deps);
   var employee = findEmployee(deps.employees(), req.token);
   if (!employee) return { status: 401, error: "unauthenticated" };
   if (req.body && req.body.employeeId && req.body.employeeId !== employee.employeeId) return { status: 403, error: "employee-isolation" };
-  var forbidden = containsForbidden(req.body);
+  var forbidden = containsForbidden(path === "/api/scope" ? bodyWithoutMatchFix(req.body) : req.body);
   if (forbidden.length) return { status: 400, error: "financial-or-location-rejected", keys: forbidden };
   if (req.method === "DELETE" || req.method === "PATCH" || req.method === "PUT") return { status: 403, error: "employees-cannot-change-photos" };
 
@@ -329,8 +453,24 @@ function handleRequest(req, deps) {
     return { status: 200, lists: rowsForEmployee(deps.listMaterials(), employee.employeeId) };
   }
 
+  if ((req.method === "GET" || req.method === "POST") && path === "/api/scope") {
+    var found = matchScope(deps.listScopes ? deps.listScopes() : [], scopeQuery(req));
+    return { status: 200, scope: publicScope(found.row), reason: found.reason };
+  }
+
   if (path.indexOf("/api/job-photos") === 0) return handlePhotoRoute(req, deps, employee, path);
   return { status: 404, error: "not-found" };
+}
+
+function upsertScopeRequest(req, deps) {
+  var key = req.body && req.body.adminKey;
+  if (!deps.adminKeyOk || !deps.adminKeyOk(key)) return { status: 403, error: "admin-only" };
+  var geo = { lat: req.body && req.body.lat, lng: req.body && req.body.lng };
+  if ((!isFinite(Number(geo.lat)) || !isFinite(Number(geo.lng))) && deps.geocode) geo = deps.geocode(req.body && req.body.address) || {};
+  var built = buildScopeRecord(req.body || {}, geo);
+  if (!built.ok) return { status: 400, error: built.reason };
+  deps.saveScope(built.record);
+  return { status: 200, ok: true, scope: built.publicView };
 }
 
 function assertJobPhotosPrefix(path) {

@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import crypto from "node:crypto";
 import { payWeekContaining, reportWeek } from "../../js/chicago-time.js";
+import { jobIdForLabel } from "../../js/ids.js";
 
 function loadLogic() {
   const code = readFileSync(new URL("../apps-script/Logic.js", import.meta.url), "utf8");
@@ -166,4 +167,62 @@ test("material save drops billing rates and photo paths cannot leave Job Photos"
   }, memoryDeps({ employees: added.directory, graph: false }));
   assert.equal(offline.status, 503);
   assert.equal(logic.handleRequest({ method: "DELETE", path: "/api/job-photos/photos/1", token: "ada-token-12345678", body: {} }, deps).status, 403);
+});
+
+test("scope tasks lose prices and employees never receive coordinates", () => {
+  const added = logic.addEmployeeRecord([], "Ada", "ada-token-12345678");
+  const messy = [
+    "Install receptacles in the kitchen",
+    "Subtotal $1,250.00",
+    "Wire the kitchen $45.00 each",
+    "Total",
+    "Markup 20%",
+    "Tax",
+    "Price: $10",
+    "Labor rate $85/hr",
+    "Labor hours 4",
+    "Mount the panel"
+  ];
+  const tasks = logic.sanitizeScopeTasks(messy);
+  assert.equal(JSON.stringify(tasks), JSON.stringify(["Install receptacles in the kitchen", "Wire the kitchen each", "Mount the panel"]));
+  assert.equal(JSON.stringify(tasks).includes("$"), false);
+  const built = logic.buildScopeRecord({ address: "123 Main St", contractor: "BluSky", tasks: messy }, { lat: 38.63, lng: -90.2 });
+  assert.equal(built.record.jobId, jobIdForLabel("123 Main St"));
+  assert.equal(built.publicView.lat, undefined);
+  assert.equal(JSON.stringify(built.publicView).includes("$"), false);
+  const deps = memoryDeps({ employees: added.directory });
+  deps.adminKeyOk = (key) => key === "admin-secret";
+  deps.geocode = () => ({ lat: 38.63, lng: -90.2 });
+  deps.saveScope = (record) => { deps.data.scopes = [record]; };
+  deps.listScopes = () => deps.data.scopes || [];
+  const denied = logic.handleRequest({
+    method: "POST", path: "/api/scope/upsert", token: "ada-token-12345678",
+    body: { address: "123 Main St", tasks: messy }
+  }, deps);
+  assert.equal(denied.status, 403);
+  const saved = logic.handleRequest({
+    method: "POST", path: "/api/scope/upsert", token: "",
+    body: { adminKey: "admin-secret", address: "123 Main St", contractor: "BluSky", tasks: messy.join("\n") }
+  }, deps);
+  assert.equal(saved.status, 200);
+  assert.equal(saved.scope.tasks.length, 3);
+  assert.equal(Object.keys(saved.scope).sort().join(","), "address,jobId,tasks");
+  const lookup = logic.handleRequest({
+    method: "POST", path: "/api/scope", token: "ada-token-12345678",
+    body: { lat: 38.6302, lng: -90.2001, accuracyMeters: 20 }
+  }, deps);
+  assert.equal(lookup.scope.address, "123 Main St");
+  assert.equal(lookup.scope.lat, undefined);
+  assert.equal(JSON.stringify(lookup).includes("38.63"), false);
+  const fuzzy = logic.handleRequest({
+    method: "POST", path: "/api/scope", token: "ada-token-12345678",
+    body: { lat: 38.63, lng: -90.2, accuracyMeters: 400 }
+  }, deps);
+  assert.equal(fuzzy.scope, null);
+  assert.equal(fuzzy.reason, "low-accuracy");
+  const byId = logic.handleRequest({
+    method: "POST", path: "/api/scope", token: "ada-token-12345678",
+    body: { jobId: built.record.jobId }
+  }, deps);
+  assert.equal(byId.scope.jobId, built.record.jobId);
 });

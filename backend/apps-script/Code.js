@@ -14,8 +14,24 @@ function liveDeps() {
     graphConfigured: function () { return microsoftConfigured_(); },
     graphList: function (path) { return graphChildren_(path); },
     graphGet: function (photoId, size) { return graphPhoto_(photoId, size); },
-    graphUpload: function (path, contentBase64) { return graphPut_(path, contentBase64); }
+    graphUpload: function (path, contentBase64) { return graphPut_(path, contentBase64); },
+    listScopes: function () { return readSheet_("Scopes", SCOPE_HEADERS); },
+    saveScope: function (record) { saveScope_(record); },
+    adminKeyOk: function (key) { return adminKeyOk_(key); },
+    geocode: function (address) { return geocodeAddress_(address); }
   };
+}
+
+function geocodeAddress_(address) {
+  if (!address) return { lat: "", lng: "" };
+  try {
+    var result = Maps.newGeocoder().geocode(address);
+    var loc = result && result.results && result.results[0] && result.results[0].geometry && result.results[0].geometry.location;
+    if (!loc) return { lat: "", lng: "" };
+    return { lat: loc.lat, lng: loc.lng };
+  } catch (err) {
+    return { lat: "", lng: "" };
+  }
 }
 
 function parseRequest_(e, method) {

@@ -90,3 +90,7 @@ curl -s -X POST "https://script.google.com/macros/s/DEPLOYMENT_ID/exec?path=/api
 Expect `"entries": []` the first time. A second person's token must not return the first person's rows.
 
 A path such as `Accounting` or `Job Photos/../Accounting` must come back as an error and must not create a file.
+
+## 8. Bid scopes
+
+See `backend/SCOPE.md`. To load a price-free task list, post to `/api/scope/upsert` with the admin key. The proposal text may still contain prices; the script removes them before saving. Redeploy the web app after replacing `Logic.js`, `Code.js`, and `Store.js`. The first geocode may ask you to approve the script again. No new OAuth scope was added. Maps uses the external-request scope already in `appsscript.json`.
