@@ -139,9 +139,13 @@ test("theme override accepts a name, auto, or off", () => {
     halloween: ["ghost"],
     valentines: ["float-up"],
     "st-patricks": ["picker", "coin"],
-    easter: ["hopper"],
-    groundhog: ["groundhog"],
-    "labor-day": ["hammer"],
+    easter: ["hopper", "egg-wobble"],
+    groundhog: ["groundhog", "snow"],
+    "labor-day": ["labor-work", "wave"],
+    "arbor-day": ["arbor-tree", "arbor-seed"],
+    "earth-day": ["earth-globe", "sprout-sway"],
+    "mothers-day": ["bloom"],
+    "fathers-day": ["float-up"],
     mlk: ["banner-shimmer"],
     "july-4": ["twinkle", "ripple"]
   };
@@ -154,8 +158,17 @@ test("theme override accepts a name, auto, or off", () => {
   assert.ok(reduced, "reduced-motion block");
   assert.match(reduced[1], /animation:\s*none/);
   assert.equal((themeDecor("christmas") + themeBanner("christmas")).includes("Q1120"), false);
-  for (const name of ["twinkle", "bulb-color", "wave", "wreath", "ripple", "snow", "drift", "float-up", "bob", "bat", "wing", "glow", "fuse", "spark", "turkey-walk", "turkey-tail", "santa-fly", "ghost", "hopper", "groundhog", "sprout", "hammer", "salute", "fade-in", "banner-shimmer"]) {
+  for (const name of ["twinkle", "bulb-color", "wave", "wreath", "ripple", "snow", "drift", "float-up", "bob", "bat", "wing", "glow", "fuse", "spark", "turkey-walk", "turkey-tail", "santa-fly", "ghost", "hopper", "groundhog", "sprout", "hammer", "salute", "fade-in", "banner-shimmer", "labor-work", "egg-wobble", "earth-globe", "bloom", "arbor-tree", "sprout-sway"]) {
     assert.match(reduced[1], new RegExp("\\." + name + "(?:,|\\{)"));
+  }
+  const illustrated = ["thanksgiving", "christmas", "labor-day", "easter", "groundhog", "arbor-day", "earth-day", "mothers-day", "fathers-day"];
+  for (const id of illustrated) {
+    assert.match(themeDecor(id), /holiday\/[a-z0-9-]+\/[a-z0-9-]+\.webp/, id);
+    assert.equal(themeDecor(id).includes("blended"), false, id);
+  }
+  for (const id of THEME_IDS) {
+    if (illustrated.includes(id)) continue;
+    assert.equal(themeDecor(id).includes("holiday/"), false, id);
   }
   assert.match(css, /holiday-paused/);
   assert.match(css, /animation-play-state:\s*paused/);

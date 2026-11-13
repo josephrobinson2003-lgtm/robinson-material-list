@@ -239,6 +239,22 @@ function sceneSvg(body) {
   return '<svg class="holiday-svg" viewBox="0 0 1600 525" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' + body + "</svg>";
 }
 
+function art(file, x, y, w, h, cls, delay) {
+  const style = delay ? ' style="animation-delay:' + delay + 's"' : "";
+  const name = cls ? ' class="' + cls + '"' : "";
+  return '<image' + name + style + ' href="holiday/' + file + '" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '"/>';
+}
+
+function bunting() {
+  const colors = ["#b4232a", "#f7f7fb", "#1F3864"];
+  let out = "";
+  for (let i = 0; i < 7; i += 1) {
+    out += '<g class="wave" style="animation-delay:' + (i * 0.18).toFixed(2) + 's" transform="translate(' + (820 + i * 95) + ' 448)">' +
+      '<path d="M0 0 Q24 26 48 0 L48 14 Q24 38 0 14 Z" fill="' + colors[i % 3] + '"/></g>';
+  }
+  return out;
+}
+
 function scallops(colors) {
   let out = "";
   for (let i = 0; i < 16; i += 1) {
@@ -338,25 +354,6 @@ function firework(x, y, delay) {
     '<g class="spark" style="animation-delay:' + delay + 's">' + sparks + '<circle r="16" fill="#fff"/></g></g>';
 }
 
-function walkingTurkey() {
-  const feather = function (rot, fill) {
-    return '<ellipse rx="46" ry="16" fill="' + fill + '" transform="rotate(' + rot + ') translate(36,0)"/>';
-  };
-  return '<g transform="translate(0 455)"><g class="turkey-walk"><g class="turkey-bob">' +
-    '<g class="turkey-tail">' +
-    feather(-70, "#6b2a12") + feather(-46, "#8c3b16") + feather(-22, "#c4652a") +
-    feather(0, "#d4a017") + feather(22, "#c4652a") + feather(46, "#8c3b16") + feather(70, "#6b2a12") +
-    "</g>" +
-    '<ellipse cx="18" cy="4" rx="32" ry="20" fill="#6b3a12"/>' +
-    '<g class="turkey-head"><circle cx="48" cy="-8" r="11" fill="#5c2e0a"/>' +
-    '<path fill="#e07a1f" d="M56 -12 L74 -6 L56 -1 Z"/>' +
-    '<path fill="#b4232a" d="M42 -18 C46 -32 56 -26 48 -14 Z"/>' +
-    '<circle cx="52" cy="-10" r="1.8" fill="#1d2330"/></g>' +
-    '<g class="leg"><path d="M10 20 L2 42 M2 42 L-8 48 M2 42 L6 50 M2 42 L12 46" fill="none" stroke="#e07a1f" stroke-width="3.5" stroke-linecap="round"/></g>' +
-    '<g class="leg leg-b"><path d="M24 20 L30 42 M30 42 L22 48 M30 42 L34 50 M30 42 L40 46" fill="none" stroke="#e07a1f" stroke-width="3.5" stroke-linecap="round"/></g>' +
-    "</g></g></g>";
-}
-
 function nameBanner(label, fill, ink) {
   return bannerSvg('<rect width="1200" height="72" fill="' + fill + '"/><text class="banner-shimmer" x="600" y="48" text-anchor="middle" font-family="Georgia, serif" font-size="40" font-weight="700" fill="' + ink + '">' + label + "</text>");
 }
@@ -454,16 +451,13 @@ const SCENES = {
   valentines: sceneSvg(heart(1040, 16, 1.8, "#c23b56", 0) + heart(1240, 55, 1.2, "#e89aaf", 1.4)),
   presidents: sceneSvg(flag(1000, 10, 220, 130) + star(1260, 36, 26, "#FFC20E", 0.4)),
   easter: sceneSvg(
-    '<g transform="translate(180 470)"><ellipse class="egg-bit" cx="0" cy="0" rx="16" ry="22" fill="#f4d35e" stroke="#1F3864" stroke-width="2"/></g>' +
-    '<g transform="translate(420 478)"><ellipse class="egg-bit" style="animation-delay:3s" cx="0" cy="0" rx="16" ry="22" fill="#9fd3ea" stroke="#1F3864" stroke-width="2"/></g>' +
-    '<g transform="translate(700 468)"><ellipse class="egg-bit" style="animation-delay:6s" cx="0" cy="0" rx="16" ry="22" fill="#f2b6d0" stroke="#1F3864" stroke-width="2"/></g>' +
-    '<g class="hopper" transform="translate(10 390) scale(2.4)">' +
-    '<ellipse cx="16" cy="28" rx="18" ry="8" fill="#d7ecf5"/>' +
-    '<ellipse cx="28" cy="8" rx="22" ry="16" fill="#f7f7fb"/>' +
-    '<ellipse cx="12" cy="-18" rx="6" ry="16" fill="#f7f7fb"/><ellipse cx="26" cy="-18" rx="6" ry="16" fill="#f7f7fb"/>' +
-    '<circle cx="46" cy="2" r="10" fill="#f7f7fb"/><circle cx="49" cy="0" r="1.5" fill="#1d2330"/>' +
-    '<path d="M58 6 L70 2 L58 12 Z" fill="#f2b6d0"/>' +
-    "</g>"
+    art("easter/egg-1.webp", 860, 430, 40, 64, "egg-wobble", 0) +
+    art("easter/egg-2.webp", 980, 438, 40, 64, "egg-wobble", 1.2) +
+    art("easter/egg-3.webp", 1100, 428, 40, 64, "egg-wobble", 2.4) +
+    art("easter/egg-4.webp", 1220, 440, 40, 64, "egg-wobble", 3.6) +
+    art("easter/egg-5.webp", 1340, 432, 40, 64, "egg-wobble", 4.8) +
+    art("easter/basket.webp", 560, 328, 156, 178) +
+    art("easter/bunny.webp", 16, 340, 150, 156, "hopper")
   ),
   "st-patricks": sceneSvg(
     shamrock(80, 70, 1.1, 0) + shamrock(1480, 80, 1.15, 1) + shamrock(80, 360, 0.9, 0.6) + shamrock(1500, 360, 1, 1.4) +
@@ -479,37 +473,62 @@ const SCENES = {
     "</g>"
   ),
   groundhog: sceneSvg(
-    '<g transform="translate(150 390) scale(2.3)"><ellipse cx="0" cy="28" rx="58" ry="20" fill="#6b4a2a"/>' +
-    '<g class="groundhog"><ellipse cx="0" cy="10" rx="26" ry="18" fill="#8a6a42"/><circle cy="-8" r="14" fill="#a07848"/>' +
-    '<circle cx="-6" cy="-10" r="2" fill="#1d2330"/><circle cx="6" cy="-10" r="2" fill="#1d2330"/><ellipse cy="-2" rx="4" ry="3" fill="#5c3a22"/></g></g>'
+    '<g fill="#c5d0e0">' +
+    '<g transform="translate(160 18)"><circle class="snow" r="5"/></g>' +
+    '<g transform="translate(480 8)"><circle class="snow" style="animation-delay:1.1s" r="4"/></g>' +
+    '<g transform="translate(760 24)"><circle class="snow" style="animation-delay:.5s" r="6"/></g>' +
+    '<g transform="translate(1040 10)"><circle class="snow" style="animation-delay:1.7s" r="4"/></g>' +
+    "</g>" +
+    art("groundhog/hog.webp", 1088, 214, 270, 192, "groundhog") +
+    art("groundhog/mound.webp", 980, 378, 470, 132)
   ),
   "arbor-day": sceneSvg(
-    '<g transform="translate(260 450)"><ellipse cy="16" rx="22" ry="8" fill="#6b4a2a"/><circle cy="8" r="7" fill="#c4a574"/>' +
-    '<g class="sprout"><rect x="-3" y="-70" width="6" height="80" fill="#2f6b32"/>' +
-    '<ellipse cx="-16" cy="-40" rx="16" ry="8" fill="#1f7a3a"/><ellipse cx="16" cy="-28" rx="16" ry="8" fill="#18703a"/></g></g>'
+    art("arbor-day/seed.webp", 632, 432, 116, 76, "arbor-stage arbor-seed") +
+    art("arbor-day/sprout.webp", 626, 380, 128, 128, "arbor-stage arbor-sprout") +
+    art("arbor-day/sapling.webp", 616, 286, 148, 222, "arbor-stage arbor-sapling") +
+    art("arbor-day/tree.webp", 592, 254, 196, 254, "arbor-stage arbor-tree") +
+    art("arbor-day/vine.webp", 800, 16, 300, 198, "wave") +
+    art("arbor-day/leaf-1.webp", 1088, 36, 26, 26, "drift", 0.2) +
+    art("arbor-day/leaf-2.webp", 1148, 78, 24, 32, "drift", 1.5) +
+    art("arbor-day/leaf-3.webp", 1024, 22, 22, 34, "drift", 0.8)
   ),
   "earth-day": sceneSvg(
-    christmasTree(360, 400) + christmasTree(560, 420) +
-    '<text x="900" y="120" font-family="Georgia, serif" font-size="42" fill="#145c30">Happy Earth Day</text>'
+    '<g class="earth-globe">' +
+    art("earth-day/globe.webp", 1168, 108, 214, 212) +
+    art("earth-day/sprout.webp", 1236, 42, 78, 80, "sprout-sway") +
+    "</g>" +
+    art("earth-day/leaf-1.webp", 1040, 36, 30, 42, "drift", 0) +
+    art("earth-day/leaf-2.webp", 1488, 48, 36, 34, "drift", 1.1) +
+    art("earth-day/leaf-3.webp", 1100, 150, 32, 34, "drift", 0.6) +
+    art("earth-day/leaf-4.webp", 1420, 200, 28, 30, "drift", 1.8) +
+    art("earth-day/leaf-5.webp", 1520, 120, 30, 26, "drift", 0.3) +
+    art("earth-day/leaf-6.webp", 1008, 90, 34, 32, "drift", 1.4)
   ),
-  "mothers-day": sceneSvg(""),
-  "fathers-day": sceneSvg(""),
+  "mothers-day": sceneSvg(
+    '<ellipse class="glow" cx="1236" cy="160" rx="100" ry="58" fill="#f7b0c4"/>' +
+    art("mothers-day/heart.webp", 1104, 92, 280, 120, "bloom", 0) +
+    art("mothers-day/flower-1.webp", 1248, 18, 132, 122, "bloom", 0.5) +
+    art("mothers-day/flower-2.webp", 1348, 112, 138, 120, "bloom", 1.1) +
+    art("mothers-day/flower-4.webp", 1308, 228, 168, 134, "bloom", 1.7) +
+    art("mothers-day/petal-1.webp", 180, 40, 36, 42, "drift", 0) +
+    art("mothers-day/petal-2.webp", 420, 16, 34, 32, "drift", 1.2) +
+    art("mothers-day/petal-3.webp", 680, 48, 40, 24, "drift", 0.6) +
+    art("mothers-day/petal-4.webp", 240, 120, 32, 26, "drift", 1.8)
+  ),
+  "fathers-day": sceneSvg(
+    art("fathers-day/tie.webp", 36, 148, 62, 148, "wave") +
+    art("fathers-day/grill.webp", 1104, 188, 210, 320) +
+    '<g class="float-up" transform="translate(1188 150)"><path d="M0 28 C8 16 -6 12 2 0" fill="none" stroke="#c5cad3" stroke-width="4" stroke-linecap="round"/></g>' +
+    '<g class="float-up" style="animation-delay:1.1s" transform="translate(1224 138)"><path d="M0 34 C-8 18 8 12 0 -4" fill="none" stroke="#d5dae2" stroke-width="3.5" stroke-linecap="round"/></g>' +
+    art("fathers-day/toolbox.webp", 1336, 292, 176, 196) +
+    art("fathers-day/driver.webp", 1310, 458, 96, 52)
+  ),
   "memorial-day": sceneSvg(flag(1000, 16, 240, 140)),
   juneteenth: sceneSvg(star(1120, 90, 64, "#e0b33a") + '<path fill="#bb3a2f" d="M980 150 a150 64 0 0 1 300 0 z"/>'),
   "july-4": sceneSvg(flag(760, 20, 200, 110) + firework(1240, 70, 0.4) + firework(1420, 110, 2.2)),
   "labor-day": sceneSvg(
-    '<g transform="translate(1020 40) scale(1.45)">' +
-    '<rect x="150" y="20" width="18" height="250" fill="#c4a574"/>' +
-    '<path d="M40 70 H168" stroke="#FFC20E" stroke-width="5"/>' +
-    '<line x1="20" y1="10" x2="20" y2="280" stroke="#8a8f98" stroke-width="5"/>' +
-    '<line x1="52" y1="10" x2="52" y2="280" stroke="#8a8f98" stroke-width="5"/>' +
-    '<line x1="20" y1="50" x2="52" y2="50" stroke="#8a8f98" stroke-width="4"/>' +
-    '<line x1="20" y1="100" x2="52" y2="100" stroke="#8a8f98" stroke-width="4"/>' +
-    '<line x1="20" y1="150" x2="52" y2="150" stroke="#8a8f98" stroke-width="4"/>' +
-    '<g transform="translate(36 90)"><rect x="-12" y="-40" width="28" height="8" rx="2" fill="#FFC20E"/>' +
-    '<circle cy="-24" r="11" fill="#f0d2b0"/><rect x="-9" y="-16" width="18" height="40" fill="#1F3864"/>' +
-    '<g class="hammer"><rect x="10" y="-36" width="5" height="30" fill="#6b3a12"/><rect x="4" y="-40" width="18" height="8" fill="#667085"/></g></g>' +
-    '<circle class="glow" cx="168" cy="70" r="8" fill="#fff4c2"/></g>'
+    bunting() +
+    art("labor-day/electrician.webp", 960, 148, 168, 328, "labor-work")
   ),
   "peoples-day": sceneSvg(""),
   halloween: sceneSvg(
@@ -528,19 +547,16 @@ const SCENES = {
     '<g class="salute" style="animation-delay:.6s" transform="translate(320 438)" fill="#1d2330"><circle cy="-46" r="7"/><path d="M-8 -36 H8 L6 -6 H-6 Z"/><path d="M1 -26 L16 -42" stroke="#1d2330" stroke-width="3.5"/><path d="M-3 -6 L-5 14 M4 -6 L7 14" stroke="#1d2330" stroke-width="3.5"/></g>'
   ),
   thanksgiving: sceneSvg(
-    '<g transform="translate(1000 12)"><ellipse cx="70" cy="70" rx="44" ry="32" fill="#8c3b16"/><circle cx="114" cy="54" r="15" fill="#6b3a12"/><path fill="#c4652a" d="M114 42 l10 -14 l8 14 z"/>' +
-    leaf(4, 62, "#c4652a", -30) + leaf(-8, 34, "#d4a017", 20) + leaf(24, 18, "#8c3b16", -10) + "</g>" +
-    pumpkin(1240, 110, 1.45) + leaf(1460, 70, "#d4a017", 16, 0) + leaf(1180, 24, "#c4652a", -12, 1.5) +
-    pumpkin(180, 430, 1.2) + pumpkin(1360, 440, 1.2) + walkingTurkey()
+    leaf(90, 28, "#c4652a", -18, 0) + leaf(260, 12, "#d4a017", 14, 1.3) +
+    leaf(1488, 40, "#8c3b16", 10, 0.4) + leaf(1320, 16, "#c4652a", -16, 1.7) +
+    '<g class="turkey-walk">' +
+    art("thanksgiving/walk.webp", 0, 348, 190, 174, "turkey-body") +
+    art("thanksgiving/fan.webp", -16, 292, 220, 230, "turkey-tail") +
+    "</g>"
   ),
   christmas: sceneSvg(
     wreath() + christmasTree(1472, 318) +
-    '<g class="santa-fly" transform="translate(200 80)">' +
-    '<ellipse cx="0" cy="0" rx="16" ry="8" fill="#8c5a2a"/><circle cx="18" cy="-6" r="6" fill="#8c5a2a"/>' +
-    '<ellipse cx="70" cy="8" rx="36" ry="12" fill="#b4232a"/><rect x="40" y="-2" width="28" height="10" fill="#f7f7fb"/>' +
-    '<circle cx="108" cy="2" r="10" fill="#f0d2b0"/><path fill="#b4232a" d="M96 -8 H120 L114 2 H100 Z"/>' +
-    "</g>" +
-    '<g transform="translate(70 0)"><path fill="#b4232a" d="M30 78 C24 18 96 -8 132 36 L104 86 Z"/><rect x="8" y="74" width="112" height="22" rx="10" fill="#f7f7fb"/><circle cx="132" cy="34" r="16" fill="#f7f7fb"/></g>' +
+    art("christmas/sleigh.webp", 0, -6, 390, 148, "santa-fly") +
     '<g fill="#f7f7fb">' +
     '<g transform="translate(1040 16)"><circle class="snow" r="16"/></g>' +
     '<g transform="translate(1180 36)"><circle class="snow" style="animation-delay:1.1s" r="13"/></g>' +
