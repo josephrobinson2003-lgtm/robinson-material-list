@@ -122,16 +122,16 @@ test("theme override accepts a name, auto, or off", () => {
   }
   assert.equal(nextPreviewTheme("christmas"), "new-year");
   const motion = {
-    christmas: ["snow", "bulb"],
-    "new-year": ["burst"],
-    veterans: ["wave", "flag-wave"],
-    thanksgiving: ["drift"],
+    christmas: ["snow", "bulb-color", "wreath"],
+    "new-year": ["spark", "fuse"],
+    veterans: ["wave", "ripple"],
+    thanksgiving: ["drift", "turkey-walk", "turkey-tail"],
     halloween: ["bat", "wing", "glow"],
     valentines: ["float-up"],
     "st-patricks": ["drift"],
     easter: ["bob"],
     mlk: ["banner-shimmer"],
-    "july-4": ["twinkle", "flag-wave"]
+    "july-4": ["twinkle", "ripple"]
   };
   for (const id of Object.keys(motion)) {
     const markup = themeDecor(id) + themeBanner(id);
@@ -141,7 +141,8 @@ test("theme override accepts a name, auto, or off", () => {
   const reduced = css.match(/@media \(prefers-reduced-motion:\s*reduce\)\{([^}]+)\}/);
   assert.ok(reduced, "reduced-motion block");
   assert.match(reduced[1], /animation:\s*none/);
-  for (const name of ["bulb", "twinkle", "burst", "wave", "flag-wave", "snow", "drift", "float-up", "bob", "bat", "wing", "glow", "banner-shimmer"]) {
+  assert.equal((themeDecor("christmas") + themeBanner("christmas")).includes("Q1120"), false);
+  for (const name of ["twinkle", "bulb-color", "wave", "wreath", "ripple", "snow", "drift", "float-up", "bob", "bat", "wing", "glow", "fuse", "spark", "turkey-walk", "turkey-tail", "banner-shimmer"]) {
     assert.match(reduced[1], new RegExp("\\." + name + "(?:,|\\{)"));
   }
   assert.match(css, /holiday-paused/);

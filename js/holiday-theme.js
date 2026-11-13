@@ -208,16 +208,36 @@ function scallops(colors) {
 const PATRIOTIC = ["#b4232a", "#f7f7fb", "#1F3864"];
 
 function flag(x, y, w, h) {
+  const slices = 9;
+  const sliceWidth = w / slices;
   const stripe = h / 13;
-  let out = '<g transform="translate(' + x + " " + y + ')"><g class="flag-wave">';
-  for (let i = 0; i < 13; i += 1) {
-    out += '<rect y="' + (i * stripe) + '" width="' + w + '" height="' + (stripe + 0.6) + '" fill="' + (i % 2 ? "#f7f7fb" : "#b4232a") + '"/>';
+  const cantonW = w * 0.42;
+  const cantonH = stripe * 7;
+  const stars = [
+    [w * 0.1, stripe * 1.7, stripe * 0.62],
+    [w * 0.26, stripe * 1.7, stripe * 0.55],
+    [w * 0.18, stripe * 3.4, stripe * 0.62],
+    [w * 0.1, stripe * 5.1, stripe * 0.55],
+    [w * 0.26, stripe * 5.1, stripe * 0.55]
+  ];
+  let out = '<g transform="translate(' + x + " " + y + ')">';
+  for (let slice = 0; slice < slices; slice += 1) {
+    const sx = slice * sliceWidth;
+    out += '<g class="ripple" style="animation-delay:' + (slice * 0.1) + 's">';
+    for (let row = 0; row < 13; row += 1) {
+      out += '<rect x="' + sx + '" y="' + (row * stripe) + '" width="' + (sliceWidth + 1) + '" height="' + (stripe + 0.5) + '" fill="' + (row % 2 ? "#f7f7fb" : "#b4232a") + '"/>';
+    }
+    if (sx < cantonW) {
+      out += '<rect x="' + sx + '" y="0" width="' + Math.min(sliceWidth + 1, cantonW - sx) + '" height="' + cantonH + '" fill="#1F3864"/>';
+    }
+    stars.forEach(function (dot) {
+      if (dot[0] >= sx && dot[0] < sx + sliceWidth) {
+        out += '<circle cx="' + dot[0] + '" cy="' + dot[1] + '" r="' + dot[2] + '" fill="#fff"/>';
+      }
+    });
+    out += "</g>";
   }
-  out += '<rect width="' + (w * 0.42) + '" height="' + (stripe * 7) + '" fill="#1F3864"/>';
-  out += '<circle cx="' + (w * 0.12) + '" cy="' + (stripe * 1.8) + '" r="' + (stripe * 0.7) + '" fill="#fff"/>';
-  out += '<circle cx="' + (w * 0.28) + '" cy="' + (stripe * 3.4) + '" r="' + (stripe * 0.7) + '" fill="#fff"/>';
-  out += '<circle cx="' + (w * 0.14) + '" cy="' + (stripe * 5.1) + '" r="' + (stripe * 0.7) + '" fill="#fff"/>';
-  out += "</g></g>";
+  out += "</g>";
   return out;
 }
 
@@ -260,10 +280,38 @@ function star(x, y, r, color, delay) {
   ].map((pair) => pair.join(",")).join(" ") + '"/>';
 }
 
-function burst(x, y, color, delay) {
-  return '<g transform="translate(' + x + " " + y + ')"><g class="burst" style="animation-delay:' + (delay || 0) + 's"><circle r="8" fill="' + color + '"/>' +
-    [0, 45, 90, 135].map((deg) => '<rect x="-3" y="-46" width="6" height="34" rx="3" fill="' + color + '" transform="rotate(' + deg + ')"/>').join("") +
-    "</g></g>";
+function firework(x, y, delay) {
+  const colors = ["#FFC20E", "#f7f7fb", "#7eb6ff", "#ff6b6b", "#ffd0a8", "#fff4c2"];
+  let sparks = "";
+  const count = 18;
+  for (let i = 0; i < count; i += 1) {
+    const angle = Math.round((i / count) * 360);
+    const radius = 78 + (i % 3) * 36;
+    sparks += '<g transform="rotate(' + angle + ') translate(0,' + (-radius) + ')">' +
+      '<circle r="' + (14 + (i % 2) * 6) + '" fill="' + colors[i % colors.length] + '"/></g>';
+  }
+  return '<g transform="translate(' + x + " " + y + ')">' +
+    '<rect class="fuse" style="animation-delay:' + delay + 's" x="-3" y="0" width="6" height="120" rx="3" fill="#ffe27a"/>' +
+    '<g class="spark" style="animation-delay:' + delay + 's">' + sparks + '<circle r="16" fill="#fff"/></g></g>';
+}
+
+function walkingTurkey() {
+  const feather = function (rot, fill) {
+    return '<ellipse rx="46" ry="16" fill="' + fill + '" transform="rotate(' + rot + ') translate(36,0)"/>';
+  };
+  return '<g transform="translate(0 455)"><g class="turkey-walk"><g class="turkey-bob">' +
+    '<g class="turkey-tail">' +
+    feather(-70, "#6b2a12") + feather(-46, "#8c3b16") + feather(-22, "#c4652a") +
+    feather(0, "#d4a017") + feather(22, "#c4652a") + feather(46, "#8c3b16") + feather(70, "#6b2a12") +
+    "</g>" +
+    '<ellipse cx="18" cy="4" rx="32" ry="20" fill="#6b3a12"/>' +
+    '<g class="turkey-head"><circle cx="48" cy="-8" r="11" fill="#5c2e0a"/>' +
+    '<path fill="#e07a1f" d="M56 -12 L74 -6 L56 -1 Z"/>' +
+    '<path fill="#b4232a" d="M42 -18 C46 -32 56 -26 48 -14 Z"/>' +
+    '<circle cx="52" cy="-10" r="1.8" fill="#1d2330"/></g>' +
+    '<g class="leg"><path d="M10 20 L2 42 M2 42 L-8 48 M2 42 L6 50 M2 42 L12 46" fill="none" stroke="#e07a1f" stroke-width="3.5" stroke-linecap="round"/></g>' +
+    '<g class="leg leg-b"><path d="M24 20 L30 42 M30 42 L22 48 M30 42 L34 50 M30 42 L40 46" fill="none" stroke="#e07a1f" stroke-width="3.5" stroke-linecap="round"/></g>' +
+    "</g></g></g>";
 }
 
 function nameBanner(label, fill, ink) {
@@ -271,16 +319,42 @@ function nameBanner(label, fill, ink) {
 }
 
 function lights() {
-  let bulbs = '<path d="M20 28 H1180" fill="none" stroke="#1f7a3a" stroke-width="6"/>';
-  const colors = ["#b4232a", "#FFC20E", "#1F3864", "#f7f7fb"];
+  const colors = ["#b4232a", "#1f7a3a", "#FFC20E", "#2F5597"];
+  let bulbs = '<path d="M16 30 H1184" fill="none" stroke="#1f7a3a" stroke-width="6"/>';
   for (let i = 0; i < 12; i += 1) {
-    bulbs += '<circle class="bulb" style="animation-delay:' + (i * 0.18) + 's" cx="' + (50 + i * 95) + '" cy="28" r="16" fill="' + colors[i % colors.length] + '"/>';
+    const cx = 48 + i * 96;
+    bulbs += '<circle cx="' + cx + '" cy="30" r="15" fill="' + colors[i % colors.length] + '"/>';
+    for (let c = 0; c < colors.length; c += 1) {
+      const delay = (i * 0.2 + c * 0.55).toFixed(2);
+      bulbs += '<circle class="bulb-color" style="animation-delay:' + delay + 's" cx="' + cx + '" cy="30" r="15" fill="' + colors[c] + '"/>';
+    }
   }
   return bannerSvg(bulbs);
 }
 
+function wreath() {
+  return '<g transform="translate(1264 86)"><line x1="0" y1="-70" x2="0" y2="-40" stroke="#6b3a12" stroke-width="3"/>' +
+    '<g class="wreath"><circle r="34" fill="none" stroke="#1f7a3a" stroke-width="14"/>' +
+    '<circle r="26" fill="none" stroke="#2f8a48" stroke-width="5"/>' +
+    '<circle cx="-18" cy="6" r="5" fill="#b4232a"/><circle cx="16" cy="-8" r="5" fill="#b4232a"/><circle cx="4" cy="18" r="4" fill="#FFC20E"/>' +
+    '<path fill="#b4232a" d="M-14 26 C-30 14 -38 36 -16 40 C-6 32 0 36 0 26 C0 36 6 32 16 40 C38 36 30 14 14 26 C6 20 0 24 0 26 C0 24 -6 20 -14 26 Z"/>' +
+    '<rect x="-4" y="26" width="8" height="20" rx="2" fill="#b4232a"/></g></g>';
+}
+
+function christmasTree(x, y) {
+  return '<g transform="translate(' + x + " " + y + ')">' +
+    '<polygon points="0,-62 26,-18 -26,-18" fill="#1f7a3a"/>' +
+    '<polygon points="0,-34 34,8 -34,8" fill="#18703a"/>' +
+    '<polygon points="0,-6 40,36 -40,36" fill="#145c30"/>' +
+    '<rect x="-7" y="36" width="14" height="14" fill="#6b3a12"/>' +
+    '<circle cx="0" cy="-50" r="5" fill="#FFC20E"/>' +
+    '<circle cx="-12" cy="2" r="4" fill="#b4232a"/>' +
+    '<circle cx="14" cy="18" r="4" fill="#f7f7fb"/>' +
+    "</g>";
+}
+
 const BANNERS = {
-  "new-year": bannerSvg('<rect width="1200" height="72" fill="#1F3864"/>' + burst(160, 36, "#FFC20E", 0) + burst(420, 40, "#f7f7fb", 0.8) + burst(680, 34, "#FFC20E", 1.6) + burst(960, 40, "#f7f7fb", 2.4)),
+  "new-year": bannerSvg('<rect width="1200" height="72" fill="#1F3864"/>' + star(180, 36, 14, "#FFC20E", 0) + star(600, 36, 16, "#f7f7fb", 0.6) + star(1020, 36, 14, "#FFC20E", 1.2)),
   mlk: nameBanner("Martin Luther King Jr. Day", "#1F3864", "#FFC20E"),
   valentines: bannerSvg(scallops(["#c23b56", "#f7f7fb", "#e89aaf"])),
   presidents: bannerSvg(scallops(PATRIOTIC)),
@@ -298,7 +372,7 @@ const BANNERS = {
 };
 
 const SCENES = {
-  "new-year": sceneSvg(burst(1040, 80, "#FFC20E", 0.4) + burst(1240, 50, "#f7f7fb", 1.2) + burst(1400, 110, "#FFC20E", 2) + burst(1160, 150, "#1F3864", 2.8)),
+  "new-year": sceneSvg(firework(1140, 78, 0) + firework(1288, 36, 1.6) + firework(1420, 96, 3.2)),
   mlk: sceneSvg(""),
   valentines: sceneSvg(heart(1040, 16, 1.8, "#c23b56", 0) + heart(1240, 55, 1.2, "#e89aaf", 1.4)),
   presidents: sceneSvg(flag(1000, 10, 220, 130) + star(1260, 36, 26, "#FFC20E", 0.4)),
@@ -319,19 +393,16 @@ const SCENES = {
     '<g transform="translate(1000 12)"><ellipse cx="70" cy="70" rx="44" ry="32" fill="#8c3b16"/><circle cx="114" cy="54" r="15" fill="#6b3a12"/><path fill="#c4652a" d="M114 42 l10 -14 l8 14 z"/>' +
     leaf(4, 62, "#c4652a", -30) + leaf(-8, 34, "#d4a017", 20) + leaf(24, 18, "#8c3b16", -10) + "</g>" +
     pumpkin(1240, 110, 1.45) + leaf(1460, 70, "#d4a017", 16, 0) + leaf(1180, 24, "#c4652a", -12, 1.5) +
-    pumpkin(180, 470, 1.6) + pumpkin(420, 480, 1.35) + pumpkin(1360, 455, 1.55)
+    pumpkin(180, 430, 1.2) + pumpkin(1360, 440, 1.2) + walkingTurkey()
   ),
   christmas: sceneSvg(
-    '<path d="M980 150 Q1120 20 1260 24 Q1400 30 1520 170" fill="none" stroke="#1f7a3a" stroke-width="8"/>' +
-    '<circle class="bulb" style="animation-delay:.2s" cx="1040" cy="78" r="16" fill="#b4232a"/><circle class="bulb" style="animation-delay:.5s" cx="1140" cy="36" r="16" fill="#FFC20E"/>' +
-    '<circle class="bulb" style="animation-delay:.8s" cx="1260" cy="24" r="16" fill="#1F3864"/><circle class="bulb" style="animation-delay:1.1s" cx="1380" cy="55" r="16" fill="#b4232a"/>' +
-    '<circle class="bulb" style="animation-delay:1.4s" cx="1480" cy="120" r="16" fill="#FFC20E"/>' +
+    wreath() + christmasTree(1472, 318) +
     '<g transform="translate(70 0)"><path fill="#b4232a" d="M30 78 C24 18 96 -8 132 36 L104 86 Z"/><rect x="8" y="74" width="112" height="22" rx="10" fill="#f7f7fb"/><circle cx="132" cy="34" r="16" fill="#f7f7fb"/></g>' +
     '<g fill="#f7f7fb">' +
-    '<g transform="translate(1040 16)"><circle class="snow" r="10"/></g>' +
-    '<g transform="translate(1220 8)"><circle class="snow" style="animation-delay:1.4s" r="8"/></g>' +
-    '<g transform="translate(1380 28)"><circle class="snow" style="animation-delay:2.6s" r="11"/></g>' +
-    '<g transform="translate(1500 12)"><circle class="snow" style="animation-delay:.7s" r="7"/></g>' +
+    '<g transform="translate(1040 16)"><circle class="snow" r="16"/></g>' +
+    '<g transform="translate(1180 36)"><circle class="snow" style="animation-delay:1.1s" r="13"/></g>' +
+    '<g transform="translate(1360 12)"><circle class="snow" style="animation-delay:2.2s" r="18"/></g>' +
+    '<g transform="translate(1540 24)"><circle class="snow" style="animation-delay:.6s" r="12"/></g>' +
     "</g>"
   )
 };
