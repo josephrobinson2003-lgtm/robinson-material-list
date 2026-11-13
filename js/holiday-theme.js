@@ -152,29 +152,194 @@ export function resolveTheme(date, override) {
   return themeForDutyDate(duty);
 }
 
-function svg(body) {
+const GREETING = {
+  "new-year": "Happy New Year",
+  mlk: "Martin Luther King Jr. Day",
+  valentines: "Happy Valentine's Day",
+  presidents: "Happy Presidents' Day",
+  "st-patricks": "Happy St. Patrick's Day",
+  easter: "Happy Easter",
+  "memorial-day": "Memorial Day",
+  juneteenth: "Happy Juneteenth",
+  "july-4": "Happy Independence Day",
+  "labor-day": "Happy Labor Day",
+  "peoples-day": "Indigenous Peoples' Day",
+  halloween: "Happy Halloween",
+  veterans: "Happy Veterans Day",
+  thanksgiving: "Happy Thanksgiving",
+  christmas: "Merry Christmas"
+};
+
+const TINT = {
+  "new-year": "#efe6c4",
+  mlk: "#efe6c4",
+  valentines: "#f8d5df",
+  presidents: "#e4eef8",
+  "st-patricks": "#d7f0dc",
+  easter: "#f7e6f4",
+  "memorial-day": "#f6e4e4",
+  juneteenth: "#f8e6d2",
+  "july-4": "#e4eef8",
+  "labor-day": "#e4eef8",
+  "peoples-day": "#f3e6d4",
+  halloween: "#f6d3b0",
+  veterans: "#d9e6f5",
+  thanksgiving: "#f6e2c4",
+  christmas: "#e3f2e6"
+};
+
+function bannerSvg(body) {
+  return '<svg class="holiday-svg" viewBox="0 0 1200 72" preserveAspectRatio="none" aria-hidden="true">' + body + "</svg>";
+}
+
+function sceneSvg(body) {
   return '<svg class="holiday-svg" viewBox="0 0 1600 525" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' + body + "</svg>";
 }
 
-const sky = "translate(980 4) scale(0.72)";
-const DECOR = {
-  "new-year": svg('<g transform="' + sky + '" fill="#1F3864"><circle cx="20" cy="16" r="4"/><circle cx="70" cy="8" r="3"/><circle cx="120" cy="18" r="4"/><circle cx="168" cy="8" r="3"/><path fill="none" stroke="#FFC20E" stroke-width="3" d="M10 34 h170"/></g>'),
-  mlk: svg('<g transform="' + sky + '"><path fill="#FFC20E" d="M70 2 a16 16 0 0 1 16 16 v4 H54 v-4 a16 16 0 0 1 16 -16 z"/><rect x="66" y="22" width="8" height="10" fill="#1F3864"/><rect x="56" y="32" width="28" height="4" rx="2" fill="#1F3864"/></g>'),
-  valentines: svg('<g transform="' + sky + '" fill="#c23b56"><path transform="translate(70 22) scale(.7)" d="M0 6 C0 -8 16 -10 16 2 C16 14 0 22 0 22 C0 22 -16 14 -16 2 C-16 -10 0 -8 0 6 Z"/><path transform="translate(130 26) scale(.45)" d="M0 6 C0 -8 16 -10 16 2 C16 14 0 22 0 22 C0 22 -16 14 -16 2 C-16 -10 0 -8 0 6 Z"/></g>'),
-  presidents: svg('<g transform="' + sky + '" fill="#1F3864"><polygon points="40,4 46,18 62,18 49,27 54,42 40,33 26,42 31,27 18,18 34,18"/><polygon points="120,8 125,20 138,20 128,27 132,40 120,33 108,40 112,27 102,20 115,20"/></g>'),
-  "st-patricks": svg('<g transform="' + sky + ' translate(70 28)" fill="#1f7a3a"><path transform="scale(.55)" d="M0 0 C18 -8 26 -28 8 -32 C-4 -22 0 -8 0 0 C-18 -8 -32 -4 -34 10 C-18 12 -6 4 0 0 C-10 18 -6 34 10 36 C12 18 4 8 0 0 C16 12 34 8 36 -6 C20 -10 8 -4 0 0 Z"/><rect x="-1" y="2" width="3" height="16" rx="1"/></g>'),
-  easter: svg('<g transform="' + sky + '"><ellipse cx="50" cy="20" rx="9" ry="12" fill="#f4d35e" stroke="#1F3864" stroke-width="1.5"/><ellipse cx="84" cy="22" rx="8" ry="11" fill="#f7f3ea" stroke="#2F5597" stroke-width="1.5"/><ellipse cx="116" cy="18" rx="9" ry="12" fill="#d7ecf5" stroke="#1F3864" stroke-width="1.5"/></g>'),
-  "memorial-day": svg('<g transform="' + sky + ' translate(70 6)"><rect width="36" height="22" fill="#1F3864"/><rect y="7" width="36" height="8" fill="#f7f3ea"/><rect y="15" width="36" height="7" fill="#b23a3a"/><rect x="14" width="8" height="22" fill="#f7f3ea"/></g>'),
-  juneteenth: svg('<g transform="' + sky + ' translate(60 2)"><path fill="#bb3a2f" d="M8 28 a28 28 0 0 1 56 0 z"/><polygon fill="#e0b33a" points="36,2 40,14 54,14 43,22 47,34 36,27 25,34 29,22 18,14 32,14"/></g>'),
-  "july-4": svg('<g transform="' + sky + '" fill="#1F3864"><polygon points="48,6 53,18 66,18 56,26 60,38 48,31 36,38 40,26 30,18 43,18"/><polygon points="118,10 122,20 134,20 125,26 128,36 118,30 108,36 111,26 102,20 114,20"/><polygon points="84,2 87,10 96,10 89,15 92,24 84,19 76,24 79,15 72,10 81,10"/></g>'),
-  "labor-day": svg('<g transform="' + sky + ' translate(40 4)"><path fill="#1F3864" d="M12 4 h70 a10 10 0 0 1 10 10 v4 H2 v-4 a10 10 0 0 1 10 -10 z"/><rect x="8" y="18" width="78" height="6" rx="2" fill="#FFC20E"/><rect x="40" y="24" width="14" height="12" fill="#1F3864"/></g>'),
-  "peoples-day": svg('<g transform="' + sky + ' translate(70 4)"><circle cx="28" cy="16" r="12" fill="none" stroke="#c4652a" stroke-width="3"/><circle cx="28" cy="16" r="4" fill="#d4a017"/><path fill="none" stroke="#6b3a12" stroke-width="2" d="M8 36 h40"/></g>'),
-  halloween: svg('<g transform="' + sky + ' translate(78 2)"><circle cx="16" cy="16" r="14" fill="#e07a1f"/><path fill="#1d2330" d="M8 14 l5 5 l5 -5 l3 6 h-16 z M20 14 l5 5 l5 -5 l3 6 h-16 z M12 24 h10 l-5 5 z"/></g>'),
-  veterans: svg('<g transform="' + sky + ' translate(84 2)"><circle cx="14" cy="12" r="10" fill="#b23a3a"/><circle cx="14" cy="12" r="4" fill="#1d2330"/><rect x="12" y="20" width="3" height="14" fill="#1f7a3a"/></g>'),
-  thanksgiving: svg('<g transform="' + sky + '" fill="#c4652a"><path transform="translate(40 28) scale(.55) rotate(-18)" d="M0 0 C16 -26 34 -8 26 14 C20 28 6 26 0 16 C-8 26 -22 28 -26 12 C-32 -8 -16 -26 0 0 Z"/><path transform="translate(90 30) scale(.55) rotate(12)" fill="#8c3b16" d="M0 0 C16 -26 34 -8 26 14 C20 28 6 26 0 16 C-8 26 -22 28 -26 12 C-32 -8 -16 -26 0 0 Z"/><path transform="translate(140 26) scale(.55) rotate(-6)" fill="#d4a017" d="M0 0 C16 -26 34 -8 26 14 C20 28 6 26 0 16 C-8 26 -22 28 -26 12 C-32 -8 -16 -26 0 0 Z"/></g>'),
-  christmas: svg('<g transform="' + sky + '"><path d="M16 14 h160" fill="none" stroke="#1f7a3a" stroke-width="2"/><circle class="bulb" cx="28" cy="14" r="4" fill="#b23a3a"/><circle class="bulb" cx="64" cy="14" r="4" fill="#FFC20E"/><circle class="bulb" cx="100" cy="14" r="4" fill="#1F3864"/><circle class="bulb" cx="136" cy="14" r="4" fill="#b23a3a"/><circle class="bulb" cx="168" cy="14" r="4" fill="#FFC20E"/><circle cx="100" cy="32" r="10" fill="none" stroke="#1f7a3a" stroke-width="3"/><circle cx="100" cy="32" r="3" fill="#b23a3a"/></g>')
+function scallops(colors) {
+  let out = "";
+  for (let i = 0; i < 16; i += 1) {
+    const x = i * 75;
+    out += '<polygon points="' + x + ",0 " + (x + 75) + ",0 " + (x + 37) + ',68" fill="' + colors[i % colors.length] + '"/>';
+  }
+  return out;
+}
+
+const PATRIOTIC = ["#b4232a", "#f7f7fb", "#1F3864"];
+
+function flag(x, y, w, h) {
+  const stripe = h / 13;
+  let out = '<g transform="translate(' + x + " " + y + ')">';
+  for (let i = 0; i < 13; i += 1) {
+    out += '<rect y="' + (i * stripe) + '" width="' + w + '" height="' + (stripe + 0.6) + '" fill="' + (i % 2 ? "#f7f7fb" : "#b4232a") + '"/>';
+  }
+  out += '<rect width="' + (w * 0.42) + '" height="' + (stripe * 7) + '" fill="#1F3864"/>';
+  out += '<circle cx="' + (w * 0.12) + '" cy="' + (stripe * 1.8) + '" r="' + (stripe * 0.7) + '" fill="#fff"/>';
+  out += '<circle cx="' + (w * 0.28) + '" cy="' + (stripe * 3.4) + '" r="' + (stripe * 0.7) + '" fill="#fff"/>';
+  out += '<circle cx="' + (w * 0.14) + '" cy="' + (stripe * 5.1) + '" r="' + (stripe * 0.7) + '" fill="#fff"/>';
+  out += "</g>";
+  return out;
+}
+
+function heart(x, y, s, color) {
+  return '<path fill="' + color + '" transform="translate(' + x + " " + y + ") scale(" + s + ')" d="M0 18 C0 -8 28 -12 28 10 C28 32 0 48 0 48 C0 48 -28 32 -28 10 C-28 -12 0 -8 0 18 Z"/>';
+}
+
+function shamrock(x, y, s) {
+  return '<g transform="translate(' + x + " " + y + ") scale(" + s + ')" fill="#1f7a3a"><path d="M0 0 C22 -8 30 -36 8 -40 C-6 -26 0 -8 0 0 C-22 -8 -40 -6 -42 12 C-22 16 -8 6 0 0 C-12 22 -8 42 12 44 C16 22 6 10 0 0 C20 14 42 10 44 -8 C24 -12 10 -4 0 0 Z"/><rect x="-3" y="6" width="6" height="28" rx="3"/></g>';
+}
+
+function egg(x, y, fill) {
+  return '<ellipse cx="' + x + '" cy="' + y + '" rx="46" ry="62" fill="' + fill + '" stroke="#1F3864" stroke-width="4"/>';
+}
+
+function pumpkin(x, y, s) {
+  return '<g transform="translate(' + x + " " + y + ") scale(" + s + ')"><ellipse cx="0" cy="8" rx="34" ry="28" fill="#e07a1f"/><ellipse cx="-16" cy="8" rx="16" ry="26" fill="#c4652a"/><ellipse cx="16" cy="8" rx="16" ry="26" fill="#f4a259"/><rect x="-4" y="-28" width="8" height="16" rx="2" fill="#2f6b32"/></g>';
+}
+
+function leaf(x, y, color, rot) {
+  return '<path fill="' + color + '" transform="translate(' + x + " " + y + ") rotate(" + rot + ')" d="M0 0 C28 -48 62 -16 46 24 C34 52 8 46 0 28 C-12 48 -40 50 -48 22 C-58 -16 -28 -48 0 0 Z"/>';
+}
+
+function star(x, y, r, color) {
+  return '<polygon fill="' + color + '" points="' + [
+    [x, y - r],
+    [x + r * 0.28, y - r * 0.32],
+    [x + r, y - r * 0.28],
+    [x + r * 0.42, y + r * 0.12],
+    [x + r * 0.62, y + r],
+    [x, y + r * 0.42],
+    [x - r * 0.62, y + r],
+    [x - r * 0.42, y + r * 0.12],
+    [x - r, y - r * 0.28],
+    [x - r * 0.28, y - r * 0.32]
+  ].map((pair) => pair.join(",")).join(" ") + '"/>';
+}
+
+function burst(x, y, color) {
+  return '<g class="burst" transform="translate(' + x + " " + y + ')"><circle r="8" fill="' + color + '"/>' +
+    [0, 45, 90, 135].map((deg) => '<rect x="-3" y="-46" width="6" height="34" rx="3" fill="' + color + '" transform="rotate(' + deg + ')"/>').join("") +
+    "</g>";
+}
+
+function nameBanner(label, fill, ink) {
+  return bannerSvg('<rect width="1200" height="72" fill="' + fill + '"/><text x="600" y="48" text-anchor="middle" font-family="Georgia, serif" font-size="40" font-weight="700" fill="' + ink + '">' + label + "</text>");
+}
+
+function lights() {
+  let bulbs = '<path d="M20 28 H1180" fill="none" stroke="#1f7a3a" stroke-width="6"/>';
+  const colors = ["#b4232a", "#FFC20E", "#1F3864", "#f7f7fb"];
+  for (let i = 0; i < 12; i += 1) {
+    bulbs += '<circle class="bulb" cx="' + (50 + i * 95) + '" cy="28" r="16" fill="' + colors[i % colors.length] + '"/>';
+  }
+  return bannerSvg(bulbs);
+}
+
+const BANNERS = {
+  "new-year": bannerSvg('<rect width="1200" height="72" fill="#1F3864"/>' + burst(160, 36, "#FFC20E") + burst(420, 40, "#f7f7fb") + burst(680, 34, "#FFC20E") + burst(960, 40, "#f7f7fb")),
+  mlk: nameBanner("Martin Luther King Jr. Day", "#1F3864", "#FFC20E"),
+  valentines: bannerSvg(scallops(["#c23b56", "#f7f7fb", "#e89aaf"])),
+  presidents: bannerSvg(scallops(PATRIOTIC)),
+  "st-patricks": bannerSvg(scallops(["#1f7a3a", "#f7f7fb", "#8fd19a"])),
+  easter: bannerSvg(scallops(["#f4d35e", "#f7f7fb", "#9fd3ea", "#f2b6d0"])),
+  "memorial-day": bannerSvg(scallops(PATRIOTIC)),
+  juneteenth: bannerSvg(scallops(["#bb3a2f", "#f7f7fb", "#e0b33a", "#1F3864"])),
+  "july-4": bannerSvg(scallops(PATRIOTIC) + star(80, 28, 16, "#FFC20E") + star(600, 26, 18, "#FFC20E") + star(1080, 28, 16, "#FFC20E")),
+  "labor-day": nameBanner("Labor Day", "#1F3864", "#FFC20E"),
+  "peoples-day": nameBanner("Indigenous Peoples' Day", "#6b3a12", "#f6f3ec"),
+  halloween: bannerSvg(scallops(["#e07a1f", "#1d2330", "#f4a259"])),
+  veterans: bannerSvg(scallops(PATRIOTIC)),
+  thanksgiving: bannerSvg(scallops(["#c4652a", "#8c3b16", "#d4a017", "#f6e2c4"])),
+  christmas: lights()
 };
 
+const SCENES = {
+  "new-year": sceneSvg(burst(1040, 80, "#FFC20E") + burst(1240, 50, "#f7f7fb") + burst(1400, 110, "#FFC20E") + burst(1160, 150, "#1F3864")),
+  mlk: sceneSvg(""),
+  valentines: sceneSvg(heart(1040, 16, 1.8, "#c23b56") + heart(1240, 55, 1.2, "#e89aaf")),
+  presidents: sceneSvg(flag(1000, 10, 220, 130) + star(1260, 36, 26, "#FFC20E")),
+  "st-patricks": sceneSvg(shamrock(1040, 88, 1.8) + shamrock(1220, 110, 1.2)),
+  easter: sceneSvg(egg(1020, 88, "#f4d35e") + egg(1130, 96, "#f7f7fb") + egg(1240, 84, "#9fd3ea")),
+  "memorial-day": sceneSvg(flag(980, 8, 210, 124) + '<g transform="translate(1220 18)"><circle cx="36" cy="34" r="32" fill="#b4232a"/><circle cx="36" cy="34" r="11" fill="#1d2330"/><rect x="30" y="62" width="12" height="36" fill="#1f7a3a"/></g>'),
+  juneteenth: sceneSvg(star(1120, 90, 64, "#e0b33a") + '<path fill="#bb3a2f" d="M980 150 a150 64 0 0 1 300 0 z"/>'),
+  "july-4": sceneSvg(flag(980, 8, 200, 118) + star(1220, 40, 34, "#1F3864") + star(1340, 100, 26, "#b4232a") + star(1440, 36, 22, "#1F3864")),
+  "labor-day": sceneSvg(""),
+  "peoples-day": sceneSvg(""),
+  halloween: sceneSvg(pumpkin(1080, 78, 2) + '<g fill="#1d2330"><path d="M1000 24 l48 18 l-32 10 z M1040 6 l22 32 l-28 4 z"/><path d="M1260 30 l50 18 l-34 10 z M1300 10 l22 34 l-30 4 z"/></g>' + pumpkin(1280, 100, 1.35)),
+  veterans: sceneSvg(flag(990, 8, 240, 140)),
+  thanksgiving: sceneSvg(
+    '<g transform="translate(1000 12)"><ellipse cx="70" cy="70" rx="44" ry="32" fill="#8c3b16"/><circle cx="114" cy="54" r="15" fill="#6b3a12"/><path fill="#c4652a" d="M114 42 l10 -14 l8 14 z"/>' +
+    leaf(4, 62, "#c4652a", -30) + leaf(-8, 34, "#d4a017", 20) + leaf(24, 18, "#8c3b16", -10) + "</g>" +
+    pumpkin(1240, 110, 1.45) + leaf(1480, 80, "#d4a017", 16) +
+    pumpkin(180, 470, 1.6) + pumpkin(420, 480, 1.35) + pumpkin(1360, 455, 1.55)
+  ),
+  christmas: sceneSvg(
+    '<path d="M980 150 Q1120 20 1260 24 Q1400 30 1520 170" fill="none" stroke="#1f7a3a" stroke-width="8"/>' +
+    '<circle class="bulb" cx="1040" cy="78" r="16" fill="#b4232a"/><circle class="bulb" cx="1140" cy="36" r="16" fill="#FFC20E"/>' +
+    '<circle class="bulb" cx="1260" cy="24" r="16" fill="#1F3864"/><circle class="bulb" cx="1380" cy="55" r="16" fill="#b4232a"/>' +
+    '<circle class="bulb" cx="1480" cy="120" r="16" fill="#FFC20E"/>' +
+    '<g transform="translate(70 0)"><path fill="#b4232a" d="M30 78 C24 18 96 -8 132 36 L104 86 Z"/><rect x="8" y="74" width="112" height="22" rx="10" fill="#f7f7fb"/><circle cx="132" cy="34" r="16" fill="#f7f7fb"/></g>' +
+    '<g fill="#f7f7fb"><circle cx="760" cy="40" r="10"/><circle cx="900" cy="90" r="8"/><circle cx="700" cy="120" r="7"/><circle cx="1500" cy="200" r="9"/><circle cx="600" cy="70" r="6"/></g>'
+  )
+};
+
+export function themeGreeting(themeId) {
+  return GREETING[themeId] || "";
+}
+
+export function themeTint(themeId) {
+  return TINT[themeId] || "";
+}
+
+export function themeBanner(themeId) {
+  return BANNERS[themeId] || "";
+}
+
 export function themeDecor(themeId) {
-  return DECOR[themeId] || "";
+  return SCENES[themeId] || "";
+}
+
+export function nextPreviewTheme(current) {
+  const index = THEME_IDS.indexOf(current);
+  return THEME_IDS[(index + 1) % THEME_IDS.length];
 }

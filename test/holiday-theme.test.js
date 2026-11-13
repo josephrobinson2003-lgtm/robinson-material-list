@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
-  THEME_IDS, holidayDate, monthWindows, themeForDutyDate, resolveTheme, themeDecor
+  THEME_IDS, holidayDate, monthWindows, themeForDutyDate, resolveTheme, themeDecor,
+  themeBanner, themeGreeting, nextPreviewTheme
 } from "../js/holiday-theme.js";
 
 const DATES = {
@@ -109,12 +110,17 @@ test("theme override accepts a name, auto, or off", () => {
   assert.equal(resolveTheme("2026-08-01", "christmas"), "christmas");
   assert.equal(resolveTheme("2026-12-25", "not-a-theme"), "christmas");
   assert.equal(resolveTheme("2026-11-13", ""), "veterans");
+  let cursor = null;
   for (const id of THEME_IDS) {
-    const markup = themeDecor(id);
-    assert.equal(markup.includes("<svg"), true, id);
+    cursor = nextPreviewTheme(cursor);
+    assert.equal(cursor, id);
+    const markup = themeDecor(id) + themeBanner(id) + themeGreeting(id);
+    assert.equal(themeBanner(id).includes("<svg"), true, id);
+    assert.equal(themeGreeting(id).length > 3, true, id);
     assert.equal(markup.includes("http"), false, id);
     assert.equal(markup.includes("$"), false, id);
   }
+  assert.equal(nextPreviewTheme("christmas"), "new-year");
   const css = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   assert.match(css, /prefers-reduced-motion:\s*reduce/);
 });

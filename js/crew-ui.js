@@ -6,7 +6,7 @@ import { loadJobBook, rememberJob, saveJobBook } from "./jobs.js";
 import { photoManifest, planPhoto, uploadPhoto, STAGES, KNOWN_CONTRACTORS } from "./job-photos.js";
 import { photoServiceStatus } from "./photo-backend.js";
 import { armTracking, geofenceCapabilities, getNativeGeofence, suggestJobFromFix } from "./native-bridge.js";
-import { resolveTheme, themeDecor } from "./holiday-theme.js";
+import { nextPreviewTheme, resolveTheme, themeBanner, themeDecor, themeGreeting } from "./holiday-theme.js";
 import { markPrivacyNoticeRead, privacyNoticeSeen, privacyParagraphs } from "./privacy-notice.js";
 import { createWebSecureStore } from "./secure-store.js";
 import { createBrowserBlobStore, createBrowserStore } from "./storage.js";
@@ -32,6 +32,8 @@ let privacyOpen = false;
 let serverHealthy = false;
 let serverOpen = false;
 let themeOverride = "";
+let logoTaps = 0;
+let previewTheme = null;
 let moreOpen = false;
 let blobStore = null;
 let bookStore = null;
@@ -64,6 +66,13 @@ export async function startCrewApp() {
   await drainNativeEvents();
   draw();
   paintHoliday(themeOverride);
+  const logo = document.getElementById("logo_wrap");
+  if (logo) logo.addEventListener("click", () => {
+    logoTaps += 1;
+    if (logoTaps < 5) return;
+    previewTheme = nextPreviewTheme(previewTheme);
+    paintHoliday(themeOverride);
+  });
   wireMaterials();
   window.RobinsonBackend = {
     submitMaterial(list) {
@@ -415,13 +424,24 @@ async function refreshServerHealth() {
 }
 
 function paintHoliday(override) {
+  const theme = previewTheme || resolveTheme(new Date(), override) || "";
+  const header = document.getElementById("app_header");
+  if (header) header.setAttribute("data-holiday", theme);
   const layer = document.getElementById("logo_theme");
-  if (!layer) return;
-  const theme = resolveTheme(new Date(), override);
-  layer.innerHTML = theme ? themeDecor(theme) : "";
-  layer.hidden = !theme;
-  const wrap = document.getElementById("logo_wrap");
-  if (wrap) wrap.setAttribute("data-holiday", theme || "");
+  const banner = document.getElementById("holiday_banner");
+  const greet = document.getElementById("holiday_greet");
+  if (layer) {
+    layer.innerHTML = theme ? themeDecor(theme) : "";
+    layer.hidden = !theme || !themeDecor(theme);
+  }
+  if (banner) {
+    banner.innerHTML = theme ? themeBanner(theme) : "";
+    banner.hidden = !theme;
+  }
+  if (greet) {
+    greet.textContent = theme ? themeGreeting(theme) : "";
+    greet.hidden = !theme;
+  }
 }
 
 function scopeHtml() {
