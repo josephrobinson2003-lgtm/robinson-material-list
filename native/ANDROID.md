@@ -1,7 +1,8 @@
 # Android test build
 
-Android is the first install path. The iPhone plugin source stays in
-`plugins/robinson-geofence/ios` and is not required for this build.
+Android is the first install path. The app requires Android 8.0 or newer.
+The iPhone plugin source stays in `plugins/robinson-geofence/ios` and is
+not required for this build.
 
 This APK has not been installed on a phone in this change. Locked-phone
 geofence behavior is still unverified until someone runs it on a device.
