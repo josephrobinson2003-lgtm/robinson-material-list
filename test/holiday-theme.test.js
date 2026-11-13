@@ -10,11 +10,16 @@ const DATES = {
   2026: {
     "new-year": "2026-01-01",
     mlk: "2026-01-19",
+    groundhog: "2026-02-02",
     valentines: "2026-02-14",
     presidents: "2026-02-16",
     "st-patricks": "2026-03-17",
     easter: "2026-04-05",
+    "arbor-day": "2026-04-24",
+    "earth-day": "2026-04-22",
+    "mothers-day": "2026-05-10",
     "memorial-day": "2026-05-25",
+    "fathers-day": "2026-06-21",
     juneteenth: "2026-06-19",
     "july-4": "2026-07-04",
     "labor-day": "2026-09-07",
@@ -27,11 +32,16 @@ const DATES = {
   2027: {
     "new-year": "2027-01-01",
     mlk: "2027-01-18",
+    groundhog: "2027-02-02",
     valentines: "2027-02-14",
     presidents: "2027-02-15",
     "st-patricks": "2027-03-17",
     easter: "2027-03-28",
+    "arbor-day": "2027-04-30",
+    "earth-day": "2027-04-22",
+    "mothers-day": "2027-05-09",
     "memorial-day": "2027-05-31",
+    "fathers-day": "2027-06-20",
     juneteenth: "2027-06-19",
     "july-4": "2027-07-04",
     "labor-day": "2027-09-06",
@@ -46,11 +56,11 @@ const DATES = {
 const WINDOWS = {
   2026: {
     1: [["new-year", 1, 9], ["mlk", 10, 31]],
-    2: [["valentines", 1, 14], ["presidents", 15, 28]],
+    2: [["groundhog", 1, 7], ["valentines", 8, 14], ["presidents", 15, 28]],
     3: [["st-patricks", 1, 31]],
-    4: [["easter", 1, 30]],
-    5: [["memorial-day", 1, 31]],
-    6: [["juneteenth", 1, 30]],
+    4: [["easter", 1, 13], ["earth-day", 14, 22], ["arbor-day", 23, 30]],
+    5: [["mothers-day", 1, 17], ["memorial-day", 18, 31]],
+    6: [["juneteenth", 1, 19], ["fathers-day", 20, 30]],
     7: [["july-4", 1, 31]],
     8: [],
     9: [["labor-day", 1, 30]],
@@ -60,11 +70,11 @@ const WINDOWS = {
   },
   2027: {
     1: [["new-year", 1, 9], ["mlk", 10, 31]],
-    2: [["valentines", 1, 14], ["presidents", 15, 28]],
+    2: [["groundhog", 1, 7], ["valentines", 8, 14], ["presidents", 15, 28]],
     3: [["st-patricks", 1, 22], ["easter", 23, 31]],
-    4: [],
-    5: [["memorial-day", 1, 31]],
-    6: [["juneteenth", 1, 30]],
+    4: [["earth-day", 1, 25], ["arbor-day", 26, 30]],
+    5: [["mothers-day", 1, 19], ["memorial-day", 20, 31]],
+    6: [["juneteenth", 1, 19], ["fathers-day", 20, 30]],
     7: [["july-4", 1, 31]],
     8: [],
     9: [["labor-day", 1, 30]],
@@ -95,7 +105,7 @@ test("every month of 2026 and 2027 uses the midpoint window", () => {
   assert.equal(themeForDutyDate("2026-11-19"), "thanksgiving");
   assert.equal(themeForDutyDate("2026-02-14"), "valentines");
   assert.equal(themeForDutyDate("2026-02-15"), "presidents");
-  assert.equal(themeForDutyDate("2027-04-05"), null);
+  assert.equal(themeForDutyDate("2027-04-05"), "earth-day");
   assert.equal(themeForDutyDate("2027-03-28"), "easter");
   for (const year of [2026, 2027]) {
     for (const id of THEME_IDS) {
@@ -122,14 +132,16 @@ test("theme override accepts a name, auto, or off", () => {
   }
   assert.equal(nextPreviewTheme("christmas"), "new-year");
   const motion = {
-    christmas: ["snow", "bulb-color", "wreath"],
+    christmas: ["snow", "bulb-color", "wreath", "santa-fly"],
     "new-year": ["spark", "fuse"],
     veterans: ["wave", "ripple"],
     thanksgiving: ["drift", "turkey-walk", "turkey-tail"],
-    halloween: ["bat", "wing", "glow"],
+    halloween: ["ghost"],
     valentines: ["float-up"],
-    "st-patricks": ["drift"],
-    easter: ["bob"],
+    "st-patricks": ["picker", "coin"],
+    easter: ["hopper"],
+    groundhog: ["groundhog"],
+    "labor-day": ["hammer"],
     mlk: ["banner-shimmer"],
     "july-4": ["twinkle", "ripple"]
   };
@@ -142,7 +154,7 @@ test("theme override accepts a name, auto, or off", () => {
   assert.ok(reduced, "reduced-motion block");
   assert.match(reduced[1], /animation:\s*none/);
   assert.equal((themeDecor("christmas") + themeBanner("christmas")).includes("Q1120"), false);
-  for (const name of ["twinkle", "bulb-color", "wave", "wreath", "ripple", "snow", "drift", "float-up", "bob", "bat", "wing", "glow", "fuse", "spark", "turkey-walk", "turkey-tail", "banner-shimmer"]) {
+  for (const name of ["twinkle", "bulb-color", "wave", "wreath", "ripple", "snow", "drift", "float-up", "bob", "bat", "wing", "glow", "fuse", "spark", "turkey-walk", "turkey-tail", "santa-fly", "ghost", "hopper", "groundhog", "sprout", "hammer", "salute", "fade-in", "banner-shimmer"]) {
     assert.match(reduced[1], new RegExp("\\." + name + "(?:,|\\{)"));
   }
   assert.match(css, /holiday-paused/);

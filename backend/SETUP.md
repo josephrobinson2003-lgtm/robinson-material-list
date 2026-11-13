@@ -99,6 +99,6 @@ The phone posts JSON with header `content-type: text/plain;charset=utf-8`. Apps 
 
 ## 9. Holiday logo
 
-Script property `THEME_OVERRIDE` is optional. Leave it blank or set `auto` and the phone picks the mark from the Chicago date. Set `off` for the plain logo. Set one theme name to force it without a new app build: `new-year`, `mlk`, `valentines`, `presidents`, `st-patricks`, `easter`, `memorial-day`, `juneteenth`, `july-4`, `labor-day`, `peoples-day`, `halloween`, `veterans`, `thanksgiving`, `christmas`.
+Script property `THEME_OVERRIDE` is optional. Leave it blank or set `auto` and the phone picks the mark from the Chicago date. Set `off` for the plain logo. Set one theme name to force it without a new app build: `new-year`, `mlk`, `groundhog`, `valentines`, `presidents`, `st-patricks`, `easter`, `arbor-day`, `earth-day`, `mothers-day`, `memorial-day`, `fathers-day`, `juneteenth`, `july-4`, `labor-day`, `peoples-day`, `halloween`, `veterans`, `thanksgiving`, `christmas`.
 
 `GET /api/theme` and `/api/health` return that value and nothing else from Script Properties. Health does not require an employee token. An unknown name is treated as `auto`. No new OAuth scope.

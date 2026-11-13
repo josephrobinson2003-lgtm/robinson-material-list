@@ -232,6 +232,11 @@ test("theme override is a name, auto, or off and is public", () => {
   assert.equal(logic.publicTheme("auto"), "auto");
   assert.equal(logic.publicTheme("off"), "off");
   assert.equal(logic.publicTheme("Thanksgiving"), "thanksgiving");
+  assert.equal(logic.publicTheme("groundhog"), "groundhog");
+  assert.equal(logic.publicTheme("mothers-day"), "mothers-day");
+  assert.equal(logic.publicTheme("fathers-day"), "fathers-day");
+  assert.equal(logic.publicTheme("arbor-day"), "arbor-day");
+  assert.equal(logic.publicTheme("earth-day"), "earth-day");
   assert.equal(logic.publicTheme("payroll"), "auto");
   const deps = memoryDeps({ employees: [] });
   deps.theme = () => "thanksgiving";

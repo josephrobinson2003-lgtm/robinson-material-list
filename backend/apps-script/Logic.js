@@ -414,9 +414,9 @@ function bodyWithoutMatchFix(body) {
 }
 
 var THEME_IDS = [
-  "new-year", "mlk", "valentines", "presidents", "st-patricks", "easter",
-  "memorial-day", "juneteenth", "july-4", "labor-day", "peoples-day",
-  "halloween", "veterans", "thanksgiving", "christmas"
+  "new-year", "mlk", "groundhog", "valentines", "presidents", "st-patricks", "easter",
+  "arbor-day", "earth-day", "mothers-day", "memorial-day", "fathers-day", "juneteenth",
+  "july-4", "labor-day", "peoples-day", "halloween", "veterans", "thanksgiving", "christmas"
 ];
 
 function publicTheme(value) {

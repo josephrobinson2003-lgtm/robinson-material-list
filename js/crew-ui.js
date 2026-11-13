@@ -6,7 +6,7 @@ import { loadJobBook, rememberJob, saveJobBook } from "./jobs.js";
 import { photoManifest, planPhoto, uploadPhoto, STAGES, KNOWN_CONTRACTORS } from "./job-photos.js";
 import { photoServiceStatus } from "./photo-backend.js";
 import { armTracking, geofenceCapabilities, getNativeGeofence, suggestJobFromFix } from "./native-bridge.js";
-import { nextPreviewTheme, resolveTheme, themeBanner, themeDecor, themeGreeting } from "./holiday-theme.js";
+import { resolveTheme, themeBanner, themeDecor, themeGreeting, themeRing, THEME_IDS, THEME_LABELS } from "./holiday-theme.js";
 import { markPrivacyNoticeRead, privacyNoticeSeen, privacyParagraphs } from "./privacy-notice.js";
 import { createWebSecureStore } from "./secure-store.js";
 import { createBrowserBlobStore, createBrowserStore } from "./storage.js";
@@ -33,7 +33,6 @@ let serverHealthy = false;
 let serverOpen = false;
 let themeOverride = "";
 let logoTaps = 0;
-let previewTheme = null;
 let moreOpen = false;
 let blobStore = null;
 let bookStore = null;
@@ -70,8 +69,8 @@ export async function startCrewApp() {
   if (logo) logo.addEventListener("click", () => {
     logoTaps += 1;
     if (logoTaps < 5) return;
-    previewTheme = nextPreviewTheme(previewTheme);
-    paintHoliday(themeOverride);
+    logoTaps = 0;
+    openHolidayPreview();
   });
   wireMaterials();
   window.RobinsonBackend = {
@@ -172,7 +171,7 @@ function draw() {
             <button type="button" class="btn secondary" id="tc_pdf">Download my hours (PDF)</button>
           </div>
           <button type="button" class="btn secondary" id="tc_off">I didn't work this day</button>
-          <p class="hint"><button type="button" class="textlink privacy-reopen">Privacy notice</button></p>
+          <p class="hint"><button type="button" class="textlink" id="holiday_previews">Holiday previews</button> · <button type="button" class="textlink privacy-reopen">Privacy notice</button></p>
         </div>
       </details>
       ${serverCard()}
@@ -271,6 +270,8 @@ function draw() {
     }
     await persist(); draw(); restoreTab();
   });
+  const previews = $("holiday_previews");
+  if (previews) previews.addEventListener("click", () => openHolidayPreview());
   const more = $("tc_more");
   if (more) more.addEventListener("toggle", () => { moreOpen = more.open; });
   if ($("server_change")) $("server_change").addEventListener("click", () => {
@@ -423,13 +424,14 @@ async function refreshServerHealth() {
   }
 }
 
-function paintHoliday(override) {
-  const theme = previewTheme || resolveTheme(new Date(), override) || "";
-  const header = document.getElementById("app_header");
-  if (header) header.setAttribute("data-holiday", theme);
-  const layer = document.getElementById("logo_theme");
-  const banner = document.getElementById("holiday_banner");
-  const greet = document.getElementById("holiday_greet");
+function applyHoliday(root, theme) {
+  if (!root) return;
+  root.setAttribute("data-holiday", theme || "");
+  const layer = root.querySelector(".logo-theme");
+  const banner = root.querySelector(".holiday-banner");
+  const greet = root.querySelector(".holiday-greet");
+  const ring = root.querySelector(".light-ring");
+  const tint = root.querySelector(".logo-tint");
   if (layer) {
     layer.innerHTML = theme ? themeDecor(theme) : "";
     layer.hidden = !theme || !themeDecor(theme);
@@ -442,6 +444,48 @@ function paintHoliday(override) {
     greet.textContent = theme ? themeGreeting(theme) : "";
     greet.hidden = !theme;
   }
+  if (ring) {
+    ring.innerHTML = theme ? themeRing(theme) : "";
+    ring.hidden = !theme || !themeRing(theme);
+  }
+  if (tint) tint.hidden = theme !== "valentines";
+  root.querySelectorAll(".santa-fly, .ghost").forEach((node) => {
+    const extra = Math.random() * 8;
+    const current = parseFloat(node.style.animationDelay) || 0;
+    node.style.animationDelay = (current + extra).toFixed(2) + "s";
+  });
+}
+
+function paintHoliday(override) {
+  applyHoliday(document.getElementById("app_header"), resolveTheme(new Date(), override) || "");
+}
+
+function openHolidayPreview() {
+  const panel = document.getElementById("holiday_preview");
+  const list = document.getElementById("holiday_preview_list");
+  const play = document.getElementById("holiday_preview_play");
+  if (!panel || !list || !play) return;
+  list.hidden = false;
+  play.hidden = true;
+  list.innerHTML = THEME_IDS.map((id) => '<button type="button" class="listpick" data-preview="' + id + '">' + (THEME_LABELS[id] || id) + "</button>").join("");
+  list.querySelectorAll("[data-preview]").forEach((button) => {
+    button.addEventListener("click", () => playHolidayPreview(button.getAttribute("data-preview")));
+  });
+  panel.hidden = false;
+}
+
+function playHolidayPreview(theme) {
+  const list = document.getElementById("holiday_preview_list");
+  const play = document.getElementById("holiday_preview_play");
+  const stage = document.getElementById("holiday_preview_stage");
+  if (list) list.hidden = true;
+  if (play) play.hidden = false;
+  applyHoliday(stage, theme);
+}
+
+function closeHolidayPreview() {
+  const panel = document.getElementById("holiday_preview");
+  if (panel) panel.hidden = true;
 }
 
 function scopeHtml() {
@@ -724,8 +768,11 @@ function bindTabs() {
 
 if (typeof document !== "undefined") {
   document.addEventListener("visibilitychange", () => {
-    const header = document.getElementById("app_header");
-    if (header) header.classList.toggle("holiday-paused", document.visibilityState !== "visible");
+    document.documentElement.classList.toggle("holiday-paused", document.visibilityState !== "visible");
+  });
+  document.addEventListener("click", (event) => {
+    if (event.target && event.target.id === "holiday_preview_close") closeHolidayPreview();
+    if (event.target && event.target.id === "holiday_preview_back") openHolidayPreview();
   });
   document.addEventListener("click", (event) => {
     const button = event.target.closest && event.target.closest(".privacy-reopen");
