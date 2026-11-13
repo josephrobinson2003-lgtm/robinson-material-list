@@ -413,11 +413,26 @@ function bodyWithoutMatchFix(body) {
   return copy;
 }
 
+var THEME_IDS = [
+  "new-year", "mlk", "valentines", "presidents", "st-patricks", "easter",
+  "memorial-day", "juneteenth", "july-4", "labor-day", "peoples-day",
+  "halloween", "veterans", "thanksgiving", "christmas"
+];
+
+function publicTheme(value) {
+  var raw = String(value == null ? "" : value).trim().toLowerCase();
+  if (!raw || raw === "auto") return "auto";
+  if (raw === "off") return "off";
+  return THEME_IDS.indexOf(raw) === -1 ? "auto" : raw;
+}
+
 function handleRequest(req, deps) {
   var path = (req && req.path) || "/api/health";
   if (path.charAt(0) !== "/") path = "/" + path;
-  if (path === "/api/health" || path === "/health") {
-    return { status: 200, ok: true, photos: !!(deps && deps.graphConfigured && deps.graphConfigured()), email: "not-sent-by-health", timezone: "America/Chicago" };
+  if (path === "/api/health" || path === "/health" || path === "/api/theme") {
+    var theme = deps && typeof deps.theme === "function" ? publicTheme(deps.theme()) : "auto";
+    if (path === "/api/theme") return { status: 200, theme: theme };
+    return { status: 200, ok: true, photos: !!(deps && deps.graphConfigured && deps.graphConfigured()), email: "not-sent-by-health", timezone: "America/Chicago", theme: theme };
   }
   if (path === "/api/scope/upsert") return upsertScopeRequest(req, deps);
   var employee = findEmployee(deps.employees(), req.token);

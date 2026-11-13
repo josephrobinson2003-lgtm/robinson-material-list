@@ -35,7 +35,7 @@ export async function postBackend(config, path, body, fetchImpl) {
   if (typeof fetchFn !== "function") return { ok: false, reason: "not-configured" };
   const response = await fetchFn(config.url + "?path=" + encodeURIComponent(path), {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "text/plain;charset=utf-8" },
     body: JSON.stringify(Object.assign({ path, token: config.token }, body || {}))
   });
   let data = {};

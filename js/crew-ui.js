@@ -6,7 +6,8 @@ import { loadJobBook, rememberJob, saveJobBook } from "./jobs.js";
 import { photoManifest, planPhoto, uploadPhoto, STAGES, KNOWN_CONTRACTORS } from "./job-photos.js";
 import { photoServiceStatus } from "./photo-backend.js";
 import { armTracking, geofenceCapabilities, getNativeGeofence, suggestJobFromFix } from "./native-bridge.js";
-import { PRIVACY_PARAGRAPHS } from "./privacy-notice.js";
+import { resolveTheme, themeDecor } from "./holiday-theme.js";
+import { markPrivacyNoticeRead, privacyNoticeSeen, privacyParagraphs } from "./privacy-notice.js";
 import { createWebSecureStore } from "./secure-store.js";
 import { createBrowserBlobStore, createBrowserStore } from "./storage.js";
 import { flushQueue } from "./sync-queue.js";
@@ -27,6 +28,11 @@ let photoMessage = "";
 let timeMessage = "";
 let scopeView = null;
 let scopeMessage = "";
+let privacyOpen = false;
+let serverHealthy = false;
+let serverOpen = false;
+let themeOverride = "";
+let moreOpen = false;
 let blobStore = null;
 let bookStore = null;
 
@@ -50,11 +56,14 @@ export async function startCrewApp() {
     } catch { /* keep blank */ }
   }
   jobs = loadJobBook();
+  try { privacyOpen = !privacyNoticeSeen(localStorage); } catch { privacyOpen = true; }
+  await refreshServerHealth();
   const flushed = await flushQueue(state, unconfiguredBackend());
   state = flushed.state;
   tracking = await geofenceCapabilities();
   await drainNativeEvents();
   draw();
+  paintHoliday(themeOverride);
   wireMaterials();
   window.RobinsonBackend = {
     submitMaterial(list) {
@@ -114,47 +123,50 @@ function draw() {
   const review = reviewDay(state, today);
   const track = trackingLabel(tracking);
   const auth = photoServiceStatus();
+  const connected = readDeviceConfig(localStorage).configured && serverHealthy;
+  const syncLine = connected
+    ? "Confirmed hours go to Joe's private sheet. Sunday email is sent from there."
+    : "Sunday email is not connected.";
   root.innerHTML = `
     <section id="timecards_panel" class="crew" hidden>
-      <p class="pilot">Pay week is Monday through Saturday. The report is sent on Sunday. Breaks are paid. Travel between jobs is added to the next job. Sunday email is not sending yet.</p>
-      <div class="statusline"><b>${esc(track.title)}</b><span>${esc(track.detail)} On the Android app, suggestions watch saved jobs only while you leave them on for today, including with the screen locked. That is not a driving route.</span></div>
-      <section class="card"><h2>Privacy</h2><div class="fields"><div class="full noticebody">${PRIVACY_PARAGRAPHS.map((p) => "<p>" + esc(p) + "</p>").join("")}
-        <button type="button" class="btn secondary" id="privacy_ok">${state.privacyNoticeAcknowledged ? "Notice read" : "I have read this"}</button></div></div></section>
+      ${privacyOpen ? `<section class="card" id="privacy_card"><h2>Privacy</h2><div class="fields"><div class="full noticebody">${privacyParagraphs(connected).map((p) => "<p>" + esc(p) + "</p>").join("")}
+        <button type="button" class="btn secondary" id="privacy_ok">Notice read</button></div></div></section>` : ""}
       <section class="card"><h2>Your time</h2><div class="fields">
         <div class="full"><label class="f" for="tc_name">Your name</label><input class="t" id="tc_name" value="${esc(state.employeeName)}" autocomplete="name"></div>
-        <div class="full hint">Today is ${esc(formatChicagoDay(today))}. Report week ${esc(week.weekStart)} through ${esc(week.weekEnd)}, sent Sunday ${esc(week.sendOn)}. This phone is one person. Joe and the employee each confirm only their own day.</div>
+        <div class="full hint">${esc(formatChicagoDay(today))}. Week ${esc(week.weekStart)} through ${esc(week.weekEnd)}. ${esc(syncLine)}</div>
         <div class="full"><label class="f" for="tc_job">Job</label><input class="t" id="tc_job" list="shared_jobs" value="${esc(state.jobDraft)}"></div>
-        <label class="checkline"><input type="checkbox" id="tc_optin" ${state.locationOptIn ? "checked" : ""}> Allow a location suggestion when I tap the button</label>
       </div>
-      <div class="actions">
-        <button type="button" class="btn secondary" id="tc_use">Use this job</button>
-        <button type="button" class="btn secondary" id="tc_suggest">Suggest job from where I am</button>
-        <button type="button" class="btn new" id="tc_start">Start work</button>
-        <button type="button" class="btn secondary" id="tc_break">Break</button>
+      <div class="primary-actions">
+        <button type="button" class="btn" id="tc_start">Start work</button>
+        <button type="button" class="btn new" id="tc_break">Break</button>
         <button type="button" class="btn secondary" id="tc_stop">Stop</button>
-        <button type="button" class="btn secondary" id="tc_arm">Arm job-site suggestions</button>
-        <button type="button" class="btn secondary" id="tc_spot">Save this spot for matching</button>
       </div>
       <p class="hint" id="tc_msg">${esc(timeMessage)}</p>
       ${reviewHtml(review)}
-      <div class="actions">
-        <button type="button" class="btn" id="tc_confirm" ${(review.canConfirm && !dayAlreadyConfirmed(review)) ? "" : "disabled"}>${dayAlreadyConfirmed(review) ? "Day confirmed" : "Confirm my day"}</button>
-        <button type="button" class="btn secondary" id="tc_off">I didn't work this day</button>
-      </div>
-      <p class="hint">Saved on this phone. Not uploaded. The Monday–Saturday report is not emailed yet.</p>
-      <div class="actions">
-        <button type="button" class="btn secondary" id="tc_json">Download my hours (JSON)</button>
-        <button type="button" class="btn secondary" id="tc_csv">Download my hours (CSV)</button>
-        <button type="button" class="btn secondary" id="tc_pdf">Download my hours (PDF)</button>
-      </div></section>
-      <section class="card"><h2>Server</h2>
-        <p class="hint">${readDeviceConfig(localStorage).configured ? "A server address and token are saved on this phone. They are not sent anywhere until you confirm a day or a material list." : "No server is configured. Time and photos stay on this phone."}</p>
-        <div class="fields">
-          <div class="full"><label class="f" for="cfg_url">Backend web app URL</label><input class="t" id="cfg_url" value="${esc(readDeviceConfig(localStorage).url)}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div>
-          <div class="full"><label class="f" for="cfg_token">Employee token</label><input class="t" id="cfg_token" type="password" value="" placeholder="${readDeviceConfig(localStorage).hasToken ? "Token saved. Paste a new one to replace it." : "Paste the token Joe gives you"}" autocomplete="off"></div>
+      <button type="button" class="btn" id="tc_confirm" ${(review.canConfirm && !dayAlreadyConfirmed(review)) ? "" : "disabled"}>${dayAlreadyConfirmed(review) ? "Day confirmed" : "Confirm my day"}</button>
+      <details class="more" id="tc_more" ${moreOpen ? "open" : ""}>
+        <summary>More</summary>
+        <div class="more-body">
+          <p class="hint"><b>${esc(track.title)}</b> ${esc(track.detail)} Suggestions watch saved jobs only while you leave them on for today. That is not a driving route.</p>
+          <label class="checkline"><input type="checkbox" id="tc_optin" ${state.locationOptIn ? "checked" : ""}> Allow a location suggestion when I tap the button</label>
+          <div class="actions">
+            <button type="button" class="btn secondary" id="tc_use">Use this job</button>
+            <button type="button" class="btn secondary" id="tc_suggest">Suggest job from where I am</button>
+            <button type="button" class="btn secondary" id="tc_arm">Arm job-site suggestions</button>
+            <button type="button" class="btn secondary" id="tc_spot">Save this spot for matching</button>
+          </div>
+          <h3>Saved spots</h3>
+          ${spotsHtml()}
+          <div class="actions">
+            <button type="button" class="btn secondary" id="tc_json">Download my hours (JSON)</button>
+            <button type="button" class="btn secondary" id="tc_csv">Download my hours (CSV)</button>
+            <button type="button" class="btn secondary" id="tc_pdf">Download my hours (PDF)</button>
+          </div>
+          <button type="button" class="btn secondary" id="tc_off">I didn't work this day</button>
+          <p class="hint"><button type="button" class="textlink privacy-reopen">Privacy notice</button></p>
         </div>
-        <button type="button" class="btn secondary" id="cfg_save">Save server setup</button>
-      </section>
+      </details>
+      ${serverCard()}
     </section>
     <section id="photos_panel" class="crew" hidden>
       <p class="pilot">Job photos are not connected. Employees do not sign in to Microsoft.</p>
@@ -198,7 +210,14 @@ function draw() {
     await persist();
   });
   $("tc_job").addEventListener("input", () => { state = setJobDraft(state, $("tc_job").value).state; });
-  $("privacy_ok").addEventListener("click", async () => { state = acknowledgePrivacy(state).state; await persist(); draw(); restoreTab(); });
+  if ($("privacy_ok")) $("privacy_ok").addEventListener("click", async () => {
+    markPrivacyNoticeRead(localStorage);
+    state = acknowledgePrivacy(state).state;
+    privacyOpen = false;
+    await persist();
+    draw();
+    restoreTab();
+  });
   $("tc_optin").addEventListener("change", async () => {
     state = setLocationOptIn(state, $("tc_optin").checked, new Date()).state;
     await persist();
@@ -243,14 +262,27 @@ function draw() {
     }
     await persist(); draw(); restoreTab();
   });
-  $("cfg_save").addEventListener("click", async () => {
+  const more = $("tc_more");
+  if (more) more.addEventListener("toggle", () => { moreOpen = more.open; });
+  if ($("server_change")) $("server_change").addEventListener("click", () => {
+    serverOpen = true;
+    draw();
+    restoreTab();
+  });
+  if ($("cfg_save")) $("cfg_save").addEventListener("click", async () => {
     const saved = saveDeviceConfig(localStorage, { url: $("cfg_url").value.trim(), token: $("cfg_token").value.trim() });
     timeMessage = saved.ok ? "Server setup saved on this phone." : "Enter the https web app address and the token from Joe.";
     if (saved.ok) {
       try {
         const health = await postBackend(readDeviceConfig(localStorage), "/api/health", {});
-        timeMessage = health.ok ? "The server answered. Sunday email still runs there, not on this phone." : "Saved on this phone. The server did not answer.";
+        serverHealthy = !!(health.ok && health.data && health.data.ok !== false);
+        if (health.data && typeof health.data.theme === "string") themeOverride = health.data.theme;
+        serverOpen = !serverHealthy;
+        timeMessage = serverHealthy ? "Connected to Robinson Electrical." : "Saved on this phone. The server did not answer.";
+        paintHoliday(themeOverride);
       } catch (err) {
+        serverHealthy = false;
+        serverOpen = true;
         timeMessage = "Saved on this phone. The server did not answer.";
       }
     }
@@ -317,12 +349,10 @@ function reviewHtml(review) {
     <h3>Job visits</h3>
     ${review.visits.length ? review.visits.map(rowHtml).join("") : "<p>No job visits yet.</p>"}
     <h3>Breaks</h3>
-    <p>Breaks are paid. They stay in the day's hours.</p>
-    ${review.breaks.length ? review.breaks.map(rowHtml).join("") : "<p>No breaks recorded. Add one if you took a break.</p>"}
+    <p class="hint">Paid. Not subtracted.</p>
+    ${review.breaks.length ? review.breaks.map(rowHtml).join("") : "<p>No breaks recorded.</p>"}
     <h3>Travel</h3>
-    <p>The time between leaving one job and arriving at the next is added to the next job. The drive to the first job and the drive home are not counted.</p>
-    <h3>Saved spots</h3>
-    ${(state.pins || []).map((pin) => '<p>' + esc(pin.jobLabel) + ' <button type="button" class="btn secondary" data-drop-pin="' + esc(pin.jobId) + '">Remove spot</button></p>').join("") || "<p>No saved spots.</p>"}
+    <p class="hint">Travel between jobs is added to the next job.</p>
   </div></div></section>`;
 }
 
@@ -351,6 +381,47 @@ function rowHtml(item) {
     ? esc(formatChicagoLabel(row.intervalStart)) + " to " + esc(row.end ? formatChicagoLabel(row.end) : "end not set") + " (on site " + esc(formatChicagoLabel(row.onSiteStart || row.start)) + ")"
     : esc(row.start ? formatChicagoLabel(row.start) : "start not set") + " to " + esc(row.end ? formatChicagoLabel(row.end) : "end not set");
   return `<article class="visit"><b>${esc(row.jobLabel)}</b> <span class="pill">${esc(label)}</span><p>${esc(row.kind)} · ${when}</p>${travelLine}${row.kind === "break" ? "<p>Paid break.</p>" : ""}${row.lowAccuracy ? "<p>Location was coarse or unavailable.</p>" : ""}${note}${choice}<p class="hint">${esc(statusWord(row.syncStatus))}</p></article>`;
+}
+
+function spotsHtml() {
+  return (state.pins || []).map((pin) => '<p>' + esc(pin.jobLabel) + ' <button type="button" class="btn secondary" data-drop-pin="' + esc(pin.jobId) + '">Remove spot</button></p>').join("") || "<p>No saved spots.</p>";
+}
+
+function serverCard() {
+  const config = readDeviceConfig(localStorage);
+  if (config.configured && serverHealthy && !serverOpen) {
+    return '<section class="card"><p class="connectedline">Connected to Robinson Electrical ✓ <button type="button" class="textlink" id="server_change">Change</button></p></section>';
+  }
+  const hint = config.configured
+    ? "The address is saved on this phone. The token stays hidden."
+    : "No server is configured. Time and photos stay on this phone.";
+  const tokenHint = config.hasToken ? "Token saved. Paste a new one to replace it." : "Paste the token Joe gives you";
+  return '<section class="card"><h2>Server</h2><p class="hint">' + esc(hint) + '</p><div class="fields"><div class="full"><label class="f" for="cfg_url">Backend web app URL</label><input class="t" id="cfg_url" value="' + esc(config.url) + '" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div><div class="full"><label class="f" for="cfg_token">Employee token</label><input class="t" id="cfg_token" type="password" value="" placeholder="' + esc(tokenHint) + '" autocomplete="off"></div></div><button type="button" class="btn secondary" id="cfg_save">Save server setup</button></section>';
+}
+
+async function refreshServerHealth() {
+  const config = readDeviceConfig(localStorage);
+  if (!config.configured) {
+    serverHealthy = false;
+    return;
+  }
+  try {
+    const health = await postBackend(config, "/api/health", {});
+    serverHealthy = !!(health.ok && health.data && health.data.ok !== false);
+    if (health.data && typeof health.data.theme === "string") themeOverride = health.data.theme;
+  } catch {
+    serverHealthy = false;
+  }
+}
+
+function paintHoliday(override) {
+  const layer = document.getElementById("logo_theme");
+  if (!layer) return;
+  const theme = resolveTheme(new Date(), override);
+  layer.innerHTML = theme ? themeDecor(theme) : "";
+  layer.hidden = !theme;
+  const wrap = document.getElementById("logo_wrap");
+  if (wrap) wrap.setAttribute("data-holiday", theme || "");
 }
 
 function scopeHtml() {
@@ -632,6 +703,13 @@ function bindTabs() {
 }
 
 if (typeof document !== "undefined") {
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest && event.target.closest(".privacy-reopen");
+    if (!button) return;
+    privacyOpen = true;
+    draw();
+    show("timecards");
+  });
   window.addEventListener("DOMContentLoaded", () => {
     bindTabs();
     startCrewApp().catch(() => {

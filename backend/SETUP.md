@@ -75,7 +75,7 @@ Replace the URL and token. Do not paste a real token into a ticket or into git.
 
 ```bash
 curl -s -X POST "https://script.google.com/macros/s/DEPLOYMENT_ID/exec?path=/api/health" \
-  -H "content-type: application/json" \
+  -H "content-type: text/plain;charset=utf-8" \
   -d '{"path":"/api/health"}'
 ```
 
@@ -83,7 +83,7 @@ Expect `"ok": true` and `"photos": false` before Microsoft is authorized, then `
 
 ```bash
 curl -s -X POST "https://script.google.com/macros/s/DEPLOYMENT_ID/exec?path=/api/timecards" \
-  -H "content-type: application/json" \
+  -H "content-type: text/plain;charset=utf-8" \
   -d '{"path":"/api/timecards","token":"TOKEN_FROM_addEmployee"}'
 ```
 
@@ -93,4 +93,12 @@ A path such as `Accounting` or `Job Photos/../Accounting` must come back as an e
 
 ## 8. Bid scopes
 
-See `backend/SCOPE.md`. To load a price-free task list, post to `/api/scope/upsert` with the admin key. The proposal text may still contain prices; the script removes them before saving. Redeploy the web app after replacing `Logic.js`, `Code.js`, and `Store.js`. The first geocode may ask you to approve the script again. No new OAuth scope was added. Maps uses the external-request scope already in `appsscript.json`.
+See `backend/SCOPE.md`. To load a price-free task list, post to `/api/scope/upsert` with the admin key. The proposal text may still contain prices; the script removes them before saving. Redeploy the web app after replacing `Logic.js` and `Code.js`. The first geocode may ask you to approve the script again. No new OAuth scope was added. Maps uses the external-request scope already in `appsscript.json`.
+
+The phone posts JSON with header `content-type: text/plain;charset=utf-8`. Apps Script still reads `e.postData.contents`. A JSON content type makes the phone send a CORS preflight, which the web app does not answer.
+
+## 9. Holiday logo
+
+Script property `THEME_OVERRIDE` is optional. Leave it blank or set `auto` and the phone picks the mark from the Chicago date. Set `off` for the plain logo. Set one theme name to force it without a new app build: `new-year`, `mlk`, `valentines`, `presidents`, `st-patricks`, `easter`, `memorial-day`, `juneteenth`, `july-4`, `labor-day`, `peoples-day`, `halloween`, `veterans`, `thanksgiving`, `christmas`.
+
+`GET /api/theme` and `/api/health` return that value and nothing else from Script Properties. Health does not require an employee token. An unknown name is treated as `auto`. No new OAuth scope.

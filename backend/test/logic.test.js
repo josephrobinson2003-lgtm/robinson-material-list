@@ -226,3 +226,23 @@ test("scope tasks lose prices and employees never receive coordinates", () => {
   }, deps);
   assert.equal(byId.scope.jobId, built.record.jobId);
 });
+
+test("theme override is a name, auto, or off and is public", () => {
+  assert.equal(logic.publicTheme(""), "auto");
+  assert.equal(logic.publicTheme("auto"), "auto");
+  assert.equal(logic.publicTheme("off"), "off");
+  assert.equal(logic.publicTheme("Thanksgiving"), "thanksgiving");
+  assert.equal(logic.publicTheme("payroll"), "auto");
+  const deps = memoryDeps({ employees: [] });
+  deps.theme = () => "thanksgiving";
+  const health = logic.handleRequest({ method: "GET", path: "/api/health", body: {} }, deps);
+  assert.equal(health.ok, true);
+  assert.equal(health.theme, "thanksgiving");
+  assert.equal(JSON.stringify(health).includes("payroll"), false);
+  deps.theme = () => "wages";
+  const theme = logic.handleRequest({ method: "GET", path: "/api/theme" }, deps);
+  assert.equal(theme.status, 200);
+  assert.equal(theme.theme, "auto");
+  deps.theme = () => "off";
+  assert.equal(logic.handleRequest({ method: "POST", path: "/api/health", body: {} }, deps).theme, "off");
+});

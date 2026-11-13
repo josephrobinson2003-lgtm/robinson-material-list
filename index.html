@@ -20,7 +20,23 @@
 html{-webkit-text-size-adjust:100%}
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:16px;line-height:1.35;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 header.top{background:#f6f3ec;color:var(--navy);padding:8px 12px 12px;padding-top:calc(8px + env(safe-area-inset-top))}
-header.top .logo{display:block;width:100%;max-width:640px;height:auto;margin:0 auto}
+.logo-wrap{position:relative;max-width:640px;margin:0 auto}
+header.top .logo{display:block;width:100%;height:auto;margin:0 auto;position:relative;z-index:1}
+.logo-theme{position:absolute;inset:0;z-index:2;pointer-events:none}
+.logo-theme svg{width:100%;height:100%;display:block}
+.holiday-svg .bulb{animation:twinkle 1.8s ease-in-out infinite}
+@keyframes twinkle{50%{opacity:.35}}
+@media (prefers-reduced-motion: reduce){.holiday-svg .bulb{animation:none}}
+.textlink{background:none;border:0;padding:0;color:var(--blue);font:inherit;font-weight:700;text-decoration:underline}
+.connectedline{margin:0;padding:12px 14px;font-weight:700;color:var(--navy)}
+.primary-actions{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;margin:8px 0 4px}
+.primary-actions .btn{width:100%;height:54px}
+#tc_confirm{width:100%;margin-top:8px}
+details.more{background:#fff;border:1px solid var(--line);border-radius:12px;margin:10px 0}
+details.more:not([open]) .more-body{display:none}
+details.more>summary{cursor:pointer;padding:14px;font-weight:700;color:var(--navy);list-style:none}
+details.more>summary::-webkit-details-marker{display:none}
+details.more .more-body{padding:0 14px 14px}
 header.top .sub{font-size:14px;margin-top:2px;color:var(--blue);text-align:center}
 header.top .sub a{color:var(--blue)}
 header.top .title2{font-size:16px;font-weight:700;margin-top:8px;color:var(--navy);text-align:center}
@@ -130,7 +146,10 @@ h3{margin:12px 0 6px;font-size:15px}
 </head>
 <body>
 <header class="top">
-  <img class="logo" src="logo.png" width="1600" height="525" alt="Robinson Electrical LLC">
+  <div class="logo-wrap" id="logo_wrap">
+    <img class="logo" src="logo.png" width="1600" height="525" alt="Robinson Electrical LLC">
+    <div class="logo-theme" id="logo_theme" hidden></div>
+  </div>
   <div class="title2">Robinson Electrical</div>
   <div class="sub" id="section_label">Job Material List</div>
   <div class="sub">St. Louis, MO &middot; <a href="tel:+13145784050">314-578-4050</a></div>
@@ -182,7 +201,7 @@ h3{margin:12px 0 6px;font-size:15px}
     </div>
   </section>
 </form>
-<footer class="foot">Robinson Electrical LLC &middot; 314-578-4050 &middot; Lists save on this phone (last 3).</footer>
+<footer class="foot">Robinson Electrical LLC &middot; 314-578-4050 &middot; Lists save on this phone (last 3). <button type="button" class="textlink privacy-reopen">Privacy notice</button></footer>
 </main>
 <div id="crew_panels"></div>
 

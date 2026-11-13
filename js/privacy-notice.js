@@ -1,5 +1,8 @@
 /** Plain-language notice. This is not an App Store approval. */
 
+export const PRIVACY_NOTICE_VERSION = 1;
+const NOTICE_KEY = "re_privacy_notice_version";
+
 export const PRIVACY_PARAGRAPHS = [
   "Robinson Electrical on this phone is a pilot for Joe and one employee. Each phone keeps that person's own time, material lists, and photos. You do not see the other person's hours.",
   "Apple has not reviewed or approved this app. Google has not either. Nothing here is an App Store listing.",
@@ -11,6 +14,26 @@ export const PRIVACY_PARAGRAPHS = [
   "Job photos live in a Job Photos folder, separate from Accounting. You do not sign in to Microsoft. Joe connects that folder once on the private server. Until then, photos you pick stay on this phone and are not uploaded. You cannot delete or rename them.",
   "The app does not read your contacts, and it has no ad tracker. Material-list pictures are only files you choose.",
   "Current location can suggest which job you are on. It does not show where an older gallery photo was taken.",
-  "Joe has not set how long entries stay on the phone. The app does not delete them on a schedule. You can remove a job spot you saved.",
-  "Sunday email and the company spreadsheet are not connected."
+  "Joe has not set how long entries stay on the phone. The app does not delete them on a schedule. You can remove a job spot you saved."
 ];
+
+export function privacyClosing(serverConfigured) {
+  if (serverConfigured) {
+    return "Confirmed hours go to Joe's private company sheet, and the Sunday email is sent from there.";
+  }
+  return "Sunday email and the company spreadsheet are not connected.";
+}
+
+export function privacyParagraphs(serverConfigured) {
+  return PRIVACY_PARAGRAPHS.concat(privacyClosing(!!serverConfigured));
+}
+
+export function privacyNoticeSeen(storage, version = PRIVACY_NOTICE_VERSION) {
+  if (!storage) return false;
+  return storage.getItem(NOTICE_KEY) === String(version);
+}
+
+export function markPrivacyNoticeRead(storage, version = PRIVACY_NOTICE_VERSION) {
+  if (!storage) return;
+  storage.setItem(NOTICE_KEY, String(version));
+}

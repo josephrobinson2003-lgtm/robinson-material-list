@@ -37,7 +37,7 @@ export function createBackend({ endpoint, token, fetchImpl } = {}) {
       const response = await fetchImpl(check.url, {
         method: "POST",
         headers: {
-          "content-type": "application/json",
+          "content-type": "text/plain;charset=utf-8",
           authorization: "Bearer " + token
         },
         body: JSON.stringify(payload)

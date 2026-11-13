@@ -18,8 +18,16 @@ function liveDeps() {
     listScopes: function () { return readSheet_("Scopes", SCOPE_HEADERS); },
     saveScope: function (record) { saveScope_(record); },
     adminKeyOk: function (key) { return adminKeyOk_(key); },
-    geocode: function (address) { return geocodeAddress_(address); }
+    geocode: function (address) { return geocodeAddress_(address); },
+    theme: function () { return themeOverride_(); }
   };
+}
+
+function themeOverride_() {
+  var raw = "";
+  try { raw = scriptProperties_().getProperty("THEME_OVERRIDE") || ""; }
+  catch (err) { raw = ""; }
+  return publicTheme(raw);
 }
 
 function geocodeAddress_(address) {

@@ -13,6 +13,8 @@ import { buildEmployeeExport, confirmedCurrentIntervals, confirmedPaidMinutes, f
 import { handleEmployeeRead, handleEmployeeWrite, handleOwnerExport } from "../js/employee-boundary.js";
 import { flushQueue } from "../js/sync-queue.js";
 import { unconfiguredBackend, createBackend } from "../js/backend.js";
+import { postBackend, readDeviceConfig, saveDeviceConfig } from "../js/device-config.js";
+import { privacyClosing, privacyNoticeSeen, markPrivacyNoticeRead, PRIVACY_NOTICE_VERSION } from "../js/privacy-notice.js";
 import { planPhoto, uploadPhoto, photoManifest } from "../js/job-photos.js";
 import { assertInsideJobPhotos, photoFileName } from "../js/photo-paths.js";
 import { handlePhotoRequest, photoServiceStatus } from "../js/photo-backend.js";
@@ -315,6 +317,52 @@ test("catalog keeps old ids and adds only the distinct write-ins", () => {
   assert.match(html, /it\.name \+ " \\u2014 " \+ fmtQty\(it\.qty\) \+ " " \+ it\.unit/);
   assert.match(html, /Labor hrs @ \$100\/hr/);
   assert.equal(html.includes("gtag"), false);
+});
+
+test("phone posts text/plain so Apps Script skips the CORS preflight", async () => {
+  const storage = {
+    items: new Map(),
+    getItem(key) { return this.items.has(key) ? this.items.get(key) : null; },
+    setItem(key, value) { this.items.set(key, String(value)); },
+    removeItem(key) { this.items.delete(key); }
+  };
+  assert.equal(saveDeviceConfig(storage, { url: "https://example.com/macros/s/abc/exec", token: "tok" }).ok, true);
+  let header = "";
+  let sent = "";
+  await postBackend(readDeviceConfig(storage), "/api/health", {}, async (_url, options) => {
+    header = options.headers["content-type"];
+    sent = options.body;
+    return { ok: true, status: 200, json: async () => ({ ok: true, theme: "auto" }) };
+  });
+  assert.equal(header, "text/plain;charset=utf-8");
+  assert.equal(JSON.parse(sent).path, "/api/health");
+  let pushed = "";
+  const backend = createBackend({
+    endpoint: "https://example.com/exec",
+    token: "tok",
+    fetchImpl: async (_url, options) => {
+      pushed = options.headers["content-type"];
+      return { ok: true, status: 200 };
+    }
+  });
+  await backend.push({ hello: true });
+  assert.equal(pushed, "text/plain;charset=utf-8");
+});
+
+test("privacy notice stays dismissed until its text version changes", () => {
+  const storage = {
+    items: new Map(),
+    getItem(key) { return this.items.has(key) ? this.items.get(key) : null; },
+    setItem(key, value) { this.items.set(key, String(value)); },
+    removeItem(key) { this.items.delete(key); }
+  };
+  assert.equal(privacyNoticeSeen(storage), false);
+  markPrivacyNoticeRead(storage);
+  assert.equal(privacyNoticeSeen(storage), true);
+  assert.equal(privacyNoticeSeen(storage, PRIVACY_NOTICE_VERSION + 1), false);
+  assert.match(privacyClosing(false), /not connected/);
+  assert.match(privacyClosing(true), /private company sheet/);
+  assert.equal(privacyClosing(true).includes("$"), false);
 });
 
 test("website tracking and token storage stay unavailable", async () => {
