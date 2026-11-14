@@ -23,7 +23,7 @@ const DATES = {
     juneteenth: "2026-06-19",
     "july-4": "2026-07-04",
     "labor-day": "2026-09-07",
-    "peoples-day": "2026-10-12",
+    columbus: "2026-10-12",
     halloween: "2026-10-31",
     veterans: "2026-11-11",
     thanksgiving: "2026-11-26",
@@ -45,7 +45,7 @@ const DATES = {
     juneteenth: "2027-06-19",
     "july-4": "2027-07-04",
     "labor-day": "2027-09-06",
-    "peoples-day": "2027-10-11",
+    columbus: "2027-10-11",
     halloween: "2027-10-31",
     veterans: "2027-11-11",
     thanksgiving: "2027-11-25",
@@ -64,7 +64,7 @@ const WINDOWS = {
     7: [["july-4", 1, 31]],
     8: [],
     9: [["labor-day", 1, 30]],
-    10: [["peoples-day", 1, 21], ["halloween", 22, 31]],
+    10: [["columbus", 1, 21], ["halloween", 22, 31]],
     11: [["veterans", 1, 18], ["thanksgiving", 19, 30]],
     12: [["christmas", 1, 31]]
   },
@@ -78,7 +78,7 @@ const WINDOWS = {
     7: [["july-4", 1, 31]],
     8: [],
     9: [["labor-day", 1, 30]],
-    10: [["peoples-day", 1, 20], ["halloween", 21, 31]],
+    10: [["columbus", 1, 20], ["halloween", 21, 31]],
     11: [["veterans", 1, 17], ["thanksgiving", 18, 30]],
     12: [["christmas", 1, 31]]
   }
@@ -146,7 +146,7 @@ test("theme override accepts a name, auto, or off", () => {
     "earth-day": ["earth-globe", "sprout-sway"],
     "mothers-day": ["bloom"],
     "fathers-day": ["float-up"],
-    mlk: ["banner-shimmer"],
+    mlk: ["wave"],
     "july-4": ["twinkle", "ripple"]
   };
   for (const id of Object.keys(motion)) {

@@ -35,4 +35,4 @@
 [data-holiday="fathers-day"] .holiday-greet{font-family:Oswald,Impact,sans-serif;font-weight:600;font-size:clamp(20px,6vw,28px);color:#10284f;letter-spacing:.04em}
 [data-holiday="labor-day"] .holiday-greet{font-family:Oswald,Impact,sans-serif;font-weight:600;font-size:clamp(22px,6.4vw,30px);color:#10284f;letter-spacing:.08em;text-transform:uppercase}
 [data-holiday="juneteenth"] .holiday-greet{font-family:Righteous,Georgia,serif;font-weight:400;font-size:clamp(20px,6vw,28px);color:#7a1e16}
-[data-holiday="peoples-day"] .holiday-greet{font-family:"Libre Baskerville",Georgia,serif;font-weight:700;font-size:clamp(14px,4vw,18px);color:#4a2c12}
+[data-holiday="columbus"] .holiday-greet{font-family:"Playfair Display",Georgia,serif;font-weight:700;font-size:clamp(18px,5.4vw,26px);color:#10284f}

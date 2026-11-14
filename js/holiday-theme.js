@@ -20,7 +20,7 @@ export const THEME_IDS = [
   "juneteenth",
   "july-4",
   "labor-day",
-  "peoples-day",
+  "columbus",
   "halloween",
   "veterans",
   "thanksgiving",
@@ -43,7 +43,7 @@ export const THEME_LABELS = {
   juneteenth: "Juneteenth",
   "july-4": "Fourth of July",
   "labor-day": "Labor Day",
-  "peoples-day": "Indigenous Peoples' Day",
+  columbus: "Columbus Day",
   halloween: "Halloween",
   veterans: "Veterans Day",
   thanksgiving: "Thanksgiving",
@@ -122,7 +122,7 @@ export function holidayDate(id, year) {
   if (id === "fathers-day") return nthWeekday(year, 6, "Sun", 3);
   if (id === "arbor-day") return lastWeekday(year, 4, "Fri");
   if (id === "labor-day") return nthWeekday(year, 9, "Mon", 1);
-  if (id === "peoples-day") return nthWeekday(year, 10, "Mon", 2);
+  if (id === "columbus") return nthWeekday(year, 10, "Mon", 2);
   if (id === "thanksgiving") return nthWeekday(year, 11, "Thu", 4);
   if (id === "easter") {
     const easter = easterSunday(year);
@@ -201,7 +201,7 @@ const GREETING = {
   juneteenth: "Happy Juneteenth",
   "july-4": "Happy Independence Day",
   "labor-day": "Happy Labor Day",
-  "peoples-day": "Indigenous Peoples' Day",
+  columbus: "Happy Columbus Day",
   halloween: "Happy Halloween",
   veterans: "Happy Veterans Day",
   thanksgiving: "Happy Thanksgiving",
@@ -224,7 +224,7 @@ const TINT = {
   juneteenth: "#f8e6d2",
   "july-4": "#e4eef8",
   "labor-day": "#e4eef8",
-  "peoples-day": "#f3e6d4",
+  columbus: "#e7eef6",
   halloween: "#f6d3b0",
   veterans: "#d9e6f5",
   thanksgiving: "#f6e2c4",
@@ -461,21 +461,21 @@ export function themeRing(themeId) {
 
 const BANNERS = {
   "new-year": bannerSvg('<rect width="1200" height="72" fill="#1F3864"/>' + star(180, 36, 14, "#FFC20E", 0) + star(600, 36, 16, "#f7f7fb", 0.6) + star(1020, 36, 14, "#FFC20E", 1.2)),
-  mlk: nameBanner("Martin Luther King Jr. Day", "#1F3864", "#FFC20E"),
+  mlk: bannerSvg(scallops(["#1F3864", "#FFC20E", "#f7f7fb"])),
   valentines: bannerSvg(scallops(["#c23b56", "#f7f7fb", "#e89aaf"])),
   presidents: bannerSvg(scallops(PATRIOTIC)),
   "st-patricks": bannerSvg(scallops(["#1f7a3a", "#f7f7fb", "#8fd19a"])),
   easter: bannerSvg(scallops(["#f4d35e", "#f7f7fb", "#9fd3ea", "#f2b6d0"])),
   "memorial-day": bannerSvg(scallops(PATRIOTIC)),
-  "mothers-day": fadeBanner("Happy Mother's Day", "#f4c7d8", "#6b243c"),
-  "fathers-day": fadeBanner("Happy Father's Day", "#1F3864", "#f6f3ec"),
-  "arbor-day": fadeBanner("Happy Arbor Day", "#1f7a3a", "#f6f3ec"),
-  "earth-day": fadeBanner("Happy Earth Day", "#145c30", "#f6f3ec"),
+  "mothers-day": bannerSvg(scallops(["#f4c7d8", "#f7f7fb", "#c23b56"])),
+  "fathers-day": bannerSvg(scallops(["#1F3864", "#f7f7fb", "#2F5597"])),
+  "arbor-day": bannerSvg(scallops(["#1f7a3a", "#f7f7fb", "#8fd19a"])),
+  "earth-day": bannerSvg(scallops(["#145c30", "#f7f7fb", "#7eb6ff"])),
   groundhog: bannerSvg('<rect width="1200" height="72" fill="#6b4a2a"/>'),
-  juneteenth: bannerSvg(scallops(["#bb3a2f", "#f7f7fb", "#e0b33a", "#1F3864"])),
+  juneteenth: bannerSvg(scallops(["#1F4E8C", "#f7f7fb", "#b4232a"])),
   "july-4": bannerSvg(scallops(PATRIOTIC) + star(80, 28, 16, "#FFC20E") + star(600, 26, 18, "#FFC20E") + star(1080, 28, 16, "#FFC20E")),
-  "labor-day": nameBanner("Labor Day", "#1F3864", "#FFC20E"),
-  "peoples-day": nameBanner("Indigenous Peoples' Day", "#6b3a12", "#f6f3ec"),
+  "labor-day": bannerSvg(scallops(["#1F3864", "#FFC20E", "#f7f7fb"])),
+  columbus: bannerSvg(scallops(["#8c3b16", "#e0b33a", "#f6e2c4", "#1F3864"])),
   halloween: bannerSvg(scallops(["#e07a1f", "#1d2330", "#f4a259"])),
   veterans: bannerSvg(scallops(PATRIOTIC)),
   thanksgiving: bannerSvg(scallops(["#c4652a", "#8c3b16", "#d4a017", "#f6e2c4"])),
@@ -512,36 +512,35 @@ const SCENES = {
     groundShadow(140, 516, 100) +
     art("new-year/party.webp", 8, 300, 300, 218)
   ),
-  mlk: sceneSvg(art("mlk/dove.webp", 1080, 18, 280, 260, "bob")),
+  mlk: sceneSvg(art("mlk/dove.webp", 1040, 8, 320, 296, "bob")),
   valentines: sceneSvg(
     groundShadow(110, 516, 80) +
-    art("valentines/roses.webp", 8, 300, 200, 214) +
-    art("valentines/heart.webp", 1100, 16, 86, 83, "float-up", 0) +
-    art("valentines/heart.webp", 1280, 64, 70, 68, "float-up", 1.2) +
-    art("valentines/heart.webp", 1460, 22, 78, 76, "float-up", 0.6)
+    art("valentines/roses.webp", 4, 278, 240, 240) +
+    art("valentines/heart.webp", 1100, 12, 110, 106, "float-up", 0) +
+    art("valentines/heart.webp", 1280, 56, 90, 87, "float-up", 1.2) +
+    art("valentines/heart.webp", 1460, 16, 100, 97, "float-up", 0.6)
   ),
   presidents: sceneSvg(
-    star(1180, 28, 30, "#FFC20E", 0) + star(1360, 64, 24, "#FFC20E", 0.6) + star(1520, 24, 28, "#FFC20E", 1.2) +
-    groundShadow(90, 516, 60) +
-    art("presidents/hat.webp", 8, 336, 190, 182)
+    art("presidents/eagle.webp", 1140, 16, 180, 190, "bob") +
+    groundShadow(100, 516, 80) +
+    art("presidents/hat.webp", 4, 318, 210, 200)
   ),
   easter: sceneSvg(
     groundShadow(78, 516, 58) + groundShadow(210, 516, 48) +
-    art("easter/egg-1.webp", 268, 468, 36, 50, "egg-wobble", 0) +
-    art("easter/egg-2.webp", 308, 474, 36, 50, "egg-wobble", 1.2) +
-    art("easter/egg-3.webp", 348, 466, 34, 48, "egg-wobble", 2.4) +
-    art("easter/egg-4.webp", 384, 476, 32, 44, "egg-wobble", 3.6) +
-    art("easter/egg-5.webp", 418, 470, 32, 44, "egg-wobble", 4.8) +
-    art("easter/basket.webp", 156, 392, 140, 126) +
-    art("easter/bunny.webp", 4, 368, 150, 150, "hopper")
+    art("easter/egg-1.webp", 250, 456, 48, 62, "egg-wobble", 0) +
+    art("easter/egg-2.webp", 292, 462, 48, 62, "egg-wobble", 1.2) +
+    art("easter/egg-3.webp", 334, 454, 46, 60, "egg-wobble", 2.4) +
+    art("easter/egg-4.webp", 372, 460, 44, 56, "egg-wobble", 3.6) +
+    art("easter/basket.webp", 168, 370, 160, 144) +
+    art("easter/bunny.webp", 0, 308, 200, 210, "hopper")
   ),
   "st-patricks": sceneSvg(
     art("st-patricks/shamrock.webp", 1340, 16, 72, 76, "drift", 0) +
     art("st-patricks/shamrock.webp", 1500, 90, 64, 68, "drift", 1.1) +
     art("st-patricks/shamrock.webp", 1400, 180, 60, 64, "drift", 0.5) +
     groundShadow(80, 516, 70) + groundShadow(230, 516, 50) +
-    art("st-patricks/leprechaun.webp", 2, 292, 156, 226) +
-    art("st-patricks/pot.webp", 158, 398, 120, 120)
+    art("st-patricks/leprechaun.webp", 0, 268, 190, 250) +
+    art("st-patricks/pot.webp", 168, 378, 150, 140)
   ),
   groundhog: sceneSvg(
     '<g fill="#c5d0e0">' +
@@ -550,16 +549,15 @@ const SCENES = {
     '<g transform="translate(760 24)"><circle class="snow" style="animation-delay:.5s" r="6"/></g>' +
     '<g transform="translate(1040 10)"><circle class="snow" style="animation-delay:1.7s" r="4"/></g>' +
     "</g>" +
-    groundShadow(170, 516, 100) +
-    art("groundhog/hog.webp", 70, 332, 230, 168, "groundhog") +
-    art("groundhog/mound.webp", 16, 428, 330, 90)
+    groundShadow(150, 516, 120) +
+    art("groundhog/pop.webp", 6, 308, 270, 210, "groundhog")
   ),
   "arbor-day": sceneSvg(
     groundShadow(155, 516, 62) +
-    art("arbor-day/seed.webp", 112, 468, 86, 50, "arbor-stage arbor-seed") +
-    art("arbor-day/sprout.webp", 104, 424, 100, 94, "arbor-stage arbor-sprout") +
-    art("arbor-day/sapling.webp", 96, 372, 112, 146, "arbor-stage arbor-sapling") +
-    art("arbor-day/tree.webp", 36, 300, 210, 218, "arbor-stage arbor-tree") +
+    art("arbor-day/seed.webp", 78, 476, 70, 40, "arbor-stage arbor-seed") +
+    art("arbor-day/sprout.webp", 64, 430, 100, 86, "arbor-stage arbor-sprout") +
+    art("arbor-day/sapling.webp", 40, 360, 140, 156, "arbor-stage arbor-sapling") +
+    art("arbor-day/tree.webp", 0, 268, 174, 250, "arbor-stage arbor-tree") +
     art("arbor-day/vine.webp", 800, 16, 300, 198, "wave")
   ),
   "earth-day": sceneSvg(
@@ -577,10 +575,10 @@ const SCENES = {
   "mothers-day": sceneSvg(
     groundShadow(160, 516, 100) +
     '<ellipse class="glow" cx="130" cy="455" rx="80" ry="30" fill="#f7b0c4"/>' +
-    art("mothers-day/heart.webp", 4, 418, 220, 96, "bloom", 0) +
-    art("mothers-day/flower-1.webp", 150, 400, 120, 112, "bloom", 0.6) +
-    art("mothers-day/flower-2.webp", 40, 392, 110, 100, "bloom", 1.2) +
-    art("mothers-day/flower-4.webp", 210, 408, 120, 104, "bloom", 1.8) +
+    art("mothers-day/heart.webp", 0, 400, 250, 110, "bloom", 0) +
+    art("mothers-day/flower-1.webp", 150, 330, 160, 150, "bloom", 0.6) +
+    art("mothers-day/flower-2.webp", 8, 328, 150, 136, "bloom", 1.2) +
+    art("mothers-day/flower-4.webp", 190, 348, 155, 134, "bloom", 1.8) +
     art("mothers-day/petal-1.webp", 1040, 24, 36, 42, "drift", 0) +
     art("mothers-day/petal-2.webp", 1220, 48, 34, 32, "drift", 1.2) +
     art("mothers-day/petal-3.webp", 1400, 16, 40, 24, "drift", 0.6) +
@@ -589,18 +587,18 @@ const SCENES = {
   "fathers-day": sceneSvg(
     art("fathers-day/tie.webp", 36, 148, 62, 148, "wave") +
     groundShadow(80, 516, 50) + groundShadow(210, 516, 36) +
-    art("fathers-day/grill.webp", 4, 300, 180, 218) +
+    art("fathers-day/grill.webp", 0, 278, 220, 240) +
     '<g transform="translate(58 324)"><g class="float-up"><path d="M0 28 C8 16 -6 12 2 0" fill="none" stroke="#c5cad3" stroke-width="4" stroke-linecap="round"/></g></g>' +
     '<g transform="translate(86 312)"><g class="float-up" style="animation-delay:1.1s"><path d="M0 34 C-8 18 8 12 0 -4" fill="none" stroke="#d5dae2" stroke-width="3.5" stroke-linecap="round"/></g></g>' +
-    art("fathers-day/toolbox.webp", 148, 412, 108, 106) +
-    art("fathers-day/driver.webp", 230, 468, 96, 50)
+    art("fathers-day/toolbox.webp", 190, 390, 145, 128) +
+    art("fathers-day/driver.webp", 250, 458, 130, 60)
   ),
   "memorial-day": sceneSvg(
     art("flags/us-flag.webp", 1120, 12, 300, 270, "ripple") +
     groundShadow(100, 516, 70) +
-    art("memorial-day/poppies.webp", 10, 300, 190, 218)
+    art("memorial-day/poppies.webp", 6, 276, 220, 242)
   ),
-  juneteenth: sceneSvg(art("juneteenth/flag.webp", 1060, 28, 380, 216, "ripple")),
+  juneteenth: sceneSvg(art("juneteenth/flag.webp", 1140, 36, 360, 200, "ripple")),
   "july-4": sceneSvg(
     art("flags/us-flag.webp", 1040, 8, 280, 252, "ripple") +
     firework(1340, 48, 0.4) + firework(1500, 90, 2.2) +
@@ -611,9 +609,10 @@ const SCENES = {
     bunting() +
     art("labor-day/electrician.webp", 960, 148, 168, 328, "labor-work")
   ),
-  "peoples-day": sceneSvg(
-    groundShadow(120, 516, 80) +
-    art("peoples-day/harvest.webp", 10, 292, 210, 226)
+  columbus: sceneSvg(
+    autumnLeaves(4) +
+    groundShadow(160, 516, 120) +
+    art("columbus/ship.webp", 4, 300, 320, 218, "bob")
   ),
   halloween: sceneSvg(
     autumnLeaves(4) +
