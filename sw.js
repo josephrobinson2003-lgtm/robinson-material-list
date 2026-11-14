@@ -2,7 +2,7 @@
    Lists are stored in localStorage by the page, never in this cache.
    Bump CACHE when shipping a new version so a home-screen install
    drops the old shell and loads the new one after the app is reopened. */
-var CACHE = "re-material-20261114b";
+var CACHE = "re-material-20261114c";
 var ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./logo.png", "./favicon.ico", "./favicon-32.png", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./js/chicago-time.js", "./js/ids.js", "./js/timecard-model.js", "./js/geofence-policy.js", "./js/export-contract.js", "./js/employee-boundary.js", "./js/backend.js", "./js/device-config.js", "./js/sync-queue.js", "./js/jobs.js", "./js/exif.js", "./js/job-photos.js", "./js/photo-paths.js", "./js/photo-backend.js", "./js/storage.js", "./js/native-bridge.js", "./js/secure-store.js", "./js/privacy-notice.js", "./js/tracking-status.js", "./js/pay-rules.js", "./js/holiday-theme.js", "./js/crew-ui.js",
   "./holiday/arbor-day/leaf-1.webp", "./holiday/arbor-day/leaf-2.webp", "./holiday/arbor-day/leaf-3.webp", "./holiday/arbor-day/sapling.webp", "./holiday/arbor-day/seed.webp", "./holiday/arbor-day/sprout.webp", "./holiday/arbor-day/tree.webp", "./holiday/arbor-day/vine.webp",
   "./holiday/christmas/sleigh.webp",

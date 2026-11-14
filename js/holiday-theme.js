@@ -249,8 +249,8 @@ function bunting() {
   const colors = ["#b4232a", "#f7f7fb", "#1F3864"];
   let out = "";
   for (let i = 0; i < 7; i += 1) {
-    out += '<g class="wave" style="animation-delay:' + (i * 0.18).toFixed(2) + 's" transform="translate(' + (820 + i * 95) + ' 448)">' +
-      '<path d="M0 0 Q24 26 48 0 L48 14 Q24 38 0 14 Z" fill="' + colors[i % 3] + '"/></g>';
+    out += '<g transform="translate(' + (820 + i * 95) + ' 448)"><g class="wave" style="animation-delay:' + (i * 0.18).toFixed(2) + 's">' +
+      '<path d="M0 0 Q24 26 48 0 L48 14 Q24 38 0 14 Z" fill="' + colors[i % 3] + '"/></g></g>';
   }
   return out;
 }
@@ -406,14 +406,35 @@ function wreath() {
 }
 
 function christmasTree(x, y, s) {
+  const lights = [
+    [-18, -40, "#d32f2f"], [16, -28, "#f2c200"], [-8, -8, "#2456a6"],
+    [22, 8, "#ef6c00"], [-24, 18, "#d32f2f"], [8, 28, "#f2c200"], [-14, 48, "#1b8a3a"]
+  ];
+  let bulbs = "";
+  lights.forEach(function (bulb, i) {
+    bulbs += '<circle cx="' + bulb[0] + '" cy="' + bulb[1] + '" r="7" fill="' + bulb[2] + '" opacity="0.28"/>' +
+      '<circle class="glow" cx="' + bulb[0] + '" cy="' + bulb[1] + '" r="4.5" fill="' + bulb[2] + '"/>' +
+      '<circle cx="' + (bulb[0] - 1.2) + '" cy="' + (bulb[1] - 1.4) + '" r="1.3" fill="#fff" opacity="0.8"/>';
+  });
   return '<g transform="translate(' + x + " " + y + ") scale(" + (s || 1) + ')">' +
-    '<polygon points="0,-62 26,-18 -26,-18" fill="#1f7a3a"/>' +
-    '<polygon points="0,-34 34,8 -34,8" fill="#18703a"/>' +
-    '<polygon points="0,-6 40,36 -40,36" fill="#145c30"/>' +
-    '<rect x="-7" y="36" width="14" height="14" fill="#6b3a12"/>' +
-    '<circle cx="0" cy="-50" r="5" fill="#FFC20E"/>' +
-    '<circle cx="-12" cy="2" r="4" fill="#b4232a"/>' +
-    '<circle cx="14" cy="18" r="4" fill="#f7f7fb"/>' +
+    '<polygon points="6,-150 78,20 -52,28" fill="#0d3d22"/>' +
+    '<polygon points="0,-168 62,-78 -62,-78" fill="#146b38"/>' +
+    '<polygon points="0,-168 48,-96 -22,-92" fill="#1f8a48" opacity="0.9"/>' +
+    '<polygon points="4,-108 86,-8 -70,-4" fill="#0f4d28"/>' +
+    '<polygon points="0,-118 74,-18 -74,-18" fill="#187a3c"/>' +
+    '<polygon points="-8,-112 28,-40 -36,-36" fill="#2a9a50" opacity="0.85"/>' +
+    '<polygon points="2,-48 96,36 -84,40" fill="#0c4224"/>' +
+    '<polygon points="0,-58 88,28 -88,28" fill="#146b34"/>' +
+    '<polygon points="0,-52 40,-8 -18,-6" fill="#23864a" opacity="0.8"/>' +
+    '<polygon points="0,2 104,78 -96,82" fill="#0a3820"/>' +
+    '<polygon points="0,-8 96,70 -96,70" fill="#125c2e"/>' +
+    '<polygon points="-6,-2 36,28 -30,30" fill="#1f7a40" opacity="0.75"/>' +
+    '<rect x="-11" y="70" width="22" height="28" rx="2" fill="#5c3a1e"/>' +
+    '<rect x="-7" y="74" width="5" height="24" fill="#7a5230" opacity="0.7"/>' +
+    bulbs +
+    '<polygon points="0,-196 8,-174 -8,-174" fill="#f2c200"/>' +
+    '<polygon points="0,-164 10,-186 -10,-186" fill="#f2c200"/>' +
+    '<circle class="glow" cy="-180" r="8" fill="#ffe27a" opacity="0.85"/>' +
     "</g>";
 }
 
@@ -473,14 +494,18 @@ function groundShadow(x, y, rx) {
 
 function autumnLeaves(limit) {
   const leaves = [
-    ["maple-red.webp", 960, 6, 108, 138, "leaf-fall", -1.4, 13.2],
-    ["maple-orange.webp", 1160, 16, 72, 90, "leaf-fall leaf-b leaf-far", -6.2, 16.4],
-    ["oak-brown.webp", 1340, 2, 58, 150, "leaf-fall leaf-c", -3.1, 11.6],
-    ["maple-gold.webp", 1060, 28, 96, 118, "leaf-fall leaf-b", -8.8, 15.1],
-    ["maple-burgundy.webp", 1460, 10, 90, 104, "leaf-fall", -4.6, 14.2],
-    ["oak-rust.webp", 1240, 22, 48, 124, "leaf-fall leaf-c leaf-far", -9.4, 12.8],
-    ["maple-orange.webp", 1520, 20, 64, 78, "leaf-fall leaf-far", -2.7, 17.5],
-    ["maple-red.webp", 900, 18, 80, 102, "leaf-fall leaf-b", -11.2, 13.8]
+    ["maple-red.webp", 1088, 4, 168, 214, "leaf-fall", -0.6, 12.4],
+    ["maple-orange.webp", 1120, 18, 150, 190, "leaf-fall leaf-b", -4.2, 14.8],
+    ["oak-brown.webp", 1288, 8, 150, 200, "leaf-fall leaf-c", -2.4, 11.2],
+    ["maple-gold.webp", 1040, 30, 160, 196, "leaf-fall leaf-b", -7.6, 15.6],
+    ["maple-burgundy.webp", 1460, 8, 154, 178, "leaf-fall", -3.8, 13.4],
+    ["oak-rust.webp", 1188, 28, 140, 180, "leaf-fall leaf-c", -8.2, 12.6],
+    ["maple-orange.webp", 1520, 26, 120, 148, "leaf-fall leaf-far", -1.8, 16.2],
+    ["maple-red.webp", 1008, 16, 140, 176, "leaf-fall leaf-b", -10.4, 13.8],
+    ["maple-gold.webp", 1380, 12, 130, 160, "leaf-fall", -5.5, 14.1],
+    ["oak-brown.webp", 1210, 14, 120, 156, "leaf-fall leaf-c leaf-far", -9.1, 11.8],
+    ["maple-burgundy.webp", 1188, 6, 136, 166, "leaf-fall leaf-b", -6.7, 15.2],
+    ["maple-orange.webp", 1568, 4, 110, 136, "leaf-fall", -12.2, 13.1]
   ];
   return leaves.slice(0, limit || leaves.length).map((leaf) => {
     return '<image class="' + leaf[5] + '" style="animation-delay:' + leaf[6] + "s;animation-duration:" + leaf[7] + 's" href="holiday/leaves/' + leaf[0] + '" x="' + leaf[1] + '" y="' + leaf[2] + '" width="' + leaf[3] + '" height="' + leaf[4] + '"/>';
@@ -493,28 +518,34 @@ const SCENES = {
   valentines: sceneSvg(heart(1040, 16, 1.8, "#c23b56", 0) + heart(1240, 55, 1.2, "#e89aaf", 1.4)),
   presidents: sceneSvg(flag(1000, 10, 220, 130) + star(1260, 36, 26, "#FFC20E", 0.4)),
   easter: sceneSvg(
-    groundShadow(70, 516, 46) + groundShadow(175, 516, 40) +
-    art("easter/egg-1.webp", 230, 478, 28, 40, "egg-wobble", 0) +
-    art("easter/egg-2.webp", 262, 482, 28, 40, "egg-wobble", 1.2) +
-    art("easter/egg-3.webp", 294, 476, 28, 40, "egg-wobble", 2.4) +
-    art("easter/egg-4.webp", 326, 484, 26, 36, "egg-wobble", 3.6) +
-    art("easter/egg-5.webp", 354, 480, 26, 36, "egg-wobble", 4.8) +
-    art("easter/basket.webp", 128, 412, 108, 106) +
-    art("easter/bunny.webp", 8, 400, 112, 118, "hopper")
+    groundShadow(78, 516, 58) + groundShadow(210, 516, 48) +
+    art("easter/egg-1.webp", 268, 468, 36, 50, "egg-wobble", 0) +
+    art("easter/egg-2.webp", 308, 474, 36, 50, "egg-wobble", 1.2) +
+    art("easter/egg-3.webp", 348, 466, 34, 48, "egg-wobble", 2.4) +
+    art("easter/egg-4.webp", 384, 476, 32, 44, "egg-wobble", 3.6) +
+    art("easter/egg-5.webp", 418, 470, 32, 44, "egg-wobble", 4.8) +
+    art("easter/basket.webp", 156, 392, 140, 126) +
+    art("easter/bunny.webp", 4, 368, 150, 150, "hopper")
   ),
   "st-patricks": sceneSvg(
-    shamrock(16, 300, 0.9, 0) + shamrock(1480, 80, 1.15, 1) + shamrock(24, 400, 0.85, 0.6) + shamrock(1500, 360, 1, 1.4) +
-    groundShadow(40, 516, 28) +
-    '<g transform="translate(150 508)"><ellipse class="coin" cx="0" cy="0" rx="12" ry="8" fill="#FFC20E"/></g>' +
-    '<g transform="translate(196 512)"><ellipse class="coin" style="animation-delay:3.5s" cx="0" cy="0" rx="12" ry="8" fill="#e0b33a"/></g>' +
-    '<g transform="translate(242 506)"><ellipse class="coin" style="animation-delay:7s" cx="0" cy="0" rx="12" ry="8" fill="#FFC20E"/></g>' +
-    '<g class="picker" transform="translate(36 514) scale(2.3) translate(0 -48)">' +
-    '<ellipse cx="70" cy="48" rx="26" ry="12" fill="#1d2330"/>' +
-    '<ellipse cx="70" cy="40" rx="16" ry="8" fill="#FFC20E"/>' +
-    '<rect x="8" y="10" width="22" height="36" fill="#1f7a3a"/><circle cx="18" cy="2" r="10" fill="#f0d2b0"/>' +
-    '<path d="M6 -8 H32 L28 2 H8 Z" fill="#1f7a3a"/><rect x="16" y="-16" width="4" height="10" fill="#1f7a3a"/>' +
-    '<path d="M10 12 H28 V22 H10 Z" fill="#e8e0d0"/>' +
-    "</g>"
+    shamrock(1490, 70, 1.2, 0) + shamrock(1540, 160, 1, 1) + shamrock(1460, 250, 0.9, 0.6) + shamrock(1520, 340, 1.05, 1.4) +
+    groundShadow(96, 516, 36) +
+    '<g transform="translate(210 500)"><ellipse class="coin" cx="0" cy="0" rx="20" ry="13" fill="#FFC20E"/></g>' +
+    '<g transform="translate(262 508)"><ellipse class="coin" style="animation-delay:3.5s" cx="0" cy="0" rx="20" ry="13" fill="#e0b33a"/></g>' +
+    '<g transform="translate(314 498)"><ellipse class="coin" style="animation-delay:7s" cx="0" cy="0" rx="20" ry="13" fill="#FFC20E"/></g>' +
+    '<g transform="translate(96 512)"><g class="picker">' +
+    '<rect x="-7" y="-196" width="14" height="26" fill="#1f7a3a"/>' +
+    '<path d="M-44 -172 H44 L36 -150 H-36 Z" fill="#1f7a3a"/>' +
+    '<circle cy="-126" r="26" fill="#f0d2b0"/>' +
+    '<path d="M-20 -116 Q0 -86 20 -116 Q14 -104 0 -96 Q-14 -104 -20 -116 Z" fill="#efe4d4"/>' +
+    '<path d="M-32 -108 H32 L40 -24 H-40 Z" fill="#1f7a3a"/>' +
+    '<rect x="-32" y="-64" width="64" height="12" fill="#1d2330"/>' +
+    '<rect x="-8" y="-68" width="16" height="20" fill="#FFC20E"/>' +
+    '<rect x="-28" y="-24" width="18" height="20" fill="#1d2330"/>' +
+    '<rect x="10" y="-24" width="18" height="20" fill="#1d2330"/>' +
+    '<ellipse cx="-18" cy="2" rx="20" ry="9" fill="#1d2330"/>' +
+    '<ellipse cx="18" cy="2" rx="20" ry="9" fill="#1d2330"/>' +
+    "</g></g>"
   ),
   groundhog: sceneSvg(
     '<g fill="#c5d0e0">' +
@@ -523,16 +554,16 @@ const SCENES = {
     '<g transform="translate(760 24)"><circle class="snow" style="animation-delay:.5s" r="6"/></g>' +
     '<g transform="translate(1040 10)"><circle class="snow" style="animation-delay:1.7s" r="4"/></g>' +
     "</g>" +
-    groundShadow(160, 516, 78) +
-    art("groundhog/hog.webp", 78, 368, 168, 120, "groundhog") +
-    art("groundhog/mound.webp", 28, 442, 250, 78)
+    groundShadow(170, 516, 100) +
+    art("groundhog/hog.webp", 70, 332, 230, 168, "groundhog") +
+    art("groundhog/mound.webp", 16, 428, 330, 90)
   ),
   "arbor-day": sceneSvg(
     groundShadow(155, 516, 62) +
     art("arbor-day/seed.webp", 112, 468, 86, 50, "arbor-stage arbor-seed") +
     art("arbor-day/sprout.webp", 104, 424, 100, 94, "arbor-stage arbor-sprout") +
     art("arbor-day/sapling.webp", 96, 372, 112, 146, "arbor-stage arbor-sapling") +
-    art("arbor-day/tree.webp", 78, 348, 150, 170, "arbor-stage arbor-tree") +
+    art("arbor-day/tree.webp", 36, 300, 210, 218, "arbor-stage arbor-tree") +
     art("arbor-day/vine.webp", 800, 16, 300, 198, "wave")
   ),
   "earth-day": sceneSvg(
@@ -562,9 +593,9 @@ const SCENES = {
   "fathers-day": sceneSvg(
     art("fathers-day/tie.webp", 36, 148, 62, 148, "wave") +
     groundShadow(80, 516, 50) + groundShadow(210, 516, 36) +
-    art("fathers-day/grill.webp", 8, 348, 130, 170) +
-    '<g class="float-up" transform="translate(58 324)"><path d="M0 28 C8 16 -6 12 2 0" fill="none" stroke="#c5cad3" stroke-width="4" stroke-linecap="round"/></g>' +
-    '<g class="float-up" style="animation-delay:1.1s" transform="translate(86 312)"><path d="M0 34 C-8 18 8 12 0 -4" fill="none" stroke="#d5dae2" stroke-width="3.5" stroke-linecap="round"/></g>' +
+    art("fathers-day/grill.webp", 4, 300, 180, 218) +
+    '<g transform="translate(58 324)"><g class="float-up"><path d="M0 28 C8 16 -6 12 2 0" fill="none" stroke="#c5cad3" stroke-width="4" stroke-linecap="round"/></g></g>' +
+    '<g transform="translate(86 312)"><g class="float-up" style="animation-delay:1.1s"><path d="M0 34 C-8 18 8 12 0 -4" fill="none" stroke="#d5dae2" stroke-width="3.5" stroke-linecap="round"/></g></g>' +
     art("fathers-day/toolbox.webp", 148, 412, 108, 106) +
     art("fathers-day/driver.webp", 230, 468, 96, 50)
   ),
@@ -582,29 +613,29 @@ const SCENES = {
     '<g transform="translate(12 392) scale(2.3)"><rect width="36" height="48" fill="#4a5568"/><rect x="10" y="28" width="16" height="20" fill="#2a3140"/></g>' +
     '<g transform="translate(110 424) scale(2.3)"><rect width="30" height="36" fill="#5c6778"/><path d="M0 0 L15 -16 L30 0 Z" fill="#5c6778"/></g>' +
     '<g transform="translate(200 400) scale(2.3)"><rect width="40" height="44" fill="#3d4654"/><rect x="12" y="24" width="16" height="20" fill="#232830"/></g>' +
-    '<g class="ghost" transform="translate(620 340) scale(1.8)" fill="#f7f7fb" opacity="0.72"><ellipse cx="0" cy="0" rx="22" ry="28"/><path d="M-22 8 L-14 24 L-6 8 L2 24 L10 8 L18 24 L22 8 Z"/><circle cx="-8" cy="-6" r="3" fill="#1d2330"/><circle cx="8" cy="-6" r="3" fill="#1d2330"/></g>' +
-    '<g class="ghost" style="animation-delay:3.2s" transform="translate(960 370) scale(1.6)" fill="#f7f7fb" opacity="0.6"><ellipse cx="0" cy="0" rx="18" ry="24"/><circle cx="-6" cy="-4" r="2.5" fill="#1d2330"/><circle cx="6" cy="-4" r="2.5" fill="#1d2330"/></g>' +
-    '<g class="ghost" style="animation-delay:6s" transform="translate(1220 320) scale(1.6)" fill="#f7f7fb" opacity="0.66"><ellipse cx="0" cy="0" rx="20" ry="26"/><circle cx="-6" cy="-4" r="2.5" fill="#1d2330"/><circle cx="7" cy="-4" r="2.5" fill="#1d2330"/></g>'
+    '<g transform="translate(620 340) scale(1.8)"><g class="ghost" fill="#f7f7fb" opacity="0.72"><ellipse cx="0" cy="0" rx="22" ry="28"/><path d="M-22 8 L-14 24 L-6 8 L2 24 L10 8 L18 24 L22 8 Z"/><circle cx="-8" cy="-6" r="3" fill="#1d2330"/><circle cx="8" cy="-6" r="3" fill="#1d2330"/></g></g>' +
+    '<g transform="translate(960 370) scale(1.6)"><g class="ghost" style="animation-delay:3.2s" fill="#f7f7fb" opacity="0.6"><ellipse cx="0" cy="0" rx="18" ry="24"/><circle cx="-6" cy="-4" r="2.5" fill="#1d2330"/><circle cx="6" cy="-4" r="2.5" fill="#1d2330"/></g></g>' +
+    '<g transform="translate(1220 320) scale(1.6)"><g class="ghost" style="animation-delay:6s" fill="#f7f7fb" opacity="0.66"><ellipse cx="0" cy="0" rx="20" ry="26"/><circle cx="-6" cy="-4" r="2.5" fill="#1d2330"/><circle cx="7" cy="-4" r="2.5" fill="#1d2330"/></g></g>'
   ),
   veterans: sceneSvg(
     '<rect x="900" y="0" width="420" height="210" fill="#0c1830" opacity="0.72"/>' +
     star(980, 36, 10, "#f7f7fb", 0.2) + star(1120, 70, 8, "#f7f7fb", 0.8) + star(1240, 28, 9, "#f7f7fb", 1.3) +
     flag(980, 48, 220, 120) +
-    groundShadow(55, 516, 22) + groundShadow(150, 516, 18) +
-    '<g class="salute" transform="translate(70 514) scale(2.8) translate(0 -16)" fill="#1d2330"><circle cy="-52" r="8"/><path d="M-9 -42 H9 L7 -8 H-7 Z"/><path d="M2 -30 L20 -48" stroke="#1d2330" stroke-width="4"/><path d="M-4 -8 L-6 16 M5 -8 L8 16" stroke="#1d2330" stroke-width="4"/></g>' +
-    '<g class="salute" style="animation-delay:.6s" transform="translate(175 514) scale(2.5) translate(0 -14)" fill="#1d2330"><circle cy="-46" r="7"/><path d="M-8 -36 H8 L6 -6 H-6 Z"/><path d="M1 -26 L16 -42" stroke="#1d2330" stroke-width="3.5"/><path d="M-3 -6 L-5 14 M4 -6 L7 14" stroke="#1d2330" stroke-width="3.5"/></g>'
+    groundShadow(40, 516, 30) + groundShadow(170, 516, 26) +
+    '<g transform="translate(36 508)" fill="#1d2330"><g class="salute"><circle cy="-120" r="20"/><path d="M-22 -96 H22 L16 -16 H-16 Z"/><path d="M6 -70 L48 -112" stroke="#1d2330" stroke-width="8"/><path d="M-10 -16 L-16 18 M12 -16 L18 18" stroke="#1d2330" stroke-width="8"/></g></g>' +
+    '<g transform="translate(168 516)" fill="#1d2330"><g class="salute" style="animation-delay:.6s"><circle cy="-100" r="16"/><path d="M-18 -80 H18 L14 -12 H-14 Z"/><path d="M4 -58 L36 -96" stroke="#1d2330" stroke-width="7"/><path d="M-8 -12 L-12 14 M10 -12 L14 14" stroke="#1d2330" stroke-width="7"/></g></g>'
   ),
   thanksgiving: sceneSvg(
     autumnLeaves() +
-    groundShadow(90, 516, 55) +
+    groundShadow(130, 516, 78) +
     '<g class="turkey-walk">' +
-    art("thanksgiving/walk.webp", 8, 372, 168, 146, "turkey-body") +
-    art("thanksgiving/fan.webp", -6, 328, 190, 190, "turkey-tail") +
+    art("thanksgiving/walk.webp", 6, 292, 250, 226, "turkey-body") +
+    art("thanksgiving/fan.webp", -8, 248, 290, 270, "turkey-tail") +
     "</g>"
   ),
   christmas: sceneSvg(
-    wreath() + groundShadow(120, 516, 48) + christmasTree(120, 430, 1.65) +
-    art("christmas/sleigh.webp", 80, -32, 300, 108, "santa-fly") +
+    wreath() + groundShadow(118, 516, 72) + christmasTree(118, 420, 1) +
+    art("christmas/sleigh.webp", 1140, 28, 400, 145, "santa-fly") +
     '<g fill="#f7f7fb">' +
     '<g transform="translate(1040 16)"><circle class="snow" r="16"/></g>' +
     '<g transform="translate(1180 36)"><circle class="snow" style="animation-delay:1.1s" r="13"/></g>' +
