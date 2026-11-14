@@ -2,7 +2,7 @@
    Lists are stored in localStorage by the page, never in this cache.
    Bump CACHE when shipping a new version so a home-screen install
    drops the old shell and loads the new one after the app is reopened. */
-var CACHE = "re-material-20261114a";
+var CACHE = "re-material-20261114b";
 var ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./logo.png", "./favicon.ico", "./favicon-32.png", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./js/chicago-time.js", "./js/ids.js", "./js/timecard-model.js", "./js/geofence-policy.js", "./js/export-contract.js", "./js/employee-boundary.js", "./js/backend.js", "./js/device-config.js", "./js/sync-queue.js", "./js/jobs.js", "./js/exif.js", "./js/job-photos.js", "./js/photo-paths.js", "./js/photo-backend.js", "./js/storage.js", "./js/native-bridge.js", "./js/secure-store.js", "./js/privacy-notice.js", "./js/tracking-status.js", "./js/pay-rules.js", "./js/holiday-theme.js", "./js/crew-ui.js",
   "./holiday/arbor-day/leaf-1.webp", "./holiday/arbor-day/leaf-2.webp", "./holiday/arbor-day/leaf-3.webp", "./holiday/arbor-day/sapling.webp", "./holiday/arbor-day/seed.webp", "./holiday/arbor-day/sprout.webp", "./holiday/arbor-day/tree.webp", "./holiday/arbor-day/vine.webp",
   "./holiday/christmas/sleigh.webp",
@@ -12,7 +12,8 @@ var ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./logo.png", "./f
   "./holiday/groundhog/hog.webp", "./holiday/groundhog/mound.webp",
   "./holiday/labor-day/electrician.webp",
   "./holiday/mothers-day/flower-1.webp", "./holiday/mothers-day/flower-2.webp", "./holiday/mothers-day/flower-4.webp", "./holiday/mothers-day/heart.webp", "./holiday/mothers-day/petal-1.webp", "./holiday/mothers-day/petal-2.webp", "./holiday/mothers-day/petal-3.webp", "./holiday/mothers-day/petal-4.webp",
-  "./holiday/thanksgiving/fan.webp", "./holiday/thanksgiving/walk.webp"];
+  "./holiday/thanksgiving/fan.webp", "./holiday/thanksgiving/walk.webp",
+  "./holiday/leaves/maple-red.webp", "./holiday/leaves/maple-orange.webp", "./holiday/leaves/maple-gold.webp", "./holiday/leaves/maple-burgundy.webp", "./holiday/leaves/oak-brown.webp", "./holiday/leaves/oak-rust.webp"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ASSETS); }).then(function () { return self.skipWaiting(); }));
