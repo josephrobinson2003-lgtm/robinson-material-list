@@ -340,18 +340,70 @@ function star(x, y, r, color, delay) {
 }
 
 function firework(x, y, delay) {
-  const colors = ["#FFC20E", "#f7f7fb", "#7eb6ff", "#ff6b6b", "#ffd0a8", "#fff4c2"];
+  const colors = ["#FFC20E", "#fff4c2", "#ff6b6b", "#7eb6ff", "#f7f7fb", "#ffd0a8"];
   let sparks = "";
   const count = 18;
   for (let i = 0; i < count; i += 1) {
     const angle = Math.round((i / count) * 360);
-    const radius = 78 + (i % 3) * 36;
+    const radius = 78 + (i % 4) * 24;
     sparks += '<g transform="rotate(' + angle + ') translate(0,' + (-radius) + ')">' +
-      '<circle r="' + (14 + (i % 2) * 6) + '" fill="' + colors[i % colors.length] + '"/></g>';
+      '<circle r="' + (11 + (i % 3) * 4) + '" fill="' + colors[i % colors.length] + '"/></g>';
   }
   return '<g transform="translate(' + x + " " + y + ')">' +
-    '<rect class="fuse" style="animation-delay:' + delay + 's" x="-3" y="0" width="6" height="120" rx="3" fill="#ffe27a"/>' +
-    '<g class="spark" style="animation-delay:' + delay + 's">' + sparks + '<circle r="16" fill="#fff"/></g></g>';
+    '<rect class="fuse" style="animation-delay:' + delay + 's" x="-3" y="6" width="6" height="64" rx="3" fill="#ffe27a"/>' +
+    '<g class="spark" style="animation-delay:' + delay + 's">' + sparks + '<circle r="16" fill="#fff4c2"/></g></g>';
+}
+
+function flake(x, y, r, delay) {
+  let arms = "";
+  for (let i = 0; i < 6; i += 1) {
+    const angle = (i * Math.PI) / 3;
+    arms += '<line x1="0" y1="0" x2="' + (Math.cos(angle) * r).toFixed(1) + '" y2="' + (Math.sin(angle) * r).toFixed(1) + '"/>';
+  }
+  return '<g class="twinkle" style="animation-delay:' + delay + 's" transform="translate(' + x + " " + y + ')" stroke="#1F3864" stroke-width="2.6" stroke-linecap="round">' + arms + "</g>";
+}
+
+function bow(x, y) {
+  return '<g transform="translate(' + x + " " + y + ')">' +
+    '<path fill="#b4232a" d="M0 2 C-18 -16 -28 8 -10 10 C-22 20 -8 26 0 10 C8 26 22 20 10 10 C28 8 18 -16 0 2 Z"/>' +
+    '<circle r="3.4" fill="#FFC20E"/>' +
+    "</g>";
+}
+
+function winterBanner() {
+  let flakes = "";
+  for (let i = 0; i < 8; i += 1) {
+    flakes += flake(75 * (i * 2) + 38, 30, 12, (i * 0.35).toFixed(2));
+  }
+  return scallops(["#d7e6f4", "#f7f7fb", "#c4a574", "#9ec0dc"]) + flakes;
+}
+
+function partyBanner() {
+  let stars = "";
+  const ink = ["#d4af37", "#f7f7fb", "#ffe08a"];
+  for (let i = 0; i < 8; i += 1) {
+    stars += star(75 * (i * 2) + 38, 28, 12, ink[i % 3], i * 0.3);
+  }
+  return scallops(["#161616", "#d4af37", "#e7e7ee"]) + stars;
+}
+
+function pineBanner() {
+  let boughs = '<path d="M0 26 Q150 6 300 28 T600 24 T900 30 T1200 22" fill="none" stroke="#0e4a24" stroke-width="16" stroke-linecap="round"/>' +
+    '<path d="M0 26 Q150 6 300 28 T600 24 T900 30 T1200 22" fill="none" stroke="#1f7a3a" stroke-width="8" stroke-linecap="round"/>';
+  for (let i = 0; i < 36; i += 1) {
+    const x = 8 + i * 34;
+    const y = 18 + (i % 3) * 5;
+    boughs += '<polygon points="' + x + "," + (y + 18) + " " + (x + 9) + "," + (y - 6) + " " + (x + 18) + "," + (y + 16) + '" fill="' + (i % 2 ? "#228445" : "#166b32") + '"/>';
+  }
+  let trim = "";
+  const colors = ["#b4232a", "#FFC20E", "#2456a6", "#f7f7fb"];
+  for (let i = 0; i < 7; i += 1) {
+    const x = 90 + i * 160;
+    trim += '<line x1="' + x + '" y1="36" x2="' + x + '" y2="48" stroke="#d4af37" stroke-width="2"/>' +
+      '<circle class="twinkle" style="animation-delay:' + (i * 0.22).toFixed(2) + 's" cx="' + x + '" cy="56" r="8" fill="' + colors[i % 4] + '"/>';
+  }
+  return '<rect width="1200" height="72" fill="#145c30"/>' + boughs +
+    bow(200, 24) + bow(520, 28) + bow(840, 24) + bow(1120, 28) + trim;
 }
 
 function nameBanner(label, fill, ink) {
@@ -460,7 +512,7 @@ export function themeRing(themeId) {
 }
 
 const BANNERS = {
-  "new-year": bannerSvg('<rect width="1200" height="72" fill="#1F3864"/>' + star(180, 36, 14, "#FFC20E", 0) + star(600, 36, 16, "#f7f7fb", 0.6) + star(1020, 36, 14, "#FFC20E", 1.2)),
+  "new-year": bannerSvg(partyBanner()),
   mlk: bannerSvg(scallops(["#1F3864", "#FFC20E", "#f7f7fb"])),
   valentines: bannerSvg(scallops(["#c23b56", "#f7f7fb", "#e89aaf"])),
   presidents: bannerSvg(scallops(PATRIOTIC)),
@@ -471,7 +523,7 @@ const BANNERS = {
   "fathers-day": bannerSvg(scallops(["#1F3864", "#f7f7fb", "#2F5597"])),
   "arbor-day": bannerSvg(scallops(["#1f7a3a", "#f7f7fb", "#8fd19a"])),
   "earth-day": bannerSvg(scallops(["#145c30", "#f7f7fb", "#7eb6ff"])),
-  groundhog: bannerSvg('<rect width="1200" height="72" fill="#6b4a2a"/>'),
+  groundhog: bannerSvg(winterBanner()),
   juneteenth: bannerSvg(scallops(["#1F4E8C", "#f7f7fb", "#b4232a"])),
   "july-4": bannerSvg(scallops(PATRIOTIC) + star(80, 28, 16, "#FFC20E") + star(600, 26, 18, "#FFC20E") + star(1080, 28, 16, "#FFC20E")),
   "labor-day": bannerSvg(scallops(["#1F3864", "#FFC20E", "#f7f7fb"])),
@@ -479,7 +531,7 @@ const BANNERS = {
   halloween: bannerSvg(scallops(["#e07a1f", "#1d2330", "#f4a259"])),
   veterans: bannerSvg(scallops(PATRIOTIC)),
   thanksgiving: bannerSvg(scallops(["#c4652a", "#8c3b16", "#d4a017", "#f6e2c4"])),
-  christmas: bannerSvg('<rect width="1200" height="72" fill="#145c30"/>')
+  christmas: bannerSvg(pineBanner())
 };
 
 function groundShadow(x, y, rx) {
@@ -508,7 +560,7 @@ function autumnLeaves(limit) {
 
 const SCENES = {
   "new-year": sceneSvg(
-    firework(1160, 36, 0) + firework(1340, 18, 1.8) + firework(1500, 64, 3.4) +
+    firework(1140, 110, 0) + firework(1360, 72, 1.6) + firework(1520, 140, 3.2) +
     groundShadow(140, 516, 100) +
     art("new-year/party.webp", 8, 300, 300, 218)
   ),
@@ -600,10 +652,10 @@ const SCENES = {
   ),
   juneteenth: sceneSvg(art("juneteenth/flag.webp", 1140, 36, 360, 200, "ripple")),
   "july-4": sceneSvg(
-    art("flags/us-flag.webp", 1040, 8, 280, 252, "ripple") +
-    firework(1340, 48, 0.4) + firework(1500, 90, 2.2) +
-    groundShadow(70, 516, 40) +
-    art("july-4/sparkler.webp", 6, 250, 124, 268)
+    art("flags/us-flag.webp", 1208, 36, 250, 225, "ripple") +
+    firework(1088, 96, 0) + firework(1540, 64, 1.7) +
+    groundShadow(100, 516, 80) +
+    art("july-4/sparkler.webp", 2, 246, 198, 272)
   ),
   "labor-day": sceneSvg(
     bunting() +
@@ -615,10 +667,12 @@ const SCENES = {
     art("columbus/ship.webp", 4, 300, 320, 218, "bob")
   ),
   halloween: sceneSvg(
-    autumnLeaves(4) +
+    art("leaves/maple-gold.webp", 1288, 36, 96, 122, "leaf-fall", -1.4) +
+    art("leaves/oak-brown.webp", 1460, 88, 88, 114, "leaf-fall leaf-c", -4.2) +
+    art("leaves/maple-orange.webp", 1360, 160, 80, 102, "leaf-fall leaf-b", -7.1) +
     groundShadow(140, 516, 110) +
     art("halloween/yard.webp", 4, 300, 280, 218) +
-    art("halloween/ghost.webp", 1090, 18, 100, 116, "ghost")
+    art("halloween/ghost.webp", 1048, 4, 118, 136, "ghost")
   ),
   veterans: sceneSvg(
     art("flags/us-flag.webp", 1040, 8, 280, 252, "ripple") +
