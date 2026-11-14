@@ -1,0 +1,10 @@
+{
+  "name": "robinson-geofence",
+  "version": "0.0.1",
+  "private": true,
+  "description": "On-device job arrival and departure for Robinson Electrical. Not a published store plugin.",
+  "main": "src/web.js",
+  "type": "module",
+  "capacitor": { "ios": { "src": "ios" }, "android": { "src": "android" } },
+  "peerDependencies": { "@capacitor/core": ">=8.0.0" }
+}

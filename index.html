@@ -6,11 +6,12 @@
 <meta name="theme-color" content="#1F3864">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Material List">
-<meta name="description" content="Robinson Electrical LLC – Job Material List">
-<meta name="app-version" content="20261002d">
-<title>Robinson Electrical – Material List</title>
+<meta name="apple-mobile-web-app-title" content="Robinson Electrical">
+<meta name="description" content="Robinson Electrical materials, timecards, and job photos">
+<meta name="app-version" content="20261111a">
+<title>Robinson Electrical</title>
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="fonts/holiday.css">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -19,8 +20,150 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:16px;line-height:1.35;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
-header.top{background:#f6f3ec;color:var(--navy);padding:8px 12px 12px;padding-top:calc(8px + env(safe-area-inset-top))}
-header.top .logo{display:block;width:100%;max-width:640px;height:auto;margin:0 auto}
+header.top{background:#f6f3ec;color:var(--navy);padding:0 12px 12px;padding-top:env(safe-area-inset-top)}
+header.top[data-holiday="new-year"]{background:#efe6c4}
+header.top[data-holiday="mlk"]{background:#efe6c4}
+header.top[data-holiday="valentines"]{background:#f8d5df}
+header.top[data-holiday="presidents"]{background:#e4eef8}
+header.top[data-holiday="st-patricks"]{background:#d7f0dc}
+header.top[data-holiday="easter"]{background:#f7e6f4}
+header.top[data-holiday="memorial-day"]{background:#f6e4e4}
+header.top[data-holiday="juneteenth"]{background:#f8e6d2}
+header.top[data-holiday="july-4"]{background:#e4eef8}
+header.top[data-holiday="labor-day"]{background:#e4eef8}
+header.top[data-holiday="columbus"]{background:#e7eef6}
+header.top[data-holiday="halloween"]{background:#f6d3b0}
+header.top[data-holiday="veterans"]{background:#d9e6f5}
+header.top[data-holiday="thanksgiving"]{background:#f6e2c4}
+header.top[data-holiday="christmas"]{background:#e3f2e6}
+header.top[data-holiday="groundhog"]{background:#efe2cf}
+header.top[data-holiday="arbor-day"]{background:#e3f2e6}
+header.top[data-holiday="earth-day"]{background:#d7f0dc}
+header.top[data-holiday="mothers-day"]{background:#f7e6f4}
+header.top[data-holiday="fathers-day"]{background:#e4eef8}
+header.top[data-holiday="halloween"]{background:#f0d4ee}
+.holiday-banner{height:46px;margin:0 -12px 4px}
+.holiday-banner svg{width:100%;height:46px;display:block}
+.holiday-greet{text-align:center;font-size:22px;line-height:1.15;margin:2px 8px 0;color:var(--navy)}
+.logo-wrap{position:relative;max-width:640px;margin:0 auto}
+header.top .logo{display:block;width:100%;height:auto;margin:0 auto;position:relative;z-index:1}
+.logo-tint{position:absolute;inset:0;z-index:2;pointer-events:none;background:transparent}
+.logo-theme{position:absolute;inset:0;z-index:3;pointer-events:none}
+.light-ring{position:absolute;inset:-10px;z-index:4;pointer-events:none}
+.light-ring svg{width:100%;height:100%;display:block}
+.logo-theme svg{width:100%;height:100%;display:block}
+.holiday-svg .twinkle{animation:twinkle 1.8s ease-in-out infinite}
+.holiday-svg .bulb-color{opacity:0;animation:colorcycle 2.2s linear infinite}
+.holiday-svg .wave,.holiday-svg .wreath{animation:sway 2.8s ease-in-out infinite;transform-box:fill-box;transform-origin:top center}
+.holiday-svg .ripple{animation:ripple 1.2s ease-in-out infinite;transform-box:fill-box;transform-origin:left center}
+.holiday-svg .snow{animation:snowfall 7s linear infinite}
+.holiday-svg .drift{animation:leafdrift 8s ease-in-out infinite}
+.holiday-svg .float-up{animation:rise 6.5s ease-in-out infinite}
+.holiday-svg .bob{animation:bob 2.8s ease-in-out infinite}
+.holiday-svg .bat{animation:batfly 7s ease-in-out infinite}
+.holiday-svg .wing{animation:flap .45s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.holiday-svg .glow{animation:flicker 1.6s ease-in-out infinite}
+.holiday-svg .fuse{opacity:0;animation:fuselift 4.8s linear infinite;transform-box:fill-box;transform-origin:center bottom}
+.holiday-svg .spark{opacity:0;animation:burstout 4.8s ease-out infinite;transform-box:fill-box;transform-origin:center}
+.holiday-svg .turkey-walk{transform:translateX(8px);animation:turkeywalk 16s linear infinite}
+.holiday-svg .leaf-fall{--leaf-op:1;transform-box:fill-box;transform-origin:center;animation-name:leaffall;animation-duration:13s;animation-timing-function:linear;animation-iteration-count:infinite}
+.holiday-svg .leaf-b{animation-name:leaffallb}
+.holiday-svg .leaf-c{animation-name:leaffallc}
+.holiday-svg .leaf-far{--leaf-op:.4}
+.holiday-svg .turkey-body{animation:walkshow 16s linear infinite}
+.holiday-svg .turkey-tail{opacity:0;transform-box:fill-box;transform-origin:center bottom;animation:fanshow 16s ease-in-out infinite}
+.holiday-svg .labor-work{transform-box:fill-box;transform-origin:center bottom;animation:laborwork 1.8s ease-in-out infinite}
+.holiday-svg .egg-wobble{transform-box:fill-box;transform-origin:center bottom;animation:eggwob 6s ease-in-out infinite}
+.holiday-svg .earth-globe{transform-box:fill-box;transform-origin:center;animation:earthbob 8s ease-in-out infinite}
+.holiday-svg .sprout-sway{transform-box:fill-box;transform-origin:bottom center;animation:sway 2.6s ease-in-out infinite}
+.holiday-svg .bloom{transform-box:fill-box;transform-origin:center bottom;animation:bloomin 8s ease-in-out infinite}
+.holiday-svg .arbor-stage{opacity:0;transform-box:fill-box;transform-origin:bottom center}
+.holiday-svg .arbor-seed{animation:arbor1 22s linear infinite}
+.holiday-svg .arbor-sprout{animation:arbor2 22s linear infinite}
+.holiday-svg .arbor-sapling{animation:arbor3 22s linear infinite}
+.holiday-svg .arbor-tree{animation:arbor4 22s linear infinite}
+.holiday-banner .banner-shimmer{animation:shimmer 4.8s ease-in-out infinite}
+.holiday-paused .holiday-svg *,.holiday-paused .banner-shimmer,.holiday-paused .fade-in{animation-play-state:paused}
+header.top[data-holiday="valentines"] .logo-tint,.holiday-stage[data-holiday="valentines"] .logo-tint{background:rgba(194,59,86,.22)}
+.holiday-svg .santa-fly{opacity:0;animation:santa 22s linear infinite}
+.holiday-svg .ghost{animation:ghostup 8s linear infinite;opacity:.92}
+.holiday-svg .hopper{animation:hopacross 12s linear infinite}
+.holiday-svg .egg-bit,.holiday-svg .coin{animation:pickup 12s linear infinite}
+.holiday-svg .picker{animation:walkacross 12s linear infinite}
+.holiday-svg .groundhog{animation:peek 7s ease-in-out infinite;transform-box:fill-box;transform-origin:center bottom}
+.holiday-svg .sprout{transform:scaleY(1);transform-box:fill-box;transform-origin:bottom center;animation:grow 7s ease-in-out infinite}
+.holiday-svg .hammer{animation:swing 0.7s ease-in-out infinite;transform-box:fill-box;transform-origin:20% 80%}
+.holiday-svg .salute{animation:shift 2.4s ease-in-out infinite}
+.holiday-svg .fade-in,.holiday-banner .fade-in{animation:fadein 4s ease-in-out infinite}
+.holiday-preview{position:fixed;inset:0;z-index:40;background:#f6f3ec;display:flex;flex-direction:column;padding:12px;padding-top:calc(12px + env(safe-area-inset-top))}
+.holiday-preview[hidden]{display:none}
+.holiday-preview-bar{display:flex;justify-content:space-between;gap:8px}
+.holiday-preview-list{overflow:auto;margin-top:12px}
+.holiday-stage{margin-top:8px}
+.holiday-stage .logo-wrap{max-width:100%}
+.holiday-stage .logo{width:100%;height:auto;max-height:none}
+@keyframes twinkle{50%{opacity:.35}}
+@keyframes colorcycle{0%{opacity:0}8%{opacity:1}24%{opacity:1}32%{opacity:0}100%{opacity:0}}
+@keyframes sway{0%,100%{transform:rotate(0deg)}50%{transform:rotate(5deg)}}
+@keyframes ripple{0%,100%{transform:translateY(0) skewX(0deg)}50%{transform:translateY(-8px) skewX(-18deg)}}
+@keyframes snowfall{0%{transform:translateY(-4px);opacity:0}20%{opacity:.95}100%{transform:translateY(26px);opacity:0}}
+@keyframes leafdrift{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(22px) rotate(18deg);opacity:.35}}
+@keyframes rise{0%{transform:translateY(6px);opacity:.65}100%{transform:translateY(-18px);opacity:1}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes batfly{0%,100%{transform:translateX(0)}50%{transform:translateX(14px)}}
+@keyframes flap{50%{transform:scaleY(.55)}}
+@keyframes flicker{0%,100%{opacity:.3}50%{opacity:.95}}
+@keyframes shimmer{0%,100%{opacity:1}50%{opacity:.72}}
+@keyframes santa{0%,64%{transform:translate(0,6px);opacity:0}72%{opacity:1;transform:translate(-4px,-2px)}84%{opacity:1;transform:translate(8px,-10px)}94%{opacity:1;transform:translate(2px,-4px)}99%,100%{opacity:0;transform:translate(12px,4px)}}
+@keyframes ghostup{0%,100%{transform:translateY(6px);opacity:.8}50%{transform:translateY(-12px);opacity:1}}
+@keyframes hopacross{0%{transform:translate(0,4px)}22%{transform:translate(14px,-8px)}44%{transform:translate(26px,2px)}62%,100%{transform:translate(22px,0)}}
+@keyframes walkacross{0%{transform:translateX(0)}100%{transform:translateX(14px)}}
+@keyframes pickup{0%,18%{opacity:1}28%,100%{opacity:0}}
+@keyframes peek{0%,14%{transform:translateY(28px)}28%,68%{transform:translateY(0) rotate(0deg)}40%{transform:translateY(0) rotate(-6deg)}54%{transform:translateY(0) rotate(6deg)}82%,100%{transform:translateY(28px)}}
+@keyframes grow{0%,10%{transform:scaleY(.05)}60%,100%{transform:scaleY(1)}}
+@keyframes swing{0%,100%{transform:rotate(-18deg)}50%{transform:rotate(28deg)}}
+@keyframes shift{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+@keyframes fadein{0%,20%{opacity:.15}45%,100%{opacity:1}}
+@keyframes fuselift{0%{transform:translateY(8px) scaleY(.4);opacity:0}12%{opacity:1}30%{transform:translateY(0) scaleY(1);opacity:1}42%{opacity:0}100%{opacity:0}}
+@keyframes burstout{0%,6%{transform:scale(.12);opacity:0}14%{opacity:1;transform:scale(.45)}24%,68%{opacity:1;transform:scale(1)}84%{opacity:.3;transform:scale(1.05)}100%{opacity:0;transform:scale(.86)}}
+@keyframes turkeywalk{0%{transform:translateX(0)}36%{transform:translateX(28px)}64%{transform:translateX(28px)}100%{transform:translateX(42px)}}
+@keyframes leaffall{0%{transform:translate(0,-6px) rotate(-6deg) scaleX(1);opacity:0}10%{opacity:var(--leaf-op)}26%{transform:translate(14px,34px) rotate(28deg) scaleX(.82)}44%{transform:translate(-8px,64px) rotate(70deg) scaleX(1);opacity:var(--leaf-op)}62%{transform:translate(12px,92px) rotate(120deg) scaleX(.8)}78%,90%{transform:translate(4px,108px) rotate(150deg) scaleX(1);opacity:var(--leaf-op)}100%{transform:translate(6px,114px) rotate(164deg) scaleX(.86);opacity:0}}
+@keyframes leaffallb{0%{transform:translate(0,-8px) rotate(8deg) scaleX(.84);opacity:0}12%{opacity:var(--leaf-op)}30%{transform:translate(-16px,40px) rotate(-24deg) scaleX(1)}48%{transform:translate(10px,72px) rotate(40deg) scaleX(.8)}66%{transform:translate(-6px,98px) rotate(96deg) scaleX(.86)}80%,92%{transform:translate(-2px,110px) rotate(120deg) scaleX(1);opacity:var(--leaf-op)}100%{transform:translate(2px,116px) rotate(136deg) scaleX(.84);opacity:0}}
+@keyframes leaffallc{0%{transform:translate(0,0) rotate(0deg) scaleX(1);opacity:0}10%{opacity:var(--leaf-op)}24%{transform:translate(8px,30px) rotate(36deg) scaleX(.8)}42%{transform:translate(-12px,62px) rotate(80deg) scaleX(1)}58%{transform:translate(10px,90px) rotate(130deg) scaleX(.82)}76%,90%{transform:translate(2px,106px) rotate(160deg) scaleX(1);opacity:var(--leaf-op)}100%{transform:translate(4px,112px) rotate(176deg) scaleX(.86);opacity:0}}
+@keyframes walkshow{0%,34%{opacity:1}46%,58%{opacity:0}70%,100%{opacity:1}}
+@keyframes fanshow{0%,32%{opacity:0;transform:scale(.68)}46%,58%{opacity:1;transform:scale(1)}72%,100%{opacity:0;transform:scale(.68)}}
+@keyframes laborwork{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-6px) rotate(-1.6deg)}}
+@keyframes eggwob{0%,4%,100%{transform:rotate(0deg)}2%{transform:rotate(-9deg)}}
+@keyframes earthbob{0%,100%{transform:translateY(8px) rotate(-6deg)}50%{transform:translateY(-14px) rotate(7deg)}}
+@keyframes bloomin{0%,8%{opacity:.85;transform:scale(.92)}16%,84%{opacity:1;transform:scale(1)}94%,100%{opacity:.85;transform:scale(.92)}}
+@keyframes arbor1{0%,8%{opacity:1;transform:scale(1)}14%,100%{opacity:0;transform:scale(.75)}}
+@keyframes arbor2{0%,10%{opacity:0;transform:scale(.5)}14%,24%{opacity:1;transform:scale(1)}30%,100%{opacity:0;transform:scale(1)}}
+@keyframes arbor3{0%,26%{opacity:0;transform:scale(.55)}30%,42%{opacity:1;transform:scale(1)}48%,100%{opacity:0;transform:scale(1)}}
+@keyframes arbor4{0%,44%{opacity:0;transform:scale(.72)}52%,100%{opacity:1;transform:scale(1)}}
+@keyframes headbob{0%,36%,54%,78%,92%,100%{transform:translateY(0)}8%,24%,62%,74%{transform:translateY(-5px)}4%,16%,28%,58%,70%{transform:translateY(0)}}
+@keyframes headnod{0%,36%,54%,78%,92%,100%{transform:rotate(0deg)}6%,22%,64%{transform:rotate(-8deg)}12%,28%,70%{transform:rotate(6deg)}}
+@keyframes stepleg{0%{transform:rotate(24deg)}4%{transform:rotate(-24deg)}8%{transform:rotate(24deg)}12%{transform:rotate(-24deg)}16%{transform:rotate(24deg)}20%{transform:rotate(-24deg)}24%{transform:rotate(24deg)}28%{transform:rotate(-24deg)}32%{transform:rotate(8deg)}54%{transform:rotate(0deg)}58%{transform:rotate(-24deg)}62%{transform:rotate(24deg)}66%{transform:rotate(-24deg)}70%{transform:rotate(24deg)}74%{transform:rotate(0deg)}92%{transform:rotate(0deg)}96%{transform:rotate(18deg)}100%{transform:rotate(-18deg)}}
+@keyframes stepleg2{0%{transform:rotate(-24deg)}4%{transform:rotate(24deg)}8%{transform:rotate(-24deg)}12%{transform:rotate(24deg)}16%{transform:rotate(-24deg)}20%{transform:rotate(24deg)}24%{transform:rotate(-24deg)}28%{transform:rotate(24deg)}32%{transform:rotate(0deg)}54%{transform:rotate(0deg)}58%{transform:rotate(24deg)}62%{transform:rotate(-24deg)}66%{transform:rotate(24deg)}70%{transform:rotate(-24deg)}74%{transform:rotate(0deg)}92%{transform:rotate(0deg)}96%{transform:rotate(-18deg)}100%{transform:rotate(18deg)}}
+@keyframes fantail{0%,32%{transform:scaleX(.25)}40%,52%{transform:scaleX(1)}58%,74%{transform:scaleX(.25)}82%,90%{transform:scaleX(1)}96%,100%{transform:scaleX(.25)}}
+@media (prefers-reduced-motion: reduce){
+  .holiday-svg .twinkle,.holiday-svg .bulb-color,.holiday-svg .wave,.holiday-svg .wreath,.holiday-svg .ripple,.holiday-svg .snow,.holiday-svg .drift,.holiday-svg .float-up,.holiday-svg .bob,.holiday-svg .bat,.holiday-svg .wing,.holiday-svg .glow,.holiday-svg .fuse,.holiday-svg .spark,.holiday-svg .turkey-walk,.holiday-svg .turkey-body,.holiday-svg .turkey-tail,.holiday-svg .santa-fly,.holiday-svg .ghost,.holiday-svg .hopper,.holiday-svg .egg-bit,.holiday-svg .egg-wobble,.holiday-svg .coin,.holiday-svg .picker,.holiday-svg .groundhog,.holiday-svg .sprout,.holiday-svg .sprout-sway,.holiday-svg .hammer,.holiday-svg .labor-work,.holiday-svg .salute,.holiday-svg .fade-in,.holiday-svg .earth-globe,.holiday-svg .bloom,.holiday-svg .arbor-seed,.holiday-svg .arbor-sprout,.holiday-svg .arbor-sapling,.holiday-svg .arbor-tree,.holiday-svg .leaf-fall,.holiday-banner .fade-in,.holiday-banner .banner-shimmer{animation:none}
+  .holiday-svg .spark,.holiday-svg .fuse,.holiday-svg .santa-fly,.holiday-svg .ghost,.holiday-svg .bloom,.holiday-svg .arbor-tree,.holiday-svg .turkey-body{opacity:1}
+  .holiday-svg .turkey-tail,.holiday-svg .arbor-seed,.holiday-svg .arbor-sprout,.holiday-svg .arbor-sapling{opacity:0}
+  .holiday-svg .santa-fly{transform:none}
+  .holiday-svg .turkey-walk{transform:translateX(8px)}
+  .holiday-svg .leaf-far{opacity:.45}
+  .holiday-svg .groundhog,.holiday-svg .earth-globe,.holiday-svg .bloom,.holiday-svg .arbor-tree{transform:none}
+}
+.textlink{background:none;border:0;padding:0;color:var(--blue);font:inherit;font-weight:700;text-decoration:underline}
+.connectedline{margin:0;padding:12px 14px;font-weight:700;color:var(--navy)}
+.primary-actions{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;margin:8px 0 4px}
+.primary-actions .btn{width:100%;height:54px}
+#tc_confirm{width:100%;margin-top:8px}
+details.more{background:#fff;border:1px solid var(--line);border-radius:12px;margin:10px 0}
+details.more:not([open]) .more-body{display:none}
+details.more>summary{cursor:pointer;padding:14px;font-weight:700;color:var(--navy);list-style:none}
+details.more>summary::-webkit-details-marker{display:none}
+details.more .more-body{padding:0 14px 14px}
 header.top .sub{font-size:14px;margin-top:2px;color:var(--blue);text-align:center}
 header.top .sub a{color:var(--blue)}
 header.top .title2{font-size:16px;font-weight:700;margin-top:8px;color:var(--navy);text-align:center}
@@ -109,16 +252,90 @@ summary:focus-visible,.listpick:focus-visible,.actions .btn:focus-visible{outlin
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));background:#1d2330;color:#fff;padding:10px 16px;border-radius:10px;font-size:15px;z-index:30;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;text-align:center}
 .toast.show{opacity:1}
 footer.foot{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 6px}
+.apptabs{display:flex;gap:8px;max-width:640px;margin:0 auto;padding:10px 10px 0}
+.apptab{flex:1;min-height:44px;border-radius:12px;border:1.5px solid #c6cfdd;background:#fff;color:var(--navy);font-weight:700;font:inherit}
+.apptab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.crew{max-width:640px;margin:0 auto;padding:10px 10px 24px}
+.pilot{background:#fff8e1;border:1px solid #f0d78c;border-radius:12px;padding:10px 12px;margin:10px 0}
+.statusline{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0}
+.statusline b{display:block;color:var(--navy)}
+.statusline span,.noticebody p,.visit p{color:var(--muted)}
+.noticebody p{margin:0 0 10px}
+.warn{color:#8a5a00;font-weight:600}
+.visit{border-top:1px solid var(--line);padding:10px 0}
+.scope-task{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);list-style:none}
+.scope-task input{width:22px;height:22px;margin-top:2px;flex:none}
+.pill{display:inline-block;background:#fff3cd;border-radius:999px;padding:2px 8px;font-size:12px;color:#6a4b00}
+.checkline{display:flex;gap:8px;align-items:center;font-weight:600}
+h3{margin:12px 0 6px;font-size:15px}
 @media (max-width:360px){.step button{width:44px;height:44px}.step input{width:56px;height:44px}.row .name{font-size:15px}}
+.timeclock{background:linear-gradient(180deg,#eceff3 0%,#c5ccd6 42%,#a8b1bd 100%);border:3px solid #4e5662;border-radius:18px;padding:12px;box-shadow:inset 0 1px 0 #fff,0 7px 0 #5c6572;color:#111}
+.clock-screws{display:flex;justify-content:space-between;margin-bottom:8px}
+.clock-screws span,.clock-screws i{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#f4f6f8,#8d96a3 55%,#5c6570);box-shadow:inset 0 0 0 1px #3e4650;display:block}
+.clock-well{background:radial-gradient(circle at 50% 38%,#fffdf8,#f3ead8 62%,#e4d5b8);border:4px solid #6e7682;border-radius:16px;padding:12px 10px 14px;text-align:center}
+.clock-face{width:min(210px,62vw);height:min(210px,62vw);margin:0 auto;position:relative}
+.clock-face svg{width:100%;height:100%;display:block}
+.date-window{display:inline-block;margin-top:8px;background:#111;color:#f6f1e4;border-radius:4px;padding:4px 10px;font-weight:700;letter-spacing:.3px;font-size:14px}
+.clock-digits{margin:8px 0 0;font-size:44px;line-height:1;font-weight:800;letter-spacing:.5px;color:#111;font-variant-numeric:tabular-nums}
+.punch-status{margin:10px 0;padding:12px 14px;background:#fffef6;border:3px solid #111;border-radius:12px;font-size:20px;line-height:1.25;font-weight:800;color:#111}
+.punch-lever{display:flex;align-items:center;justify-content:center;width:100%;min-height:92px;margin:8px 0;border:0;border-radius:14px;font:inherit;font-size:28px;font-weight:900;letter-spacing:1px;color:#fff;touch-action:manipulation;box-shadow:0 7px 0 #1a1a1a;position:relative}
+.punch-lever.in{background:#0c7a32}
+.punch-lever.out{background:#b01c1c}
+.punch-lever:active{transform:translateY(6px);box-shadow:0 1px 0 #1a1a1a}
+.punch-lever:focus-visible{outline:4px solid #111;outline-offset:3px}
+.punch-side{width:100%;min-height:56px;margin:0 0 8px;font-size:18px}
+.paper-card{background:#fffef8;border:1px solid #b7a48a;border-radius:4px;padding:12px 12px 8px;margin:10px 0;color:#111;box-shadow:inset 0 0 0 1px #efe4d0}
+.paper-card h2{margin:0;background:transparent;color:#111;border:0;padding:0;font-size:13px;letter-spacing:1.5px;text-transform:uppercase}
+.card-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-end;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:8px}
+.card-name{font-size:13px;font-weight:700;color:#111;display:block;flex:1}
+.card-name input{display:block;width:100%;margin-top:2px;font-size:18px;font-weight:800;border:0;border-bottom:2px solid #111;background:transparent;border-radius:0;padding:4px 0;color:#111}
+.card-week{font-size:13px;font-weight:800;text-align:right;max-width:46%}
+.punch-row{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:8px 0;border-bottom:1px dashed #c9b89a;font-variant-numeric:tabular-nums}
+.punch-row b{font-size:16px}
+.punch-row .when{font-weight:800;font-size:16px}
+.ink-stamp{display:inline-block;border:3px solid #9d1c1c;color:#9d1c1c;font-weight:900;letter-spacing:1px;padding:0 6px;border-radius:4px;transform:rotate(-6deg)}
+.ink-stamp.out{border-color:#111;color:#111}
+.today-total{margin:8px 0 0;font-size:20px;font-weight:900}
+#tc_confirm{background:#1F3864}
+#tc_confirm[disabled]{background:#d5dbe3;color:#1a1a1a;opacity:1}
+.job-picker,.punch-confirm{background:#fffef6;border:3px solid #111;border-radius:14px;padding:12px;margin:8px 0}
+.job-picker h2,.punch-confirm h2{background:transparent;color:#111;border:0;padding:0 0 6px;font-size:22px;text-transform:none;letter-spacing:0}
+.punch-playing .paper-card{animation:cardslide .4s ease}
+.punch-playing .ink-stamp.fresh{animation:stampin .35s ease .15s both}
+@keyframes cardslide{from{transform:translateY(-16px);opacity:.35}to{transform:none;opacity:1}}
+@keyframes stampin{0%{transform:scale(1.35) rotate(-12deg);opacity:0}100%{transform:rotate(-6deg);opacity:1}}
+@media (max-width:380px){
+  .clock-digits{font-size:36px}
+  .punch-lever{min-height:84px;font-size:24px}
+  .punch-status{font-size:18px}
+}
+@media (prefers-reduced-motion: reduce){
+  .punch-lever:active{transform:none;box-shadow:0 7px 0 #1a1a1a}
+  .punch-playing .paper-card,.punch-playing .ink-stamp.fresh{animation:none}
+}
 </style>
 </head>
 <body>
-<header class="top">
-  <img class="logo" src="logo.png" width="1600" height="525" alt="Robinson Electrical LLC">
-  <div class="title2">Job Material List</div>
+<header class="top" id="app_header">
+  <div class="holiday-banner" id="holiday_banner" hidden></div>
+  <div class="logo-wrap" id="logo_wrap">
+    <img class="logo" src="logo.png" width="1600" height="525" alt="Robinson Electrical LLC">
+    <div class="logo-tint" id="logo_tint" hidden></div>
+    <div class="logo-theme" id="logo_theme" hidden></div>
+    <div class="light-ring" id="logo_ring" hidden></div>
+  </div>
+  <div class="title2">Robinson Electrical</div>
+  <div class="sub" id="section_label">Job Material List</div>
   <div class="sub">St. Louis, MO &middot; <a href="tel:+13145784050">314-578-4050</a></div>
+  <div class="holiday-greet" id="holiday_greet" hidden></div>
 </header>
-<main>
+<nav class="apptabs" aria-label="Sections">
+  <button type="button" class="apptab on" data-tab="materials" aria-pressed="true">Materials</button>
+  <button type="button" class="apptab" data-tab="timecards" aria-pressed="false">Timecards</button>
+  <button type="button" class="apptab" data-tab="photos" aria-pressed="false">Job photos</button>
+  <button type="button" class="apptab" data-tab="scope" aria-pressed="false">Scope</button>
+</nav>
+<main id="materials_panel">
 <div class="notice" id="notice" role="region" aria-label="Saved lists">
   <p><b>Your lists now save on this phone.</b> If you close the app before sending, the unfinished list is still here when you come back. Tap <b>Previous Lists</b> to open one of the last 3. Each one shows the job address and date. This note only shows once.</p>
   <button type="button" class="btn new" id="notice_ok">Got it</button>
@@ -130,7 +347,7 @@ footer.foot{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 6
       <div><label class="f" for="h_date">Date</label><input class="t" type="date" id="h_date" name="date"></div>
       <div><label class="f" for="h_employee">Employee</label><input class="t" type="text" id="h_employee" name="employee" autocomplete="name" autocapitalize="words"></div>
       <div class="full"><label class="f" for="h_customer">Customer</label><input class="t" type="text" id="h_customer" name="customer" autocapitalize="words"></div>
-      <div class="full"><label class="f" for="h_address">Job Address <span class="req">*</span></label><input class="t" type="text" id="h_address" name="address" autocapitalize="words" required><div class="errmsg" id="addr_err">Job address is required before sending.</div></div>
+      <div class="full"><label class="f" for="h_address">Job Address <span class="req">*</span></label><input class="t" type="text" id="h_address" name="address" list="shared_jobs" autocapitalize="words" required><datalist id="shared_jobs"></datalist><div class="hint">Jobs you type here are the same list used for time and photos on this phone.</div><div class="errmsg" id="addr_err">Job address is required before sending.</div></div>
       <div class="full"><label class="f" for="h_desc">Job Description</label><textarea class="t" id="h_desc" name="description" rows="2" style="min-height:64px"></textarea></div>
       <div><label class="f" for="h_labor100">Labor hrs @ $100/hr</label><input class="t" type="number" inputmode="decimal" min="0" step="0.25" id="h_labor100" name="labor100"></div>
       <div><label class="f" for="h_labor85">Labor hrs @ $85/hr</label><input class="t" type="number" inputmode="decimal" min="0" step="0.25" id="h_labor85" name="labor85"></div>
@@ -159,10 +376,11 @@ footer.foot{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 6
     </div>
   </section>
 </form>
-<footer class="foot">Robinson Electrical LLC &middot; 314-578-4050 &middot; Lists save on this phone (last 3).</footer>
+<footer class="foot">Robinson Electrical LLC &middot; 314-578-4050 &middot; Lists save on this phone (last 3). <button type="button" class="textlink privacy-reopen">Privacy notice</button></footer>
 </main>
+<div id="crew_panels"></div>
 
-<div class="bar"><div class="in">
+<div class="bar" id="material_bar"><div class="in">
   <div class="count"><b id="cnt">0</b> <span id="cntlbl">items</span><small id="cntsub">No items entered yet</small></div>
   <button type="button" class="btn" id="send">Send &#9993;</button>
 </div></div>
@@ -595,7 +813,7 @@ var PDF_TITLE = "Robinson Electrical \u2013 Job Material List";
 var NAME_KEY = "re_employee_name";
 var STORE_KEY = "re_saved_lists";
 var NOTICE_KEY = "re_autosave_notice_v1";
-var APP_VERSION = "20261002d";
+var APP_VERSION = "20261111a";
 var OTHER_ROWS = 8;
 var MAX_LISTS = 3;
 var $ = function(id){ return document.getElementById(id); };
@@ -625,14 +843,19 @@ var CATS = [
     ea("qty_fan_brace_box", "Fan Brace Box"),
     ea("qty_fan_pancake_box", "Fan Pancake Box"),
     item("qty_milwaukee_staples_box_of_600", "Milwaukee Staples (Box of 600)", "box", 1),
+    ea("qty_stack_its_cable_stackers", "Stack-Its (cable stackers)"),
+    ea("qty_single_gang_cut_in_box", "Single Gang Cut-In Box"),
+    ea("qty_two_gang_cut_in_box", "Two Gang Cut-In Box"),
     ea("qty_5in_halo_can_light", "5in Halo Can Light"),
+    ea("qty_5in_halo_cut_in_remodel_can", "5in Halo Cut-In / Remodel Can"),
     ea("qty_4in_halo_can_light", "4in Halo Can Light"),
     ea("qty_6in_wafer_can_light", "6in Wafer Can Light"),
     ea("qty_4in_wafer_can_light", "4in Wafer Can Light"),
     ea("qty_wafer_flat_bracket", "Wafer Flat Bracket"),
     ea("qty_wafer_slider_bracket", "Wafer Slider Bracket"),
     ea("qty_80cfm_panasonic_fan", "80CFM Panasonic Fan"),
-    ea("qty_110cfm_panasonic_fan", "110CFM Panasonic Fan")
+    ea("qty_110cfm_panasonic_fan", "110CFM Panasonic Fan"),
+    ea("qty_broan_50_cfm_bath_fan", "Broan 50 CFM Bath Fan")
   ]},
   {name:"Trims", items:[
     ea("qty_toggle_dimmer_switch", "Toggle Dimmer Switch"),
@@ -656,6 +879,7 @@ var CATS = [
     ea("qty_dryer_range_stainless_steel_plate", "Dryer/Range Stainless Steel Plate"),
     ea("qty_dryer_range_plate", "Dryer/Range Plate"),
     ea("qty_duplex_receptacle_plate", "Duplex Receptacle Plate"),
+    ea("qty_single_gang_blank_cover", "Single Gang Blank Cover"),
     ea("qty_single_gang_switch_plate", "Single Gang Switch Plate"),
     ea("qty_two_gang_switch_plate", "Two Gang Switch Plate"),
     ea("qty_three_gang_switch_plate", "Three Gang Switch Plate"),
@@ -670,10 +894,12 @@ var CATS = [
     ea("qty_kidde_wireless_smoke_co_combo", "Kidde Wireless Smoke/CO Combo"),
     ea("qty_kidde_wireless_bridge_unit", "Kidde Wireless Bridge Unit"),
     ea("qty_5_6in_halo_can_trim", "5/6in Halo Can Trim"),
+    ea("qty_5_6in_halo_high_lumen_can_trim", "5/6in Halo High-Lumen Can Trim"),
     ea("qty_4in_halo_can_trim", "4in Halo Can Trim"),
     ea("qty_6in_disk_light", "6in Disk Light"),
     ea("qty_chime_kit", "Chime Kit"),
-    ea("qty_keyless_fixture", "Keyless Fixture")
+    ea("qty_keyless_fixture", "Keyless Fixture"),
+    ea("qty_pull_chain_fixture", "Pull-Chain Fixture")
   ]},
   {name:"Breakers", items:[
     ea("qty_15amp_single", "15Amp Single"),
@@ -723,7 +949,8 @@ var CATS = [
     ea("qty_metal_stud_four_square_box", "Metal Stud Four Square Box"),
     ea("qty_single_gang_bell_box", "Single Gang Bell Box"),
     ea("qty_two_gang_bell_box", "Two Gang Bell Box"),
-    ea("qty_round_bell_box", "Round Bell Box")
+    ea("qty_round_bell_box", "Round Bell Box"),
+    ea("qty_octagon_box", "Octagon Box")
   ]},
   {name:"Wire", items:[
     item("qty_14_2_romex", "14-2 Romex", "ft", 25),
@@ -731,6 +958,9 @@ var CATS = [
     item("qty_12_2_romex", "12-2 Romex", "ft", 25),
     item("qty_12_3_romex", "12-3 Romex", "ft", 25),
     item("qty_10_3_romex", "10-3 Romex", "ft", 25),
+    item("qty_8_2_nmb_romex", "8-2 NM-B Romex", "ft", 25),
+    item("qty_6_3_nmb_romex", "6-3 NM-B Romex", "ft", 25),
+    item("qty_omni_wire", "Omni-Wire", "ft", 25),
     item("qty_12_2_mc", "12-2 MC", "ft", 25),
     item("qty_12_3_mc", "12-3 MC", "ft", 25),
     item("qty_18_5", "18-5", "ft", 25, "thermostat / low-voltage"),
@@ -739,7 +969,8 @@ var CATS = [
   {name:"Misc", items:[
     ea("qty_purple_wire_nuts", "Purple Wire Nuts"),
     ea("qty_single_gang_bubble_cover", "Single Gang Bubble Cover"),
-    ea("qty_two_gang_bubble_cover", "Two Gang Bubble Cover")
+    ea("qty_two_gang_bubble_cover", "Two Gang Bubble Cover"),
+    ea("qty_4in_to_3in_adapter", "4in-to-3in Adapter")
   ]}
 ];
 
@@ -892,6 +1123,7 @@ function snapshotFromForm(){
     labor100: $("h_labor100").value,
     labor85: $("h_labor85").value,
     notes: $("h_notes").value,
+    jobId: (window.RobinsonJobs && window.RobinsonJobs.idFor($("h_address").value)) || "",
     qty: qty,
     others: oth,
     photos: photoMeta.map(function(p){ return {id:p.id, name:p.name, type:p.type}; })
@@ -1480,7 +1712,7 @@ function send(){
   busy = true; $("send").disabled = true;
   Promise.all([logoReady, photosReady()]).then(function(){
   var p;
-  try { p = makePdf(); lastPdf = p; }
+  try { p = makePdf(); lastPdf = p; if (window.RobinsonBackend && window.RobinsonBackend.submitMaterial) window.RobinsonBackend.submitMaterial(p.state); }
   catch(err){ busy=false; $("send").disabled=false; alert("Could not make the PDF: " + err.message); return; }
   var file = null;
   try { file = new File([p.blob], p.name, {type:"application/pdf"}); } catch(_){}
@@ -1567,5 +1799,25 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
 })();
 
 </script>
+<div id="holiday_preview" class="holiday-preview" hidden>
+  <div class="holiday-preview-bar">
+    <button type="button" class="btn secondary" id="holiday_preview_back">Holidays</button>
+    <button type="button" class="btn secondary" id="holiday_preview_close">Close</button>
+  </div>
+  <div id="holiday_preview_list" class="holiday-preview-list"></div>
+  <div id="holiday_preview_play" hidden>
+    <div class="holiday-stage" id="holiday_preview_stage">
+      <div class="holiday-banner" id="preview_banner"></div>
+      <div class="logo-wrap">
+        <img class="logo" src="logo.png" width="1600" height="525" alt="Robinson Electrical LLC">
+        <div class="logo-tint" id="preview_tint" hidden></div>
+        <div class="logo-theme" id="preview_theme"></div>
+        <div class="light-ring" id="preview_ring" hidden></div>
+      </div>
+      <div class="holiday-greet" id="preview_greet"></div>
+    </div>
+  </div>
+</div>
+<script type="module" src="js/crew-ui.js"></script>
 </body>
 </html>
