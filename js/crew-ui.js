@@ -16,7 +16,8 @@ import {
   confirmJob, deletePin, editEntry, emptyState, manualStart, rejectSuggestion, reviewDay,
   savePin, setEmployeeName, setJobDraft, setLocationOptIn, stopInterval, switchOrInsert
 } from "./timecard-model.js";
-import { formatChicagoDay, formatChicagoLabel, dutyDateOf, reportWeek } from "./chicago-time.js";
+import { formatChicagoDay, formatChicagoLabel, dutyDateOf, reportWeek, chicagoParts, elapsedMinutes, chicagoWallToUtc } from "./chicago-time.js";
+import { billableMinutes } from "./pay-rules.js";
 import { trackingLabel } from "./tracking-status.js";
 
 const secure = createWebSecureStore();
@@ -34,6 +35,11 @@ let serverOpen = false;
 let themeOverride = "";
 let logoTaps = 0;
 let moreOpen = false;
+let confirmOutOpen = false;
+let jobPickerOpen = false;
+let punchFlash = "";
+let punchBusy = false;
+let pickerNote = "Pick the job, then punch in.";
 let blobStore = null;
 let bookStore = null;
 
@@ -65,6 +71,7 @@ export async function startCrewApp() {
   await drainNativeEvents();
   draw();
   paintHoliday(themeOverride);
+  setInterval(paintClock, 1000);
   const logo = document.getElementById("logo_wrap");
   if (logo) logo.addEventListener("click", () => {
     logoTaps += 1;
@@ -123,6 +130,216 @@ function statusWord(status) {
   return "Saved on this phone";
 }
 
+function openClockEntry() {
+  const entry = (state.entries || []).find((item) => {
+    const row = item.revisions[item.revisions.length - 1];
+    return row.status === "recorded" && !row.end;
+  });
+  if (!entry) return null;
+  return { entry, row: entry.revisions[entry.revisions.length - 1] };
+}
+
+function shortChicagoDay(dutyDate) {
+  const parsed = chicagoWallToUtc(dutyDate, "12:00");
+  if (!parsed.ok) return dutyDate;
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    weekday: "short",
+    month: "short",
+    day: "numeric"
+  }).format(parsed.date);
+}
+
+function plainTime(iso) {
+  if (!iso) return "—";
+  const p = chicagoParts(iso);
+  let hour = Number(p.hour);
+  const suffix = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12;
+  return hour + ":" + p.minute + " " + suffix;
+}
+
+function formatHours(mins) {
+  const total = Math.max(0, Math.round(mins));
+  return Math.floor(total / 60) + "h " + String(total % 60).padStart(2, "0") + "m";
+}
+
+function statusSentence(open) {
+  if (!open) return "You're off the clock";
+  const since = plainTime(open.row.start);
+  if (open.row.kind === "break") return "You're on a paid break since " + since;
+  return "You're clocked in at " + (open.row.jobLabel || "the job") + " since " + since;
+}
+
+function rowPaidMinutes(item, now) {
+  const row = item.row;
+  if (row.status !== "recorded" || !row.start) return 0;
+  const end = row.end || now.toISOString();
+  const elapsed = elapsedMinutes(row.start, end);
+  if (elapsed == null) return 0;
+  const travel = row.kind === "work" && row.end && item.travel ? (item.travel.travelMinutes || 0) : 0;
+  return billableMinutes({ kind: row.kind, elapsedMinutes: elapsed, travelMinutes: travel });
+}
+
+function punchRows(review, now) {
+  const items = review.visits.concat(review.breaks).slice().sort((a, b) => new Date(a.row.start || 0) - new Date(b.row.start || 0));
+  if (!items.length) return "<p>No punches yet today.</p>";
+  return items.map((item, index) => {
+    const row = item.row;
+    const last = index === items.length - 1;
+    const fresh = last && punchFlash ? " fresh" : "";
+    const suggested = row.status === "suggested";
+    const stamp = row.kind === "break" ? "BREAK" : (row.end ? "OUT" : "IN");
+    const stampClass = row.end || row.kind === "break" ? "ink-stamp out" : "ink-stamp";
+    const when = row.kind === "break"
+      ? plainTime(row.start) + " to " + (row.end ? plainTime(row.end) : "now")
+      : "IN " + plainTime(row.start) + " · OUT " + (row.end ? plainTime(row.end) : "—");
+    const note = row.kind === "work" && !suggested
+      ? '<label class="f">Work note, optional</label><input class="t" maxlength="200" data-note="' + esc(item.entry.entryId) + '" value="' + esc(row.workNote || "") + '">'
+      : "";
+    const choice = suggested
+      ? '<div class="actions"><button type="button" class="btn secondary" data-accept="' + esc(item.entry.entryId) + '">Accept suggestion</button><input class="t" placeholder="Why remove it"><button type="button" class="btn secondary" data-reject="' + esc(item.entry.entryId) + '">Remove</button></div>'
+      : "";
+    const tag = suggested ? "Suggested — not hours yet" : (row.end ? "" : "Open");
+    return `<div class="punch-row"><span><span class="${stampClass}${fresh}">${stamp}</span></span><span><b>${esc(row.jobLabel || "Job")}</b>${tag ? ' <span class="pill">' + esc(tag) + "</span>" : ""}<div class="when">${esc(when)}</div>${note}${choice}</span></div>`;
+  }).join("");
+}
+
+function clockHousing() {
+  const playing = punchFlash && motionOk() ? " punch-playing" : "";
+  return `<section class="timeclock${playing}" aria-label="Time clock">
+    <div class="clock-screws" aria-hidden="true"><span></span><span></span></div>
+    <div class="clock-well">
+      <div class="clock-face" id="punch_face" aria-hidden="true"><svg id="punch_svg" viewBox="0 0 200 200"></svg></div>
+      <div class="date-window" id="punch_date"></div>
+      <p class="clock-digits" id="punch_digits"></p>
+    </div>
+    <div class="clock-screws" aria-hidden="true"><span></span><i></i></div>
+  </section>`;
+}
+
+function jobPickerHtml() {
+  const buttons = (jobs.jobs || []).map((job) => '<button type="button" class="listpick" data-pick-job="' + esc(job.jobLabel) + '">' + esc(job.jobLabel) + "</button>").join("");
+  return `<div class="job-picker" role="dialog" aria-labelledby="pick_title">
+    <h2 id="pick_title">Which job?</h2>
+    <p>${esc(pickerNote)}</p>
+    ${buttons || "<p>No jobs saved on this phone yet. Type the address.</p>"}
+    <label class="f" for="tc_pick_text">Job address</label>
+    <input class="t" id="tc_pick_text" value="${esc(state.jobDraft || "")}" autocomplete="off">
+    <button type="button" class="punch-lever in" id="tc_pick_go">CLOCK IN</button>
+    <button type="button" class="btn secondary punch-side" id="tc_pick_cancel">Cancel</button>
+  </div>`;
+}
+
+function confirmOutHtml(open) {
+  return `<div class="punch-confirm" role="dialog" aria-labelledby="out_title">
+    <h2 id="out_title">Clock out?</h2>
+    <p>${esc(statusSentence(open))}</p>
+    <button type="button" class="punch-lever out" id="tc_out_yes">CLOCK OUT</button>
+    <button type="button" class="btn secondary punch-side" id="tc_out_no">Stay clocked in</button>
+  </div>`;
+}
+
+function motionOk() {
+  return typeof matchMedia !== "function" || !matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function haptic() {
+  if (!motionOk() || !navigator.vibrate) return;
+  navigator.vibrate(35);
+}
+
+function paintClock() {
+  const digits = $("punch_digits");
+  if (!digits) return;
+  const now = new Date();
+  const parts = chicagoParts(now);
+  let hour = Number(parts.hour);
+  const suffix = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12;
+  digits.textContent = hour + ":" + parts.minute + ":" + parts.second + " " + suffix;
+  const date = $("punch_date");
+  if (date) date.textContent = formatChicagoDay(parts.dutyDate);
+  const total = $("today_total");
+  if (total) {
+    const base = Number(total.getAttribute("data-base") || 0);
+    const openStart = total.getAttribute("data-open");
+    const extra = openStart ? (elapsedMinutes(openStart, now.toISOString()) || 0) : 0;
+    total.textContent = "Total today " + formatHours(base + extra);
+  }
+  const svg = $("punch_svg");
+  if (!svg) return;
+  const h = Number(parts.hour) % 12;
+  const m = Number(parts.minute);
+  const s = Number(parts.second);
+  const hourAngle = (h + m / 60) * 30;
+  const minuteAngle = (m + s / 60) * 6;
+  const secondAngle = s * 6;
+  svg.innerHTML = clockSvg(hourAngle, minuteAngle, secondAngle);
+}
+
+function clockSvg(hourAngle, minuteAngle, secondAngle) {
+  let ticks = "";
+  for (let i = 0; i < 60; i += 1) {
+    const major = i % 5 === 0;
+    const rad = (i * 6 - 90) * Math.PI / 180;
+    const inner = major ? 72 : 80;
+    const outer = 90;
+    ticks += '<line x1="' + (100 + Math.cos(rad) * inner).toFixed(1) + '" y1="' + (100 + Math.sin(rad) * inner).toFixed(1) + '" x2="' + (100 + Math.cos(rad) * outer).toFixed(1) + '" y2="' + (100 + Math.sin(rad) * outer).toFixed(1) + '" stroke="#111" stroke-width="' + (major ? 3 : 1) + '"/>';
+  }
+  const numerals = [[12, 100, 36], [3, 164, 106], [6, 100, 176], [9, 36, 106]].map(([n, x, y]) =>
+    '<text x="' + x + '" y="' + y + '" text-anchor="middle" font-size="16" font-family="Georgia, serif" font-weight="700" fill="#111">' + n + "</text>"
+  ).join("");
+  const hand = (angle, length, width) => '<line x1="100" y1="100" x2="100" y2="' + (100 - length) + '" stroke="#111" stroke-width="' + width + '" stroke-linecap="round" transform="rotate(' + angle.toFixed(2) + ' 100 100)"/>';
+  return '<circle cx="100" cy="100" r="96" fill="#f7f1e4" stroke="#111" stroke-width="4"/>' +
+    ticks + numerals +
+    hand(hourAngle, 46, 6) + hand(minuteAngle, 68, 4) +
+    '<line x1="100" y1="100" x2="100" y2="38" stroke="#9d1c1c" stroke-width="2" stroke-linecap="round" transform="rotate(' + secondAngle.toFixed(2) + ' 100 100)"/>' +
+    '<circle cx="100" cy="100" r="5" fill="#111"/>';
+}
+
+function clockScreen(review, week, syncLine) {
+  const open = openClockEntry();
+  const on = !!open;
+  const now = new Date();
+  let base = 0;
+  let openStart = "";
+  review.visits.concat(review.breaks).forEach((item) => {
+    if (item.row.status !== "recorded" || !item.row.start) return;
+    if (!item.row.end) {
+      openStart = item.row.start;
+      return;
+    }
+    base += rowPaidMinutes(item, now);
+  });
+  const blocks = review.blockers.map((item) => {
+    if (item === "review-suggestions") return "Accept or remove each suggested visit before you confirm.";
+    if (item === "missing-end") return "A visit is missing a start or end. Set it before you confirm. Nothing was guessed.";
+    if (item === "overlap") return "Two intervals overlap. Change them before you confirm.";
+    return item;
+  });
+  let action = '<button type="button" class="punch-lever ' + (on ? "out" : "in") + '" id="tc_punch">' + (on ? "CLOCK OUT" : "CLOCK IN") + "</button>";
+  if (on && open.row.kind === "break") action += '<button type="button" class="btn secondary punch-side" id="tc_resume">Back to work</button>';
+  else if (on) action += '<button type="button" class="btn secondary punch-side" id="tc_break">Paid break</button>';
+  if (confirmOutOpen) action = confirmOutHtml(open);
+  else if (jobPickerOpen) action = jobPickerHtml();
+  return `<p class="punch-status" id="tc_status" role="status">${esc(statusSentence(open))}</p>
+    ${action}
+    ${clockHousing(open)}
+    <p class="hint" id="tc_msg">${esc(timeMessage)}</p>
+    <section class="paper-card" aria-label="Today's time card">
+      <div class="card-head">
+        <label class="card-name">Employee<input id="tc_name" value="${esc(state.employeeName)}" autocomplete="name"></label>
+        <div class="card-week">Week ending<br>${esc(shortChicagoDay(week.weekEnd))}</div>
+      </div>
+      ${punchRows(review, now)}
+      <p class="today-total" id="today_total" data-base="${base}" data-open="${esc(openStart)}">Total today ${esc(formatHours(base))}</p>
+      <p class="hint">${esc(syncLine)}</p>
+    </section>
+    ${blocks.map((line) => '<p class="warn">' + esc(line) + "</p>").join("")}
+    <button type="button" class="btn" id="tc_confirm" ${(review.canConfirm && !dayAlreadyConfirmed(review)) ? "" : "disabled"}>${dayAlreadyConfirmed(review) ? "Day confirmed" : "Confirm my day"}</button>`;
+}
+
 function draw() {
   const root = $("crew_panels");
   if (!root) return;
@@ -139,22 +356,12 @@ function draw() {
     <section id="timecards_panel" class="crew" hidden>
       ${privacyOpen ? `<section class="card" id="privacy_card"><h2>Privacy</h2><div class="fields"><div class="full noticebody">${privacyParagraphs(connected).map((p) => "<p>" + esc(p) + "</p>").join("")}
         <button type="button" class="btn secondary" id="privacy_ok">Notice read</button></div></div></section>` : ""}
-      <section class="card"><h2>Your time</h2><div class="fields">
-        <div class="full"><label class="f" for="tc_name">Your name</label><input class="t" id="tc_name" value="${esc(state.employeeName)}" autocomplete="name"></div>
-        <div class="full hint">${esc(formatChicagoDay(today))}. Week ${esc(week.weekStart)} through ${esc(week.weekEnd)}. ${esc(syncLine)}</div>
-        <div class="full"><label class="f" for="tc_job">Job</label><input class="t" id="tc_job" list="shared_jobs" value="${esc(state.jobDraft)}"></div>
-      </div>
-      <div class="primary-actions">
-        <button type="button" class="btn" id="tc_start">Start work</button>
-        <button type="button" class="btn new" id="tc_break">Break</button>
-        <button type="button" class="btn secondary" id="tc_stop">Stop</button>
-      </div>
-      <p class="hint" id="tc_msg">${esc(timeMessage)}</p>
-      ${reviewHtml(review)}
-      <button type="button" class="btn" id="tc_confirm" ${(review.canConfirm && !dayAlreadyConfirmed(review)) ? "" : "disabled"}>${dayAlreadyConfirmed(review) ? "Day confirmed" : "Confirm my day"}</button>
+      ${clockScreen(review, week, syncLine)}
       <details class="more" id="tc_more" ${moreOpen ? "open" : ""}>
         <summary>More</summary>
         <div class="more-body">
+          <label class="f" for="tc_job">Job address</label>
+          <input class="t" id="tc_job" list="shared_jobs" value="${esc(state.jobDraft)}">
           <p class="hint"><b>${esc(track.title)}</b> ${esc(track.detail)} Suggestions watch saved jobs only while you leave them on for today. That is not a driving route.</p>
           <label class="checkline"><input type="checkbox" id="tc_optin" ${state.locationOptIn ? "checked" : ""}> Allow a location suggestion when I tap the button</label>
           <div class="actions">
@@ -236,14 +443,21 @@ function draw() {
   $("ph_use").addEventListener("click", () => useJob($("ph_job").value));
   $("tc_suggest").addEventListener("click", () => suggestJob("timecards"));
   $("ph_suggest").addEventListener("click", () => suggestJob("photos"));
-  $("tc_start").addEventListener("click", () => startKind("work"));
-  $("tc_break").addEventListener("click", () => startKind("break"));
-  $("tc_stop").addEventListener("click", async () => {
-    const result = stopInterval(state, new Date());
-    timeMessage = result.ok ? "Stopped. Still provisional until you confirm the day." : "Nothing is open to stop.";
-    if (result.ok) state = result.state;
-    await persist(); draw(); restoreTab();
+  if ($("tc_punch")) $("tc_punch").addEventListener("click", () => onPunch());
+  if ($("tc_break")) $("tc_break").addEventListener("click", () => startKind("break"));
+  if ($("tc_resume")) $("tc_resume").addEventListener("click", () => {
+    const open = openClockEntry();
+    startKind("work", open ? open.row.jobLabel : "");
   });
+  if ($("tc_out_yes")) $("tc_out_yes").addEventListener("click", () => finishClockOut());
+  if ($("tc_out_no")) $("tc_out_no").addEventListener("click", () => { confirmOutOpen = false; draw(); restoreTab(); });
+  if ($("tc_pick_cancel")) $("tc_pick_cancel").addEventListener("click", () => { jobPickerOpen = false; draw(); restoreTab(); });
+  if ($("tc_pick_go")) $("tc_pick_go").addEventListener("click", () => finishClockIn($("tc_pick_text").value));
+  document.querySelectorAll("[data-pick-job]").forEach((button) => button.addEventListener("click", () => {
+    const field = $("tc_pick_text");
+    if (field) field.value = button.getAttribute("data-pick-job");
+    finishClockIn(button.getAttribute("data-pick-job"));
+  }));
   $("tc_spot").addEventListener("click", () => saveCurrentSpot());
   $("tc_arm").addEventListener("click", async () => {
     const result = await armTracking(state.pins || [], dutyDateOf(new Date()));
@@ -344,6 +558,11 @@ function draw() {
     await persist(); draw(); restoreTab();
   }));
   fillJobList();
+  paintClock();
+  if (punchFlash) {
+    const flash = punchFlash;
+    setTimeout(() => { if (punchFlash === flash) punchFlash = ""; }, 900);
+  }
   restoreTab();
 }
 
@@ -579,8 +798,81 @@ async function useJob(label) {
   restoreTab();
 }
 
-function startKind(kind) {
-  let label = $("tc_job").value.trim();
+function onPunch() {
+  if (punchBusy) return;
+  if (openClockEntry()) {
+    confirmOutOpen = true;
+    jobPickerOpen = false;
+    draw();
+    restoreTab();
+    return;
+  }
+  beginClockIn();
+}
+
+function beginClockIn() {
+  confirmOutOpen = false;
+  if (!(state.locationOptIn && navigator.geolocation)) {
+    jobPickerOpen = true;
+    pickerNote = "Pick the job, then punch in.";
+    draw();
+    restoreTab();
+    return;
+  }
+  punchBusy = true;
+  timeMessage = "Checking saved job spots…";
+  draw();
+  restoreTab();
+  navigator.geolocation.getCurrentPosition((pos) => {
+    punchBusy = false;
+    const found = suggestJobFromFix(state.pins || [], {
+      latitude: pos.coords.latitude,
+      longitude: pos.coords.longitude,
+      accuracyMeters: pos.coords.accuracy
+    });
+    suggestion = found;
+    if (found.match) finishClockIn(found.match.jobLabel);
+    else {
+      jobPickerOpen = true;
+      pickerNote = "No saved spot matched. Pick the job, then punch in.";
+      timeMessage = pickerNote;
+      draw();
+      restoreTab();
+    }
+  }, () => {
+    punchBusy = false;
+    jobPickerOpen = true;
+    pickerNote = "Location was unavailable. Pick the job, then punch in.";
+    timeMessage = pickerNote;
+    draw();
+    restoreTab();
+  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+}
+
+function finishClockIn(label) {
+  punchBusy = false;
+  jobPickerOpen = false;
+  const field = $("tc_job");
+  if (field && label) field.value = label;
+  startKind("work", label);
+}
+
+async function finishClockOut() {
+  confirmOutOpen = false;
+  const result = stopInterval(state, new Date());
+  timeMessage = result.ok ? "Clocked out. Review the card, then confirm the day. This is not payroll." : "Nothing is open to stop.";
+  if (result.ok) {
+    state = result.state;
+    punchFlash = "OUT";
+    haptic();
+  }
+  await persist();
+  draw();
+  restoreTab();
+}
+
+function startKind(kind, labelOverride) {
+  let label = labelOverride != null ? String(labelOverride).trim() : (($("tc_job") && $("tc_job").value) || "").trim();
   const openEntry = state.entries.find((entry) => {
     const row = entry.revisions[entry.revisions.length - 1];
     return row.status === "recorded" && !row.end;
@@ -592,8 +884,19 @@ function startKind(kind) {
     const remembered = rememberJob(jobs, label);
     jobs = remembered.book;
     saveJobBook(jobs);
-    timeMessage = "Saved on this phone. Review the day, then confirm. This is not payroll.";
-  } else timeMessage = "Enter the job first.";
+    if (kind === "work" && !openEntry) {
+      punchFlash = "IN";
+      haptic();
+      timeMessage = "Clocked in. Review the card, then confirm the day. This is not payroll.";
+    } else if (kind === "break") {
+      timeMessage = "Paid break started. It stays in today's hours.";
+    } else {
+      timeMessage = "Back to work. Still provisional until you confirm the day.";
+    }
+  } else {
+    timeMessage = "Enter the job first.";
+    if (kind === "work" && !openEntry) jobPickerOpen = true;
+  }
   persist().then(() => { draw(); restoreTab(); });
 }
 
@@ -750,7 +1053,7 @@ function show(tab) {
   if (photos) photos.hidden = tab !== "photos";
   if (scope) scope.hidden = tab !== "scope";
   if (label) {
-    label.textContent = tab === "photos" ? "Job photos" : (tab === "timecards" ? "Timecards" : (tab === "scope" ? "Scope" : "Job Material List"));
+    label.textContent = tab === "photos" ? "Job photos" : (tab === "timecards" ? "Time clock" : (tab === "scope" ? "Scope" : "Job Material List"));
   }
   document.querySelectorAll(".apptab").forEach((button) => {
     const on = button.getAttribute("data-tab") === tab;

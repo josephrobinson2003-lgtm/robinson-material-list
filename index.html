@@ -260,6 +260,50 @@ footer.foot{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 6
 .checkline{display:flex;gap:8px;align-items:center;font-weight:600}
 h3{margin:12px 0 6px;font-size:15px}
 @media (max-width:360px){.step button{width:44px;height:44px}.step input{width:56px;height:44px}.row .name{font-size:15px}}
+.timeclock{background:linear-gradient(180deg,#eceff3 0%,#c5ccd6 42%,#a8b1bd 100%);border:3px solid #4e5662;border-radius:18px;padding:12px;box-shadow:inset 0 1px 0 #fff,0 7px 0 #5c6572;color:#111}
+.clock-screws{display:flex;justify-content:space-between;margin-bottom:8px}
+.clock-screws span,.clock-screws i{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#f4f6f8,#8d96a3 55%,#5c6570);box-shadow:inset 0 0 0 1px #3e4650;display:block}
+.clock-well{background:radial-gradient(circle at 50% 38%,#fffdf8,#f3ead8 62%,#e4d5b8);border:4px solid #6e7682;border-radius:16px;padding:12px 10px 14px;text-align:center}
+.clock-face{width:min(210px,62vw);height:min(210px,62vw);margin:0 auto;position:relative}
+.clock-face svg{width:100%;height:100%;display:block}
+.date-window{display:inline-block;margin-top:8px;background:#111;color:#f6f1e4;border-radius:4px;padding:4px 10px;font-weight:700;letter-spacing:.3px;font-size:14px}
+.clock-digits{margin:8px 0 0;font-size:44px;line-height:1;font-weight:800;letter-spacing:.5px;color:#111;font-variant-numeric:tabular-nums}
+.punch-status{margin:10px 0;padding:12px 14px;background:#fffef6;border:3px solid #111;border-radius:12px;font-size:20px;line-height:1.25;font-weight:800;color:#111}
+.punch-lever{display:flex;align-items:center;justify-content:center;width:100%;min-height:92px;margin:8px 0;border:0;border-radius:14px;font:inherit;font-size:28px;font-weight:900;letter-spacing:1px;color:#fff;touch-action:manipulation;box-shadow:0 7px 0 #1a1a1a;position:relative}
+.punch-lever.in{background:#0c7a32}
+.punch-lever.out{background:#b01c1c}
+.punch-lever:active{transform:translateY(6px);box-shadow:0 1px 0 #1a1a1a}
+.punch-lever:focus-visible{outline:4px solid #111;outline-offset:3px}
+.punch-side{width:100%;min-height:56px;margin:0 0 8px;font-size:18px}
+.paper-card{background:#fffef8;border:1px solid #b7a48a;border-radius:4px;padding:12px 12px 8px;margin:10px 0;color:#111;box-shadow:inset 0 0 0 1px #efe4d0}
+.paper-card h2{margin:0;background:transparent;color:#111;border:0;padding:0;font-size:13px;letter-spacing:1.5px;text-transform:uppercase}
+.card-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-end;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:8px}
+.card-name{font-size:13px;font-weight:700;color:#111;display:block;flex:1}
+.card-name input{display:block;width:100%;margin-top:2px;font-size:18px;font-weight:800;border:0;border-bottom:2px solid #111;background:transparent;border-radius:0;padding:4px 0;color:#111}
+.card-week{font-size:13px;font-weight:800;text-align:right;max-width:46%}
+.punch-row{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:8px 0;border-bottom:1px dashed #c9b89a;font-variant-numeric:tabular-nums}
+.punch-row b{font-size:16px}
+.punch-row .when{font-weight:800;font-size:16px}
+.ink-stamp{display:inline-block;border:3px solid #9d1c1c;color:#9d1c1c;font-weight:900;letter-spacing:1px;padding:0 6px;border-radius:4px;transform:rotate(-6deg)}
+.ink-stamp.out{border-color:#111;color:#111}
+.today-total{margin:8px 0 0;font-size:20px;font-weight:900}
+#tc_confirm{background:#1F3864}
+#tc_confirm[disabled]{background:#d5dbe3;color:#1a1a1a;opacity:1}
+.job-picker,.punch-confirm{background:#fffef6;border:3px solid #111;border-radius:14px;padding:12px;margin:8px 0}
+.job-picker h2,.punch-confirm h2{background:transparent;color:#111;border:0;padding:0 0 6px;font-size:22px;text-transform:none;letter-spacing:0}
+.punch-playing .paper-card{animation:cardslide .4s ease}
+.punch-playing .ink-stamp.fresh{animation:stampin .35s ease .15s both}
+@keyframes cardslide{from{transform:translateY(-16px);opacity:.35}to{transform:none;opacity:1}}
+@keyframes stampin{0%{transform:scale(1.35) rotate(-12deg);opacity:0}100%{transform:rotate(-6deg);opacity:1}}
+@media (max-width:380px){
+  .clock-digits{font-size:36px}
+  .punch-lever{min-height:84px;font-size:24px}
+  .punch-status{font-size:18px}
+}
+@media (prefers-reduced-motion: reduce){
+  .punch-lever:active{transform:none;box-shadow:0 7px 0 #1a1a1a}
+  .punch-playing .paper-card,.punch-playing .ink-stamp.fresh{animation:none}
+}
 </style>
 </head>
 <body>
