@@ -12,4 +12,5 @@ for (const name of ["index.html", "manifest.webmanifest", "sw.js", "logo.png", "
 }
 cpSync(join(root, "js"), join(dest, "js"), { recursive: true });
 cpSync(join(root, "holiday"), join(dest, "holiday"), { recursive: true });
+cpSync(join(root, "fonts"), join(dest, "fonts"), { recursive: true });
 console.log("Staged website into native/www");

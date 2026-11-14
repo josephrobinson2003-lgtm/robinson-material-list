@@ -405,37 +405,31 @@ function wreath() {
     '<rect x="-4" y="26" width="8" height="20" rx="2" fill="#b4232a"/></g></g>';
 }
 
-function christmasTree(x, y, s) {
-  const lights = [
-    [-18, -40, "#d32f2f"], [16, -28, "#f2c200"], [-8, -8, "#2456a6"],
-    [22, 8, "#ef6c00"], [-24, 18, "#d32f2f"], [8, 28, "#f2c200"], [-14, 48, "#1b8a3a"]
+function treeLights(x, y, w, h) {
+  const spots = [
+    [0.5, 0.07, "#ffe27a", 22],
+    [0.4, 0.24, "#d32f2f", 8],
+    [0.62, 0.26, "#2456a6", 7.5],
+    [0.33, 0.36, "#f2c200", 7],
+    [0.56, 0.38, "#d32f2f", 8],
+    [0.7, 0.42, "#1b8a3a", 7],
+    [0.42, 0.48, "#2456a6", 7.5],
+    [0.6, 0.52, "#f2c200", 8],
+    [0.34, 0.58, "#ef6c00", 7],
+    [0.52, 0.62, "#d32f2f", 7.5],
+    [0.68, 0.6, "#f2c200", 7]
   ];
-  let bulbs = "";
-  lights.forEach(function (bulb, i) {
-    bulbs += '<circle cx="' + bulb[0] + '" cy="' + bulb[1] + '" r="7" fill="' + bulb[2] + '" opacity="0.28"/>' +
-      '<circle class="glow" cx="' + bulb[0] + '" cy="' + bulb[1] + '" r="4.5" fill="' + bulb[2] + '"/>' +
-      '<circle cx="' + (bulb[0] - 1.2) + '" cy="' + (bulb[1] - 1.4) + '" r="1.3" fill="#fff" opacity="0.8"/>';
-  });
-  return '<g transform="translate(' + x + " " + y + ") scale(" + (s || 1) + ')">' +
-    '<polygon points="6,-150 78,20 -52,28" fill="#0d3d22"/>' +
-    '<polygon points="0,-168 62,-78 -62,-78" fill="#146b38"/>' +
-    '<polygon points="0,-168 48,-96 -22,-92" fill="#1f8a48" opacity="0.9"/>' +
-    '<polygon points="4,-108 86,-8 -70,-4" fill="#0f4d28"/>' +
-    '<polygon points="0,-118 74,-18 -74,-18" fill="#187a3c"/>' +
-    '<polygon points="-8,-112 28,-40 -36,-36" fill="#2a9a50" opacity="0.85"/>' +
-    '<polygon points="2,-48 96,36 -84,40" fill="#0c4224"/>' +
-    '<polygon points="0,-58 88,28 -88,28" fill="#146b34"/>' +
-    '<polygon points="0,-52 40,-8 -18,-6" fill="#23864a" opacity="0.8"/>' +
-    '<polygon points="0,2 104,78 -96,82" fill="#0a3820"/>' +
-    '<polygon points="0,-8 96,70 -96,70" fill="#125c2e"/>' +
-    '<polygon points="-6,-2 36,28 -30,30" fill="#1f7a40" opacity="0.75"/>' +
-    '<rect x="-11" y="70" width="22" height="28" rx="2" fill="#5c3a1e"/>' +
-    '<rect x="-7" y="74" width="5" height="24" fill="#7a5230" opacity="0.7"/>' +
-    bulbs +
-    '<polygon points="0,-196 8,-174 -8,-174" fill="#f2c200"/>' +
-    '<polygon points="0,-164 10,-186 -10,-186" fill="#f2c200"/>' +
-    '<circle class="glow" cy="-180" r="8" fill="#ffe27a" opacity="0.85"/>' +
-    "</g>";
+  return spots.map(function (spot, i) {
+    const cx = (x + spot[0] * w).toFixed(1);
+    const cy = (y + spot[1] * h).toFixed(1);
+    const delay = (i * 0.17).toFixed(2);
+    const bulb = i === 0
+      ? '<circle class="glow" r="' + spot[3] + '" fill="' + spot[2] + '" opacity="0.5"/>'
+      : '<circle r="' + (spot[3] + 2.6) + '" fill="' + spot[2] + '" opacity="0.22"/>' +
+        '<circle class="glow" style="animation-delay:' + delay + 's" r="' + spot[3] + '" fill="' + spot[2] + '"/>' +
+        '<circle cx="-1" cy="-1.1" r="1.1" fill="#fff" opacity="0.85"/>';
+    return '<g transform="translate(' + cx + " " + cy + ')">' + bulb + "</g>";
+  }).join("");
 }
 
 function fadeBanner(label, fill, ink) {
@@ -513,10 +507,24 @@ function autumnLeaves(limit) {
 }
 
 const SCENES = {
-  "new-year": sceneSvg(firework(1140, 78, 0) + firework(1288, 36, 1.6) + firework(1420, 96, 3.2)),
-  mlk: sceneSvg(""),
-  valentines: sceneSvg(heart(1040, 16, 1.8, "#c23b56", 0) + heart(1240, 55, 1.2, "#e89aaf", 1.4)),
-  presidents: sceneSvg(flag(1000, 10, 220, 130) + star(1260, 36, 26, "#FFC20E", 0.4)),
+  "new-year": sceneSvg(
+    firework(1160, 36, 0) + firework(1340, 18, 1.8) + firework(1500, 64, 3.4) +
+    groundShadow(140, 516, 100) +
+    art("new-year/party.webp", 8, 300, 300, 218)
+  ),
+  mlk: sceneSvg(art("mlk/dove.webp", 1080, 18, 280, 260, "bob")),
+  valentines: sceneSvg(
+    groundShadow(110, 516, 80) +
+    art("valentines/roses.webp", 8, 300, 200, 214) +
+    art("valentines/heart.webp", 1100, 16, 86, 83, "float-up", 0) +
+    art("valentines/heart.webp", 1280, 64, 70, 68, "float-up", 1.2) +
+    art("valentines/heart.webp", 1460, 22, 78, 76, "float-up", 0.6)
+  ),
+  presidents: sceneSvg(
+    star(1180, 28, 30, "#FFC20E", 0) + star(1360, 64, 24, "#FFC20E", 0.6) + star(1520, 24, 28, "#FFC20E", 1.2) +
+    groundShadow(90, 516, 60) +
+    art("presidents/hat.webp", 8, 336, 190, 182)
+  ),
   easter: sceneSvg(
     groundShadow(78, 516, 58) + groundShadow(210, 516, 48) +
     art("easter/egg-1.webp", 268, 468, 36, 50, "egg-wobble", 0) +
@@ -528,24 +536,12 @@ const SCENES = {
     art("easter/bunny.webp", 4, 368, 150, 150, "hopper")
   ),
   "st-patricks": sceneSvg(
-    shamrock(1490, 70, 1.2, 0) + shamrock(1540, 160, 1, 1) + shamrock(1460, 250, 0.9, 0.6) + shamrock(1520, 340, 1.05, 1.4) +
-    groundShadow(96, 516, 36) +
-    '<g transform="translate(210 500)"><ellipse class="coin" cx="0" cy="0" rx="20" ry="13" fill="#FFC20E"/></g>' +
-    '<g transform="translate(262 508)"><ellipse class="coin" style="animation-delay:3.5s" cx="0" cy="0" rx="20" ry="13" fill="#e0b33a"/></g>' +
-    '<g transform="translate(314 498)"><ellipse class="coin" style="animation-delay:7s" cx="0" cy="0" rx="20" ry="13" fill="#FFC20E"/></g>' +
-    '<g transform="translate(96 512)"><g class="picker">' +
-    '<rect x="-7" y="-196" width="14" height="26" fill="#1f7a3a"/>' +
-    '<path d="M-44 -172 H44 L36 -150 H-36 Z" fill="#1f7a3a"/>' +
-    '<circle cy="-126" r="26" fill="#f0d2b0"/>' +
-    '<path d="M-20 -116 Q0 -86 20 -116 Q14 -104 0 -96 Q-14 -104 -20 -116 Z" fill="#efe4d4"/>' +
-    '<path d="M-32 -108 H32 L40 -24 H-40 Z" fill="#1f7a3a"/>' +
-    '<rect x="-32" y="-64" width="64" height="12" fill="#1d2330"/>' +
-    '<rect x="-8" y="-68" width="16" height="20" fill="#FFC20E"/>' +
-    '<rect x="-28" y="-24" width="18" height="20" fill="#1d2330"/>' +
-    '<rect x="10" y="-24" width="18" height="20" fill="#1d2330"/>' +
-    '<ellipse cx="-18" cy="2" rx="20" ry="9" fill="#1d2330"/>' +
-    '<ellipse cx="18" cy="2" rx="20" ry="9" fill="#1d2330"/>' +
-    "</g></g>"
+    art("st-patricks/shamrock.webp", 1340, 16, 72, 76, "drift", 0) +
+    art("st-patricks/shamrock.webp", 1500, 90, 64, 68, "drift", 1.1) +
+    art("st-patricks/shamrock.webp", 1400, 180, 60, 64, "drift", 0.5) +
+    groundShadow(80, 516, 70) + groundShadow(230, 516, 50) +
+    art("st-patricks/leprechaun.webp", 2, 292, 156, 226) +
+    art("st-patricks/pot.webp", 158, 398, 120, 120)
   ),
   groundhog: sceneSvg(
     '<g fill="#c5d0e0">' +
@@ -571,12 +567,12 @@ const SCENES = {
     art("earth-day/globe.webp", 1168, 108, 214, 212) +
     art("earth-day/sprout.webp", 1236, 42, 78, 80, "sprout-sway") +
     "</g>" +
-    art("earth-day/leaf-1.webp", 1040, 36, 30, 42, "drift", 0) +
-    art("earth-day/leaf-2.webp", 1488, 48, 36, 34, "drift", 1.1) +
-    art("earth-day/leaf-3.webp", 1100, 150, 32, 34, "drift", 0.6) +
-    art("earth-day/leaf-4.webp", 1420, 200, 28, 30, "drift", 1.8) +
-    art("earth-day/leaf-5.webp", 1520, 120, 30, 26, "drift", 0.3) +
-    art("earth-day/leaf-6.webp", 1008, 90, 34, 32, "drift", 1.4)
+    art("earth-day/leaf-1.webp", 1040, 24, 64, 88, "drift", 0) +
+    art("earth-day/leaf-2.webp", 1460, 36, 72, 68, "drift", 1.1) +
+    art("earth-day/leaf-3.webp", 1120, 140, 60, 64, "drift", 0.6) +
+    art("earth-day/leaf-4.webp", 1380, 190, 56, 60, "drift", 1.8) +
+    art("earth-day/leaf-5.webp", 1520, 110, 58, 52, "drift", 0.3) +
+    art("earth-day/leaf-6.webp", 1008, 80, 66, 62, "drift", 1.4)
   ),
   "mothers-day": sceneSvg(
     groundShadow(160, 516, 100) +
@@ -599,31 +595,36 @@ const SCENES = {
     art("fathers-day/toolbox.webp", 148, 412, 108, 106) +
     art("fathers-day/driver.webp", 230, 468, 96, 50)
   ),
-  "memorial-day": sceneSvg(flag(1000, 16, 240, 140)),
-  juneteenth: sceneSvg(star(1120, 90, 64, "#e0b33a") + '<path fill="#bb3a2f" d="M980 150 a150 64 0 0 1 300 0 z"/>'),
-  "july-4": sceneSvg(flag(760, 20, 200, 110) + firework(1240, 70, 0.4) + firework(1420, 110, 2.2)),
+  "memorial-day": sceneSvg(
+    art("flags/us-flag.webp", 1120, 12, 300, 270, "ripple") +
+    groundShadow(100, 516, 70) +
+    art("memorial-day/poppies.webp", 10, 300, 190, 218)
+  ),
+  juneteenth: sceneSvg(art("juneteenth/flag.webp", 1060, 28, 380, 216, "ripple")),
+  "july-4": sceneSvg(
+    art("flags/us-flag.webp", 1040, 8, 280, 252, "ripple") +
+    firework(1340, 48, 0.4) + firework(1500, 90, 2.2) +
+    groundShadow(70, 516, 40) +
+    art("july-4/sparkler.webp", 6, 250, 124, 268)
+  ),
   "labor-day": sceneSvg(
     bunting() +
     art("labor-day/electrician.webp", 960, 148, 168, 328, "labor-work")
   ),
-  "peoples-day": sceneSvg(""),
+  "peoples-day": sceneSvg(
+    groundShadow(120, 516, 80) +
+    art("peoples-day/harvest.webp", 10, 292, 210, 226)
+  ),
   halloween: sceneSvg(
     autumnLeaves(4) +
-    groundShadow(42, 516, 22) + groundShadow(110, 516, 18) + groundShadow(176, 516, 24) +
-    '<g transform="translate(12 392) scale(2.3)"><rect width="36" height="48" fill="#4a5568"/><rect x="10" y="28" width="16" height="20" fill="#2a3140"/></g>' +
-    '<g transform="translate(110 424) scale(2.3)"><rect width="30" height="36" fill="#5c6778"/><path d="M0 0 L15 -16 L30 0 Z" fill="#5c6778"/></g>' +
-    '<g transform="translate(200 400) scale(2.3)"><rect width="40" height="44" fill="#3d4654"/><rect x="12" y="24" width="16" height="20" fill="#232830"/></g>' +
-    '<g transform="translate(620 340) scale(1.8)"><g class="ghost" fill="#f7f7fb" opacity="0.72"><ellipse cx="0" cy="0" rx="22" ry="28"/><path d="M-22 8 L-14 24 L-6 8 L2 24 L10 8 L18 24 L22 8 Z"/><circle cx="-8" cy="-6" r="3" fill="#1d2330"/><circle cx="8" cy="-6" r="3" fill="#1d2330"/></g></g>' +
-    '<g transform="translate(960 370) scale(1.6)"><g class="ghost" style="animation-delay:3.2s" fill="#f7f7fb" opacity="0.6"><ellipse cx="0" cy="0" rx="18" ry="24"/><circle cx="-6" cy="-4" r="2.5" fill="#1d2330"/><circle cx="6" cy="-4" r="2.5" fill="#1d2330"/></g></g>' +
-    '<g transform="translate(1220 320) scale(1.6)"><g class="ghost" style="animation-delay:6s" fill="#f7f7fb" opacity="0.66"><ellipse cx="0" cy="0" rx="20" ry="26"/><circle cx="-6" cy="-4" r="2.5" fill="#1d2330"/><circle cx="7" cy="-4" r="2.5" fill="#1d2330"/></g></g>'
+    groundShadow(140, 516, 110) +
+    art("halloween/yard.webp", 4, 300, 280, 218) +
+    art("halloween/ghost.webp", 1090, 18, 100, 116, "ghost")
   ),
   veterans: sceneSvg(
-    '<rect x="900" y="0" width="420" height="210" fill="#0c1830" opacity="0.72"/>' +
-    star(980, 36, 10, "#f7f7fb", 0.2) + star(1120, 70, 8, "#f7f7fb", 0.8) + star(1240, 28, 9, "#f7f7fb", 1.3) +
-    flag(980, 48, 220, 120) +
-    groundShadow(40, 516, 30) + groundShadow(170, 516, 26) +
-    '<g transform="translate(36 508)" fill="#1d2330"><g class="salute"><circle cy="-120" r="20"/><path d="M-22 -96 H22 L16 -16 H-16 Z"/><path d="M6 -70 L48 -112" stroke="#1d2330" stroke-width="8"/><path d="M-10 -16 L-16 18 M12 -16 L18 18" stroke="#1d2330" stroke-width="8"/></g></g>' +
-    '<g transform="translate(168 516)" fill="#1d2330"><g class="salute" style="animation-delay:.6s"><circle cy="-100" r="16"/><path d="M-18 -80 H18 L14 -12 H-14 Z"/><path d="M4 -58 L36 -96" stroke="#1d2330" stroke-width="7"/><path d="M-8 -12 L-12 14 M10 -12 L14 14" stroke="#1d2330" stroke-width="7"/></g></g>'
+    art("flags/us-flag.webp", 1040, 8, 280, 252, "ripple") +
+    groundShadow(130, 516, 100) +
+    art("veterans/folded-flag.webp", 12, 370, 210, 148)
   ),
   thanksgiving: sceneSvg(
     autumnLeaves() +
@@ -634,7 +635,9 @@ const SCENES = {
     "</g>"
   ),
   christmas: sceneSvg(
-    wreath() + groundShadow(118, 516, 72) + christmasTree(118, 420, 1) +
+    wreath() + groundShadow(96, 518, 86) +
+    art("christmas/tree.webp", 4, 246, 172, 272) +
+    treeLights(4, 246, 172, 272) +
     art("christmas/sleigh.webp", 1140, 28, 400, 145, "santa-fly") +
     '<g fill="#f7f7fb">' +
     '<g transform="translate(1040 16)"><circle class="snow" r="16"/></g>' +

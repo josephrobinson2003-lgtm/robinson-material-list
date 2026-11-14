@@ -138,7 +138,7 @@ test("theme override accepts a name, auto, or off", () => {
     thanksgiving: ["leaf-fall", "turkey-walk", "turkey-tail"],
     halloween: ["ghost"],
     valentines: ["float-up"],
-    "st-patricks": ["picker", "coin"],
+    "st-patricks": ["drift"],
     easter: ["hopper", "egg-wobble"],
     groundhog: ["groundhog", "snow"],
     "labor-day": ["labor-work", "wave"],
@@ -161,14 +161,16 @@ test("theme override accepts a name, auto, or off", () => {
   for (const name of ["twinkle", "bulb-color", "wave", "wreath", "ripple", "snow", "drift", "float-up", "bob", "bat", "wing", "glow", "fuse", "spark", "turkey-walk", "turkey-tail", "santa-fly", "ghost", "hopper", "groundhog", "sprout", "hammer", "salute", "fade-in", "banner-shimmer", "labor-work", "egg-wobble", "earth-globe", "bloom", "arbor-tree", "sprout-sway", "leaf-fall"]) {
     assert.match(reduced[1], new RegExp("\\." + name + "(?:,|\\{)"));
   }
-  const illustrated = ["thanksgiving", "christmas", "labor-day", "easter", "groundhog", "arbor-day", "earth-day", "mothers-day", "fathers-day"];
-  for (const id of illustrated) {
+  for (const id of THEME_IDS) {
     assert.match(themeDecor(id), /holiday\/[a-z0-9-]+\/[a-z0-9-]+\.webp/, id);
     assert.equal(themeDecor(id).includes("blended"), false, id);
   }
-  for (const id of THEME_IDS) {
-    if (illustrated.includes(id)) continue;
-    assert.equal(themeDecor(id).replace(/holiday\/leaves\/[a-z0-9-]+\.webp/g, "").includes("holiday/"), false, id);
+  const fontCss = readFileSync(new URL("../fonts/holiday.css", import.meta.url), "utf8");
+  assert.equal(fontCss.includes("http"), false);
+  assert.match(fontCss, /@font-face/);
+  assert.match(css, /fonts\/holiday\.css/);
+  for (const face of ["mountains-of-christmas", "great-vibes", "pinyon-script", "creepster", "irish-grover", "stardos-stencil", "cinzel-decorative", "libre-baskerville", "fredoka", "patrick-hand", "caveat", "quicksand", "oswald", "righteous", "playfair-display"]) {
+    assert.match(fontCss, new RegExp(face + "\\.woff2"));
   }
   assert.match(css, /holiday-paused/);
   assert.match(css, /animation-play-state:\s*paused/);

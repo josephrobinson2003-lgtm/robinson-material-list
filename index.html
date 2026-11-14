@@ -11,6 +11,7 @@
 <meta name="app-version" content="20261111a">
 <title>Robinson Electrical</title>
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="fonts/holiday.css">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -43,7 +44,7 @@ header.top[data-holiday="fathers-day"]{background:#e4eef8}
 header.top[data-holiday="halloween"]{background:#f0d4ee}
 .holiday-banner{height:46px;margin:0 -12px 4px}
 .holiday-banner svg{width:100%;height:46px;display:block}
-.holiday-greet{text-align:center;font-weight:800;font-size:16px;margin-top:2px;color:var(--navy)}
+.holiday-greet{text-align:center;font-size:22px;line-height:1.15;margin:2px 8px 0;color:var(--navy)}
 .logo-wrap{position:relative;max-width:640px;margin:0 auto}
 header.top .logo{display:block;width:100%;height:auto;margin:0 auto;position:relative;z-index:1}
 .logo-tint{position:absolute;inset:0;z-index:2;pointer-events:none;background:transparent}
@@ -85,7 +86,7 @@ header.top .logo{display:block;width:100%;height:auto;margin:0 auto;position:rel
 .holiday-paused .holiday-svg *,.holiday-paused .banner-shimmer,.holiday-paused .fade-in{animation-play-state:paused}
 header.top[data-holiday="valentines"] .logo-tint,.holiday-stage[data-holiday="valentines"] .logo-tint{background:rgba(194,59,86,.22)}
 .holiday-svg .santa-fly{opacity:0;animation:santa 22s linear infinite}
-.holiday-svg .ghost{animation:ghostup 8s linear infinite;opacity:0}
+.holiday-svg .ghost{animation:ghostup 8s linear infinite;opacity:.92}
 .holiday-svg .hopper{animation:hopacross 12s linear infinite}
 .holiday-svg .egg-bit,.holiday-svg .coin{animation:pickup 12s linear infinite}
 .holiday-svg .picker{animation:walkacross 12s linear infinite}
@@ -114,7 +115,7 @@ header.top[data-holiday="valentines"] .logo-tint,.holiday-stage[data-holiday="va
 @keyframes flicker{0%,100%{opacity:.3}50%{opacity:.95}}
 @keyframes shimmer{0%,100%{opacity:1}50%{opacity:.72}}
 @keyframes santa{0%,64%{transform:translate(0,6px);opacity:0}72%{opacity:1;transform:translate(-4px,-2px)}84%{opacity:1;transform:translate(8px,-10px)}94%{opacity:1;transform:translate(2px,-4px)}99%,100%{opacity:0;transform:translate(12px,4px)}}
-@keyframes ghostup{0%{transform:translateY(10px);opacity:0}18%{opacity:.6}100%{transform:translateY(-200px);opacity:0}}
+@keyframes ghostup{0%,100%{transform:translateY(6px);opacity:.8}50%{transform:translateY(-12px);opacity:1}}
 @keyframes hopacross{0%{transform:translate(0,4px)}18%{transform:translate(28px,-14px)}36%{transform:translate(52px,2px)}54%,80%{transform:translate(64px,0)}100%{transform:translate(64px,0)}}
 @keyframes walkacross{0%{transform:translateX(0)}100%{transform:translateX(14px)}}
 @keyframes pickup{0%,18%{opacity:1}28%,100%{opacity:0}}
@@ -146,7 +147,7 @@ header.top[data-holiday="valentines"] .logo-tint,.holiday-stage[data-holiday="va
 @keyframes fantail{0%,32%{transform:scaleX(.25)}40%,52%{transform:scaleX(1)}58%,74%{transform:scaleX(.25)}82%,90%{transform:scaleX(1)}96%,100%{transform:scaleX(.25)}}
 @media (prefers-reduced-motion: reduce){
   .holiday-svg .twinkle,.holiday-svg .bulb-color,.holiday-svg .wave,.holiday-svg .wreath,.holiday-svg .ripple,.holiday-svg .snow,.holiday-svg .drift,.holiday-svg .float-up,.holiday-svg .bob,.holiday-svg .bat,.holiday-svg .wing,.holiday-svg .glow,.holiday-svg .fuse,.holiday-svg .spark,.holiday-svg .turkey-walk,.holiday-svg .turkey-body,.holiday-svg .turkey-tail,.holiday-svg .santa-fly,.holiday-svg .ghost,.holiday-svg .hopper,.holiday-svg .egg-bit,.holiday-svg .egg-wobble,.holiday-svg .coin,.holiday-svg .picker,.holiday-svg .groundhog,.holiday-svg .sprout,.holiday-svg .sprout-sway,.holiday-svg .hammer,.holiday-svg .labor-work,.holiday-svg .salute,.holiday-svg .fade-in,.holiday-svg .earth-globe,.holiday-svg .bloom,.holiday-svg .arbor-seed,.holiday-svg .arbor-sprout,.holiday-svg .arbor-sapling,.holiday-svg .arbor-tree,.holiday-svg .leaf-fall,.holiday-banner .fade-in,.holiday-banner .banner-shimmer{animation:none}
-  .holiday-svg .spark,.holiday-svg .fuse,.holiday-svg .santa-fly,.holiday-svg .bloom,.holiday-svg .arbor-tree,.holiday-svg .turkey-body{opacity:1}
+  .holiday-svg .spark,.holiday-svg .fuse,.holiday-svg .santa-fly,.holiday-svg .ghost,.holiday-svg .bloom,.holiday-svg .arbor-tree,.holiday-svg .turkey-body{opacity:1}
   .holiday-svg .turkey-tail,.holiday-svg .arbor-seed,.holiday-svg .arbor-sprout,.holiday-svg .arbor-sapling{opacity:0}
   .holiday-svg .santa-fly{transform:none}
   .holiday-svg .turkey-walk{transform:translateX(8px)}
