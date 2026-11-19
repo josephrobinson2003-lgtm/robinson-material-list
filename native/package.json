@@ -1,0 +1,12 @@
+{
+  "name": "robinson-electrical-android",
+  "private": true,
+  "dependencies": {
+    "@capacitor/android": "8.6.0",
+    "@capacitor/core": "8.6.0",
+    "robinson-geofence": "file:./plugins/robinson-geofence"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.0"
+  }
+}

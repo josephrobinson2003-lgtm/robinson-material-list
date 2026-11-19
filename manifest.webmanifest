@@ -1,7 +1,7 @@
 {
-  "name": "Robinson Electrical – Material List",
-  "short_name": "Material List",
-  "description": "Robinson Electrical LLC job material list: fill in, make a PDF, email it.",
+  "name": "Robinson Electrical",
+  "short_name": "Robinson Electrical",
+  "description": "Robinson Electrical materials, daily timecards, and job photos on this phone.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
