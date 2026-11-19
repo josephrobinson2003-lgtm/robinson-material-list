@@ -272,11 +272,26 @@ test("pto balance counts scheduled hours and keeps holiday hours separate", () =
   assert.equal(balance.holidayHours, 56);
   assert.equal(balance.allowanceHours, 120);
   assert.equal(balance.renewalDate, "2026-01-15");
-  const unset = logic.ptoBalance(rows, "emp_j", logic.ptoPolicyFromProps({}), "2026-06-15");
-  assert.equal(unset.renewalDateSet, false);
-  assert.equal(unset.usedHours, null);
-  assert.equal(unset.remainingHours, null);
-  assert.match(unset.renewalPlaceholder, /PTO_RENEWAL_DATE/);
+  const blank = logic.ptoBalance([], "emp_j", logic.ptoPolicyFromProps({}), "2026-11-19");
+  assert.equal(blank.renewalDate, "2025-10-27");
+  assert.equal(blank.yearStart, "2026-10-27");
+  assert.equal(blank.yearEnd, "2027-10-27");
+  assert.equal(blank.usedHours, 0);
+  assert.equal(blank.remainingHours, 120);
+  const before = logic.ptoBalance([
+    { employeeId: "emp_j", date: "2026-10-26", hours: 8, status: "scheduled" }
+  ], "emp_j", logic.ptoPolicyFromProps({}), "2026-10-26");
+  assert.equal(before.yearStart, "2025-10-27");
+  assert.equal(before.usedHours, 8);
+  const rolled = logic.ptoBalance([
+    { employeeId: "emp_j", date: "2026-10-26", hours: 8, status: "scheduled" },
+    { employeeId: "emp_j", date: "2026-10-27", hours: 4, status: "scheduled" }
+  ], "emp_j", logic.ptoPolicyFromProps({}), "2026-10-27");
+  assert.equal(rolled.yearStart, "2026-10-27");
+  assert.equal(rolled.yearEnd, "2027-10-27");
+  assert.equal(rolled.usedHours, 4);
+  const override = logic.ptoPolicyFromProps({ renewalDate: "2024-03-01" });
+  assert.equal(override.renewalDate, "2024-03-01");
 });
 
 test("scheduling and cancelling PTO stays on one employee and writes no wages", () => {

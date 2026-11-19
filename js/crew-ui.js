@@ -7,7 +7,7 @@ import { photoManifest, planPhoto, uploadPhoto, STAGES, KNOWN_CONTRACTORS } from
 import { photoServiceStatus } from "./photo-backend.js";
 import { armTracking, geofenceCapabilities, getNativeGeofence, suggestJobFromFix } from "./native-bridge.js";
 import { resolveTheme, themeBanner, themeDecor, themeGreeting, themeRing, PREVIEW_IDS, previewLabel } from "./holiday-theme.js";
-import { cancelPtoRequest, defaultPtoPolicy, mergePtoRequests, schedulePtoRequest, summarizePto } from "./pto.js";
+import { cancelPtoRequest, formatPtoDay, mergePtoRequests, normalizePolicy, schedulePtoRequest, summarizePto } from "./pto.js";
 import { markPrivacyNoticeRead, privacyNoticeSeen, privacyParagraphs } from "./privacy-notice.js";
 import { createWebSecureStore } from "./secure-store.js";
 import { createBrowserBlobStore, createBrowserStore } from "./storage.js";
@@ -361,18 +361,16 @@ function ptoScreen() {
   const used = summary.usedHours == null ? "—" : summary.usedHours + " hours";
   const remainingHours = summary.remainingHours == null ? "—" : summary.remainingHours + " hours";
   const remainingDays = summary.remainingDays == null ? "—" : summary.remainingDays + " days";
-  const renewal = summary.renewalDateSet ? summary.renewalDate : "Not set";
-  const renewalNote = summary.renewalDateSet
-    ? "This PTO year runs " + summary.yearStart + " through " + summary.yearEnd + "."
-    : summary.renewalPlaceholder;
+  const startLabel = "Start date: " + formatPtoDay(summary.renewalDate);
+  const renewsLabel = "Renews: " + formatPtoDay(summary.yearEnd);
   return `<section class="card"><h2>PTO for this year</h2>
     <div class="pto-stats">
       <div><span>Remaining</span><b>${esc(remainingHours)}</b><span>${esc(remainingDays)}</span></div>
       <div><span>Used</span><b>${esc(used)}</b><span>from scheduled and taken days</span></div>
       <div><span>Allowance</span><b>${esc(summary.allowanceHours + " hours")}</b><span>${esc(summary.allowanceDays + " days · 8-hour day")}</span></div>
-      <div><span>Renewal date</span><b>${esc(renewal)}</b><span>year start</span></div>
+      <div><span>Start date</span><b>${esc(formatPtoDay(summary.renewalDate))}</b><span>${esc(renewsLabel)}</span></div>
     </div>
-    <p class="hint">${esc(renewalNote)}</p>
+    <p class="hint">${esc(startLabel)}. ${esc(renewsLabel)}.</p>
     <p class="hint">Paid holidays are separate: ${esc(String(summary.holidayHours))} hours a year. They are not part of this vacation balance. No pay rate is shown.</p>
     <p class="hint">${esc(ptoMessage)}</p>
   </section>
@@ -397,7 +395,7 @@ function ptoScreen() {
 }
 
 function normalizePolicySafe() {
-  return state.ptoPolicy || defaultPtoPolicy();
+  return normalizePolicy(state.ptoPolicy || {});
 }
 
 function ptoCalendar(month, today) {

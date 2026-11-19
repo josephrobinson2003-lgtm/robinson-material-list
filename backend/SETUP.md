@@ -99,9 +99,9 @@ The phone posts JSON with header `content-type: text/plain;charset=utf-8`. Apps 
 
 ## 9. PTO
 
-Vacation time is separate from the 56 paid holiday hours. The phone shows 120 hours (15 days of 8 hours) until you change it. The renewal date is not filled in, because that date was not in the records. Set these Script Properties, then run `showPtoPolicy` and confirm the log shows the real date:
+Vacation time is separate from the 56 paid holiday hours. The phone shows 120 hours (15 days of 8 hours) until you change it. Jarred started October 27, 2025, and the year renews every October 27. A blank `PTO_RENEWAL_DATE` uses that anniversary. As of late 2026 the year is October 27, 2026 through October 26, 2027, and the next renewal is October 27, 2027.
 
-- `PTO_RENEWAL_DATE` — `YYYY-MM-DD`. Required. Leave it blank only until you know the date. Do not guess.
+- `PTO_RENEWAL_DATE` — optional override, `YYYY-MM-DD`. Leave it blank to keep October 27, 2025.
 - `PTO_ALLOWANCE_HOURS` — optional. Blank uses 120.
 - `PTO_HOLIDAY_HOURS` — optional. Blank uses 56. Those hours are not subtracted from vacation.
 

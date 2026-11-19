@@ -2,17 +2,36 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { cancelPtoRequest, defaultPtoPolicy, schedulePtoRequest, summarizePto } from "../js/pto.js";
 
-test("pto math keeps holidays separate and ignores a missing renewal date", () => {
-  const open = summarizePto([], defaultPtoPolicy(), "2026-06-01");
+test("pto math uses the October 27 anniversary and rolls the year that day", () => {
+  const open = summarizePto([], defaultPtoPolicy(), "2026-11-19");
   assert.equal(open.allowanceHours, 120);
   assert.equal(open.allowanceDays, 15);
   assert.equal(open.holidayHours, 56);
-  assert.equal(open.renewalDateSet, false);
-  assert.equal(open.usedHours, null);
-  assert.equal(open.remainingHours, null);
-  assert.match(open.renewalPlaceholder, /not set/i);
+  assert.equal(open.renewalDate, "2025-10-27");
+  assert.equal(open.yearStart, "2026-10-27");
+  assert.equal(open.yearEnd, "2027-10-27");
+  assert.equal(open.usedHours, 0);
+  assert.equal(open.remainingHours, 120);
+  assert.equal(open.remainingDays, 15);
 
-  const policy = { allowanceHours: 120, holidayHours: 56, renewalDate: "2026-01-15", renewalDateSet: true };
+  const before = summarizePto([
+    { requestId: "edge", date: "2026-10-26", hours: 8, status: "scheduled" }
+  ], {}, "2026-10-26");
+  assert.equal(before.yearStart, "2025-10-27");
+  assert.equal(before.yearEnd, "2026-10-27");
+  assert.equal(before.usedHours, 8);
+  assert.equal(before.remainingHours, 112);
+
+  const rolled = summarizePto([
+    { requestId: "edge", date: "2026-10-26", hours: 8, status: "scheduled" },
+    { requestId: "next", date: "2026-10-27", hours: 4, status: "scheduled" }
+  ], {}, "2026-10-27");
+  assert.equal(rolled.yearStart, "2026-10-27");
+  assert.equal(rolled.yearEnd, "2027-10-27");
+  assert.equal(rolled.usedHours, 4);
+  assert.equal(rolled.remainingHours, 116);
+
+  const policy = { allowanceHours: 120, holidayHours: 56, renewalDate: "2026-01-15" };
   const requests = [
     { requestId: "a", date: "2026-04-02", hours: 8, status: "scheduled" },
     { requestId: "b", date: "2026-05-04", hours: 4, status: "scheduled" },

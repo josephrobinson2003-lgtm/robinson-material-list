@@ -19,6 +19,7 @@ var PTO_HEADERS = [
 ];
 var PTO_OWNER_EMAIL = "RobinsonElectricalLlc@gmail.com";
 var PTO_DAY_HOURS = 8;
+var PTO_DEFAULT_RENEWAL = "2025-10-27";
 
 var FORBIDDEN_KEYS = {
   payRate: true, wage: true, wages: true, loadedCost: true, loadedLabor: true,
@@ -440,14 +441,14 @@ function ptoPolicyFromProps(props) {
   var allowance = Number(props.allowanceHours);
   var holidays = Number(props.holidayHours);
   var renewal = String(props.renewalDate || "").trim();
-  var set = /^\d{4}-\d{2}-\d{2}$/.test(renewal);
+  var override = /^\d{4}-\d{2}-\d{2}$/.test(renewal) ? renewal : PTO_DEFAULT_RENEWAL;
   return {
     allowanceHours: isFinite(allowance) && allowance > 0 ? allowance : 120,
     holidayHours: isFinite(holidays) && holidays >= 0 ? holidays : 56,
     dayHours: PTO_DAY_HOURS,
-    renewalDate: set ? renewal : "",
-    renewalDateSet: set,
-    renewalPlaceholder: set ? "" : "Not set. Joe must set PTO_RENEWAL_DATE (YYYY-MM-DD) in Script Properties."
+    renewalDate: override,
+    renewalDateSet: true,
+    renewalPlaceholder: ""
   };
 }
 
@@ -510,7 +511,7 @@ function ptoNotice(employee, date, hours) {
 
 function ptoBalance(rows, employeeId, policy, asOf) {
   var rules = ptoPolicyFromProps(policy);
-  var window = rules.renewalDateSet ? ptoYearWindow(rules.renewalDate, asOf) : null;
+  var window = ptoYearWindow(rules.renewalDate, asOf);
   var used = null;
   if (window) {
     used = 0;
