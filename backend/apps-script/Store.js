@@ -12,6 +12,7 @@ function ensureSpreadsheet_() {
   ensureTab_(book, "Timecards", TIMECARD_HEADERS);
   ensureTab_(book, "Materials", MATERIAL_HEADERS);
   ensureTab_(book, "Scopes", SCOPE_HEADERS);
+  ensureTab_(book, "Pto", PTO_HEADERS);
   return book.getId();
 }
 
@@ -83,6 +84,17 @@ function saveScope_(record) {
   sheet.clearContents();
   sheet.appendRow(SCOPE_HEADERS);
   rows.forEach(function (row) { appendRow_("Scopes", SCOPE_HEADERS, row); });
+}
+
+function readPto_() {
+  return readSheet_("Pto", PTO_HEADERS);
+}
+
+function savePto_(rows) {
+  var sheet = openTab_("Pto", PTO_HEADERS);
+  sheet.clearContents();
+  sheet.appendRow(PTO_HEADERS);
+  (rows || []).forEach(function (row) { appendRow_("Pto", PTO_HEADERS, row); });
 }
 
 function readEmployees_() {

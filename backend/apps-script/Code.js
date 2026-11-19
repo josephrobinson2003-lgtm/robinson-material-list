@@ -19,8 +19,60 @@ function liveDeps() {
     saveScope: function (record) { saveScope_(record); },
     adminKeyOk: function (key) { return adminKeyOk_(key); },
     geocode: function (address) { return geocodeAddress_(address); },
-    theme: function () { return themeOverride_(); }
+    theme: function () { return themeOverride_(); },
+    listPto: function () { return readPto_(); },
+    savePto: function (rows) { savePto_(rows); },
+    ptoPolicy: function () { return ptoPolicyProps_(); },
+    today: function () { return dutyDateInChicago(new Date()); },
+    createPtoEvent: function (spec) { return createPtoEvent_(spec); },
+    deletePtoEvent: function (eventId) { deletePtoEvent_(eventId); },
+    notifyOwner: function (notice) { notifyPtoOwner_(notice); }
   };
+}
+
+function ptoPolicyProps_() {
+  var props = scriptProperties_();
+  return {
+    allowanceHours: props.getProperty("PTO_ALLOWANCE_HOURS") || "",
+    holidayHours: props.getProperty("PTO_HOLIDAY_HOURS") || "",
+    renewalDate: props.getProperty("PTO_RENEWAL_DATE") || ""
+  };
+}
+
+function ptoCalendar_() {
+  return CalendarApp.getDefaultCalendar();
+}
+
+function createPtoEvent_(spec) {
+  if (!spec || !spec.date || !spec.title) return "";
+  var parts = String(spec.date).split("-");
+  var day = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  var calendar = ptoCalendar_();
+  var event;
+  if (spec.allDay) event = calendar.createAllDayEvent(spec.title, day);
+  else {
+    var start = new Date(day.getTime());
+    start.setHours(8, 0, 0, 0);
+    var end = new Date(start.getTime() + Number(spec.hours || 8) * 3600000);
+    event = calendar.createEvent(spec.title, start, end);
+  }
+  event.setDescription(spec.description || (spec.hours + " hours scheduled off."));
+  try {
+    event.addEmailReminder(14 * 24 * 60);
+    event.addPopupReminder(14 * 24 * 60);
+  } catch (err) { /* a reminder that cannot be set still leaves the event */ }
+  return event.getId();
+}
+
+function deletePtoEvent_(eventId) {
+  if (!eventId) return;
+  var event = ptoCalendar_().getEventById(eventId);
+  if (event) event.deleteEvent();
+}
+
+function notifyPtoOwner_(notice) {
+  if (!notice || !notice.to) return;
+  MailApp.sendEmail({ to: notice.to, subject: notice.subject, body: notice.body });
 }
 
 function themeOverride_() {
@@ -133,6 +185,30 @@ function installSundayTrigger() {
 
 function sundayTriggerSpec() {
   return { handler: "sendWeeklyReports", weekday: "SUNDAY", hour: 8, timezone: "America/Chicago" };
+}
+
+function showPtoPolicy() {
+  return ptoPolicyFromProps(ptoPolicyProps_());
+}
+
+function installPtoReminderTrigger() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === "remindUpcomingPto") ScriptApp.deleteTrigger(triggers[i]);
+  }
+  ScriptApp.newTrigger("remindUpcomingPto").timeBased().everyDays(1).atHour(7).create();
+  return { handler: "remindUpcomingPto", everyDays: 1, hour: 7, timezone: "America/Chicago" };
+}
+
+function remindUpcomingPto() {
+  var rows = readPto_();
+  var today = dutyDateInChicago(new Date());
+  var due = ptoRemindersDue(rows, today);
+  due.forEach(function (item) {
+    MailApp.sendEmail({ to: item.to, subject: item.subject, body: item.body });
+  });
+  if (due.length) savePto_(markPtoNotified(rows, due.map(function (item) { return item.requestId; }), new Date().toISOString()));
+  return { sent: due.length };
 }
 
 function sendWeeklyReports() {

@@ -97,8 +97,20 @@ See `backend/SCOPE.md`. To load a price-free task list, post to `/api/scope/upse
 
 The phone posts JSON with header `content-type: text/plain;charset=utf-8`. Apps Script still reads `e.postData.contents`. A JSON content type makes the phone send a CORS preflight, which the web app does not answer.
 
-## 9. Holiday logo
+## 9. PTO
 
-Script property `THEME_OVERRIDE` is optional. Leave it blank or set `auto` and the phone picks the mark from the Chicago date. Set `off` for the plain logo. Set one theme name to force it without a new app build: `new-year`, `mlk`, `groundhog`, `valentines`, `presidents`, `st-patricks`, `easter`, `arbor-day`, `earth-day`, `mothers-day`, `memorial-day`, `fathers-day`, `juneteenth`, `july-4`, `labor-day`, `columbus`, `halloween`, `veterans`, `thanksgiving`, `christmas`.
+Vacation time is separate from the 56 paid holiday hours. The phone shows 120 hours (15 days of 8 hours) until you change it. The renewal date is not filled in, because that date was not in the records. Set these Script Properties, then run `showPtoPolicy` and confirm the log shows the real date:
 
-`GET /api/theme` and `/api/health` return that value and nothing else from Script Properties. Health does not require an employee token. An unknown name is treated as `auto`. No new OAuth scope.
+- `PTO_RENEWAL_DATE` — `YYYY-MM-DD`. Required. Leave it blank only until you know the date. Do not guess.
+- `PTO_ALLOWANCE_HOURS` — optional. Blank uses 120.
+- `PTO_HOLIDAY_HOURS` — optional. Blank uses 56. Those hours are not subtracted from vacation.
+
+Run `installPtoReminderTrigger` once. It emails RobinsonElectricalLlc@gmail.com each morning when scheduled PTO is 14 days away, and also if a request inside that window was not already announced. Each new PTO day is an event on the deploying account's Google Calendar titled `Jarred's time scheduled off`, with an email and popup reminder 14 days before. A request made with less than 14 days' notice emails immediately. Cancelling a future day deletes that event. The event text is the date and the hours only.
+
+Redeploy after pasting `Logic.js`, `Code.js`, and `Store.js`. Approve the calendar permission when Apps Script asks. `ensureCompanySheet` adds a Pto tab.
+
+## 10. Holiday logo
+
+Script property `THEME_OVERRIDE` is optional. Leave it blank or set `auto` and the phone picks the mark from the Chicago date. Set `off` for the plain logo. Set one theme name to force it without a new app build: `new-year`, `mlk`, `groundhog`, `valentines`, `presidents`, `st-patricks`, `easter`, `arbor-day`, `earth-day`, `mothers-day`, `memorial-day`, `fathers-day`, `juneteenth`, `july-4`, `labor-day`, `columbus`, `halloween`, `veterans`, `thanksgiving`, `christmas`, `fall`, `winter`, `happy-holidays`. A `subtle-` name such as `subtle-easter` forces that holiday's quiet lead-in.
+
+`GET /api/theme` and `/api/health` return that value and nothing else from Script Properties. Health does not require an employee token. An unknown name is treated as `auto`. The calendar scope is new for PTO events. Theme lookup itself adds no scope.

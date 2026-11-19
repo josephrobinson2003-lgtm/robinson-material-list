@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
-  THEME_IDS, holidayDate, monthWindows, themeForDutyDate, resolveTheme, themeDecor,
+  THEME_IDS, PREVIEW_IDS, holidayDate, themeForDutyDate, resolveTheme, themeDecor,
   themeBanner, themeGreeting, nextPreviewTheme
 } from "../js/holiday-theme.js";
 
@@ -53,37 +53,6 @@ const DATES = {
   }
 };
 
-const WINDOWS = {
-  2026: {
-    1: [["new-year", 1, 9], ["mlk", 10, 31]],
-    2: [["groundhog", 1, 7], ["valentines", 8, 14], ["presidents", 15, 28]],
-    3: [["st-patricks", 1, 31]],
-    4: [["easter", 1, 13], ["earth-day", 14, 22], ["arbor-day", 23, 30]],
-    5: [["mothers-day", 1, 17], ["memorial-day", 18, 31]],
-    6: [["juneteenth", 1, 19], ["fathers-day", 20, 30]],
-    7: [["july-4", 1, 31]],
-    8: [],
-    9: [["labor-day", 1, 30]],
-    10: [["columbus", 1, 21], ["halloween", 22, 31]],
-    11: [["veterans", 1, 18], ["thanksgiving", 19, 30]],
-    12: [["christmas", 1, 31]]
-  },
-  2027: {
-    1: [["new-year", 1, 9], ["mlk", 10, 31]],
-    2: [["groundhog", 1, 7], ["valentines", 8, 14], ["presidents", 15, 28]],
-    3: [["st-patricks", 1, 22], ["easter", 23, 31]],
-    4: [["earth-day", 1, 25], ["arbor-day", 26, 30]],
-    5: [["mothers-day", 1, 19], ["memorial-day", 20, 31]],
-    6: [["juneteenth", 1, 19], ["fathers-day", 20, 30]],
-    7: [["july-4", 1, 31]],
-    8: [],
-    9: [["labor-day", 1, 30]],
-    10: [["columbus", 1, 20], ["halloween", 21, 31]],
-    11: [["veterans", 1, 17], ["thanksgiving", 18, 30]],
-    12: [["christmas", 1, 31]]
-  }
-};
-
 test("every holiday date for 2026 and 2027", () => {
   for (const year of [2026, 2027]) {
     for (const id of THEME_IDS) {
@@ -92,26 +61,55 @@ test("every holiday date for 2026 and 2027", () => {
   }
 });
 
-test("every month of 2026 and 2027 uses the midpoint window", () => {
-  for (const year of [2026, 2027]) {
-    for (let month = 1; month <= 12; month += 1) {
-      const actual = monthWindows(year, month).map((window) => [window.theme, window.startDay, window.endDay]);
-      assert.deepEqual(actual, WINDOWS[year][month], year + "-" + month);
-    }
-  }
-  assert.equal(themeForDutyDate("2026-08-15"), null);
-  assert.equal(themeForDutyDate("2026-11-13"), "veterans");
-  assert.equal(themeForDutyDate("2026-11-18"), "veterans");
-  assert.equal(themeForDutyDate("2026-11-19"), "thanksgiving");
-  assert.equal(themeForDutyDate("2026-02-14"), "valentines");
-  assert.equal(themeForDutyDate("2026-02-15"), "presidents");
-  assert.equal(themeForDutyDate("2027-04-05"), "earth-day");
-  assert.equal(themeForDutyDate("2027-03-28"), "easter");
-  for (const year of [2026, 2027]) {
+function shift(duty, days) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(duty);
+  const dt = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + days));
+  return dt.toISOString().slice(0, 10);
+}
+
+test("holiday dates still show that holiday, and lead-ins fill the days before", () => {
+  for (const year of [2026, 2027, 2028]) {
     for (const id of THEME_IDS) {
-      assert.equal(themeForDutyDate(DATES[year][id]), id);
+      assert.equal(themeForDutyDate(holidayDate(id, year)), id, id + " " + year);
     }
+    const thanksgiving = holidayDate("thanksgiving", year);
+    const fallEnd = shift(thanksgiving, -5);
+    const fullStart = shift(thanksgiving, -4);
+    const fullEnd = shift(thanksgiving, 2);
+    const winterStart = shift(thanksgiving, 3);
+    assert.equal(themeForDutyDate(year + "-11-11"), "veterans");
+    assert.equal(themeForDutyDate(year + "-11-12"), "fall");
+    assert.equal(themeForDutyDate(fallEnd), "fall");
+    assert.equal(themeGreeting("fall"), "");
+    assert.equal(themeForDutyDate(fullStart), "thanksgiving");
+    assert.equal(themeForDutyDate(thanksgiving), "thanksgiving");
+    assert.equal(themeForDutyDate(fullEnd), "thanksgiving");
+    assert.equal(themeGreeting("thanksgiving"), "Happy Thanksgiving");
+    assert.equal(themeForDutyDate(winterStart), "winter");
+    assert.equal(themeGreeting("winter"), "");
+    assert.equal(themeForDutyDate(year + "-12-10"), "winter");
+    assert.equal(themeForDutyDate(year + "-12-11"), "happy-holidays");
+    assert.equal(themeForDutyDate(year + "-12-24"), "happy-holidays");
+    assert.equal(themeGreeting("happy-holidays"), "Happy Holidays");
+    assert.equal(themeForDutyDate(year + "-12-25"), "christmas");
+    assert.equal(themeForDutyDate(year + "-12-26"), "subtle-new-year");
+    assert.equal(themeGreeting("subtle-new-year"), "");
+    assert.equal(themeForDutyDate((year + 1) + "-01-01"), "new-year");
   }
+  assert.equal(themeForDutyDate("2026-03-01"), null);
+  assert.equal(themeForDutyDate("2027-03-01"), null);
+  assert.equal(themeForDutyDate("2028-02-29"), "winter");
+  assert.equal(themeForDutyDate("2026-08-15"), null);
+  assert.equal(themeForDutyDate("2026-02-14"), "valentines");
+  assert.equal(themeForDutyDate("2026-02-15"), "subtle-presidents");
+  assert.equal(themeDecor("fall").includes("holiday/"), true);
+  assert.equal(themeDecor("happy-holidays").includes("tree.webp"), false);
+  assert.equal(themeDecor("happy-holidays").includes("sleigh.webp"), false);
+  assert.equal(themeDecor("winter").includes("snow"), true);
+  assert.equal(PREVIEW_IDS.includes("fall"), true);
+  assert.equal(PREVIEW_IDS.includes("winter"), true);
+  assert.equal(PREVIEW_IDS.includes("happy-holidays"), true);
+  assert.equal(PREVIEW_IDS.includes("subtle-memorial-day"), true);
 });
 
 test("theme override accepts a name, auto, or off", () => {
@@ -119,18 +117,18 @@ test("theme override accepts a name, auto, or off", () => {
   assert.equal(resolveTheme("2026-08-01", "off"), null);
   assert.equal(resolveTheme("2026-08-01", "christmas"), "christmas");
   assert.equal(resolveTheme("2026-12-25", "not-a-theme"), "christmas");
-  assert.equal(resolveTheme("2026-11-13", ""), "veterans");
+  assert.equal(resolveTheme("2026-11-13", ""), "fall");
   let cursor = null;
-  for (const id of THEME_IDS) {
+  for (const id of PREVIEW_IDS) {
     cursor = nextPreviewTheme(cursor);
     assert.equal(cursor, id);
     const markup = themeDecor(id) + themeBanner(id) + themeGreeting(id);
     assert.equal(themeBanner(id).includes("<svg"), true, id);
-    assert.equal(themeGreeting(id).length > 3, true, id);
+    if (id !== "fall" && id !== "winter" && !id.startsWith("subtle-")) assert.equal(themeGreeting(id).length > 3, true, id);
     assert.equal(markup.includes("http"), false, id);
     assert.equal(markup.includes("$"), false, id);
   }
-  assert.equal(nextPreviewTheme("christmas"), "new-year");
+  assert.equal(nextPreviewTheme("subtle-christmas"), "fall");
   const motion = {
     christmas: ["snow", "bulb-color", "wreath", "santa-fly"],
     "new-year": ["spark", "fuse"],

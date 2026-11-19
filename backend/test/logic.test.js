@@ -250,4 +250,86 @@ test("theme override is a name, auto, or off and is public", () => {
   assert.equal(theme.theme, "auto");
   deps.theme = () => "off";
   assert.equal(logic.handleRequest({ method: "POST", path: "/api/health", body: {} }, deps).theme, "off");
+  assert.equal(logic.publicTheme("fall"), "fall");
+  assert.equal(logic.publicTheme("winter"), "winter");
+  assert.equal(logic.publicTheme("happy-holidays"), "happy-holidays");
+  assert.equal(logic.publicTheme("subtle-easter"), "subtle-easter");
+});
+
+test("pto balance counts scheduled hours and keeps holiday hours separate", () => {
+  const policy = logic.ptoPolicyFromProps({ allowanceHours: "120", holidayHours: "56", renewalDate: "2026-01-15" });
+  const rows = [
+    { employeeId: "emp_j", date: "2026-04-02", hours: 8, status: "scheduled" },
+    { employeeId: "emp_j", date: "2026-05-04", hours: 4, status: "scheduled" },
+    { employeeId: "emp_j", date: "2026-06-01", hours: 8, status: "cancelled" },
+    { employeeId: "emp_j", date: "2025-12-01", hours: 8, status: "scheduled" },
+    { employeeId: "emp_other", date: "2026-04-02", hours: 8, status: "scheduled" }
+  ];
+  const balance = logic.ptoBalance(rows, "emp_j", policy, "2026-06-15");
+  assert.equal(balance.usedHours, 12);
+  assert.equal(balance.remainingHours, 108);
+  assert.equal(balance.remainingDays, 13.5);
+  assert.equal(balance.holidayHours, 56);
+  assert.equal(balance.allowanceHours, 120);
+  assert.equal(balance.renewalDate, "2026-01-15");
+  const unset = logic.ptoBalance(rows, "emp_j", logic.ptoPolicyFromProps({}), "2026-06-15");
+  assert.equal(unset.renewalDateSet, false);
+  assert.equal(unset.usedHours, null);
+  assert.equal(unset.remainingHours, null);
+  assert.match(unset.renewalPlaceholder, /PTO_RENEWAL_DATE/);
+});
+
+test("scheduling and cancelling PTO stays on one employee and writes no wages", () => {
+  const directory = logic.addEmployeeRecord([], "Jarred", "jarred-token-123456");
+  const both = logic.addEmployeeRecord(directory.directory, "Joe", "joe-token-123456789");
+  const data = { rows: [], events: [], deleted: [], mail: [] };
+  const deps = {
+    employees: () => both.directory,
+    ptoPolicy: () => ({ allowanceHours: 120, holidayHours: 56, renewalDate: "2026-01-15" }),
+    today: () => "2026-03-10",
+    listPto: () => data.rows,
+    savePto: (rows) => { data.rows = rows; },
+    createPtoEvent: (spec) => { data.events.push(spec); return "evt-" + data.events.length; },
+    deletePtoEvent: (id) => { data.deleted.push(id); },
+    notifyOwner: (notice) => { data.mail.push(notice); }
+  };
+  const scheduled = logic.handleRequest({
+    method: "POST", path: "/api/pto/schedule", token: "jarred-token-123456",
+    body: { requestId: "pto_1", date: "2026-04-02", hours: 8 }
+  }, deps);
+  assert.equal(scheduled.acknowledged, true);
+  assert.equal(data.events[0].title, "Jarred's time scheduled off");
+  assert.equal(data.events[0].allDay, true);
+  assert.equal(JSON.stringify(data.events[0]).includes("wage"), false);
+  assert.equal(JSON.stringify(data.events[0]).includes("$"), false);
+  assert.equal(data.mail.length, 0);
+  const soon = logic.handleRequest({
+    method: "POST", path: "/api/pto/schedule", token: "jarred-token-123456",
+    body: { requestId: "pto_2", date: "2026-03-12", hours: 4 }
+  }, deps);
+  assert.equal(soon.acknowledged, true);
+  assert.equal(data.events[1].allDay, false);
+  assert.equal(data.mail.length, 1);
+  assert.equal(data.mail[0].to, "RobinsonElectricalLlc@gmail.com");
+  assert.equal(data.mail[0].subject, "Jarred's time scheduled off");
+  assert.equal(JSON.stringify(data.mail[0]).includes("wage"), false);
+  const listed = logic.handleRequest({ method: "POST", path: "/api/pto", token: "joe-token-123456789", body: {} }, deps);
+  assert.equal(listed.requests.length, 0);
+  const jarred = logic.handleRequest({ method: "POST", path: "/api/pto", token: "jarred-token-123456", body: {} }, deps);
+  assert.equal(jarred.requests.length, 2);
+  assert.equal(jarred.balance.usedHours, 12);
+  const blocked = logic.handleRequest({
+    method: "POST", path: "/api/pto/cancel", token: "joe-token-123456789", body: { requestId: "pto_1" }
+  }, deps);
+  assert.equal(blocked.status, 400);
+  const cancelled = logic.handleRequest({
+    method: "POST", path: "/api/pto/cancel", token: "jarred-token-123456", body: { requestId: "pto_1" }
+  }, deps);
+  assert.equal(cancelled.acknowledged, true);
+  assert.deepEqual(data.deleted, ["evt-1"]);
+  const past = logic.handleRequest({
+    method: "POST", path: "/api/pto/schedule", token: "jarred-token-123456",
+    body: { requestId: "pto_3", date: "2026-03-01", hours: 8 }
+  }, deps);
+  assert.equal(past.status, 400);
 });

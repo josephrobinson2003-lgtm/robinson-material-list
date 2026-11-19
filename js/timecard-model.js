@@ -20,7 +20,8 @@ export function emptyState() {
     pins: [],
     queue: [],
     jobDraft: "",
-    jobConfirmed: false
+    jobConfirmed: false,
+    ptoRequests: []
   };
 }
 

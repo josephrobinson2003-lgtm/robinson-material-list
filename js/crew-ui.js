@@ -6,7 +6,8 @@ import { loadJobBook, rememberJob, saveJobBook } from "./jobs.js";
 import { photoManifest, planPhoto, uploadPhoto, STAGES, KNOWN_CONTRACTORS } from "./job-photos.js";
 import { photoServiceStatus } from "./photo-backend.js";
 import { armTracking, geofenceCapabilities, getNativeGeofence, suggestJobFromFix } from "./native-bridge.js";
-import { resolveTheme, themeBanner, themeDecor, themeGreeting, themeRing, THEME_IDS, THEME_LABELS } from "./holiday-theme.js";
+import { resolveTheme, themeBanner, themeDecor, themeGreeting, themeRing, PREVIEW_IDS, previewLabel } from "./holiday-theme.js";
+import { cancelPtoRequest, defaultPtoPolicy, mergePtoRequests, schedulePtoRequest, summarizePto } from "./pto.js";
 import { markPrivacyNoticeRead, privacyNoticeSeen, privacyParagraphs } from "./privacy-notice.js";
 import { createWebSecureStore } from "./secure-store.js";
 import { createBrowserBlobStore, createBrowserStore } from "./storage.js";
@@ -16,7 +17,7 @@ import {
   confirmJob, deletePin, editEntry, emptyState, manualStart, rejectSuggestion, reviewDay,
   savePin, setEmployeeName, setJobDraft, setLocationOptIn, stopInterval, switchOrInsert
 } from "./timecard-model.js";
-import { formatChicagoDay, formatChicagoLabel, dutyDateOf, reportWeek, chicagoParts, elapsedMinutes, chicagoWallToUtc } from "./chicago-time.js";
+import { formatChicagoDay, formatChicagoLabel, dutyDateOf, reportWeek, chicagoParts, elapsedMinutes, chicagoWallToUtc, weekdayOfDutyDate } from "./chicago-time.js";
 import { billableMinutes } from "./pay-rules.js";
 import { trackingLabel } from "./tracking-status.js";
 
@@ -29,6 +30,9 @@ let photoMessage = "";
 let timeMessage = "";
 let scopeView = null;
 let scopeMessage = "";
+let ptoMessage = "";
+let ptoMonth = "";
+let ptoQuiet = false;
 let privacyOpen = false;
 let serverHealthy = false;
 let serverOpen = false;
@@ -55,6 +59,7 @@ export async function startCrewApp() {
   const loaded = await bookStore.load();
   state = loaded || emptyState();
   state.photos = state.photos || [];
+  state.ptoRequests = state.ptoRequests || [];
   if (!state.employeeId) state = setEmployeeName(state, "").state;
   if (!state.employeeName) {
     try {
@@ -340,6 +345,180 @@ function clockScreen(review, week, syncLine) {
     <button type="button" class="btn" id="tc_confirm" ${(review.canConfirm && !dayAlreadyConfirmed(review)) ? "" : "disabled"}>${dayAlreadyConfirmed(review) ? "Day confirmed" : "Confirm my day"}</button>`;
 }
 
+function ptoStatusWord(row) {
+  if (!row) return "";
+  if (row.syncStatus === "uploaded") return "Synced";
+  if (row.syncStatus === "failed") return "Saved on this phone — the server did not take it yet";
+  return "Pending on this phone";
+}
+
+function ptoScreen() {
+  state.ptoRequests = state.ptoRequests || [];
+  const today = dutyDateOf(new Date());
+  if (!ptoMonth) ptoMonth = today.slice(0, 7);
+  const policy = normalizePolicySafe();
+  const summary = summarizePto(state.ptoRequests, policy, today);
+  const used = summary.usedHours == null ? "—" : summary.usedHours + " hours";
+  const remainingHours = summary.remainingHours == null ? "—" : summary.remainingHours + " hours";
+  const remainingDays = summary.remainingDays == null ? "—" : summary.remainingDays + " days";
+  const renewal = summary.renewalDateSet ? summary.renewalDate : "Not set";
+  const renewalNote = summary.renewalDateSet
+    ? "This PTO year runs " + summary.yearStart + " through " + summary.yearEnd + "."
+    : summary.renewalPlaceholder;
+  return `<section class="card"><h2>PTO for this year</h2>
+    <div class="pto-stats">
+      <div><span>Remaining</span><b>${esc(remainingHours)}</b><span>${esc(remainingDays)}</span></div>
+      <div><span>Used</span><b>${esc(used)}</b><span>from scheduled and taken days</span></div>
+      <div><span>Allowance</span><b>${esc(summary.allowanceHours + " hours")}</b><span>${esc(summary.allowanceDays + " days · 8-hour day")}</span></div>
+      <div><span>Renewal date</span><b>${esc(renewal)}</b><span>year start</span></div>
+    </div>
+    <p class="hint">${esc(renewalNote)}</p>
+    <p class="hint">Paid holidays are separate: ${esc(String(summary.holidayHours))} hours a year. They are not part of this vacation balance. No pay rate is shown.</p>
+    <p class="hint">${esc(ptoMessage)}</p>
+  </section>
+  <section class="card"><h2>Schedule a day</h2>
+    <label class="f" for="pto_hours">Hours</label>
+    <select class="t" id="pto_hours">
+      <option value="8">Full day (8 hours)</option>
+      <option value="6">6 hours</option>
+      <option value="4">4 hours</option>
+      <option value="2">2 hours</option>
+      <option value="1">1 hour</option>
+    </select>
+    <div class="actions">
+      <button type="button" class="btn secondary" id="pto_prev">Previous month</button>
+      <button type="button" class="btn secondary" id="pto_next">Next month</button>
+    </div>
+    <p><b>${esc(ptoMonth)}</b></p>
+    ${ptoCalendar(ptoMonth, today)}
+    <h3>Scheduled and taken</h3>
+    ${ptoList(today)}
+  </section>`;
+}
+
+function normalizePolicySafe() {
+  return state.ptoPolicy || defaultPtoPolicy();
+}
+
+function ptoCalendar(month, today) {
+  const [yearText, monthText] = month.split("-");
+  const year = Number(yearText);
+  const monthNum = Number(monthText);
+  const first = month + "-01";
+  const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const firstWeekday = names.indexOf(weekdayOfDutyDate(first));
+  const last = new Date(Date.UTC(year, monthNum, 0)).getUTCDate();
+  let cells = names.map((name) => '<div class="pto-dow">' + name + "</div>").join("");
+  for (let i = 0; i < firstWeekday; i += 1) cells += '<div></div>';
+  for (let day = 1; day <= last; day += 1) {
+    const date = month + "-" + String(day).padStart(2, "0");
+    const row = (state.ptoRequests || []).find((item) => item.date === date && item.status !== "cancelled");
+    const past = date < today;
+    const cls = "pto-day" + (row ? " on" : "") + (past ? " past" : "");
+    const label = row ? day + " · " + row.hours + "h" : String(day);
+    cells += '<button type="button" class="' + cls + '" data-pto-date="' + date + '"' + (past && !row ? " disabled" : "") + '>' + label + "</button>";
+  }
+  return '<div class="pto-grid">' + cells + "</div>";
+}
+
+function ptoList(today) {
+  const rows = (state.ptoRequests || []).filter((row) => row.status !== "cancelled").slice().sort((a, b) => a.date < b.date ? -1 : 1);
+  if (!rows.length) return "<p>No PTO is scheduled on this phone yet.</p>";
+  return rows.map((row) => {
+    const when = row.date < today ? "Taken" : "Scheduled";
+    const cancel = row.date >= today ? '<button type="button" class="textlink" data-pto-cancel="' + esc(row.requestId) + '">Cancel</button>' : "";
+    return '<article class="visit"><b>' + esc(row.date) + '</b> <span class="pill">' + when + '</span><p>' + esc(row.hours) + ' hours · ' + esc(ptoStatusWord(row)) + "</p>" + cancel + "</article>";
+  }).join("");
+}
+
+async function syncPto() {
+  state.ptoRequests = state.ptoRequests || [];
+  const config = readDeviceConfig(localStorage);
+  if (!config.configured) {
+    state.ptoRequests.forEach((row) => {
+      if (row.syncStatus === "pending-upload") row.syncStatus = "saved-on-phone";
+    });
+    return;
+  }
+  for (const row of state.ptoRequests) {
+    if (row.syncStatus === "uploaded") continue;
+    const path = row.status === "cancelled" ? "/api/pto/cancel" : "/api/pto/schedule";
+    try {
+      const remote = await postBackend(config, path, { requestId: row.requestId, date: row.date, hours: row.hours });
+      if (remote.acknowledged) {
+        row.syncStatus = "uploaded";
+        if (remote.data && remote.data.request) Object.assign(row, remote.data.request, { syncStatus: "uploaded" });
+        if (remote.data && remote.data.policy) state.ptoPolicy = remote.data.policy;
+      } else row.syncStatus = "failed";
+    } catch {
+      row.syncStatus = "saved-on-phone";
+    }
+  }
+  try {
+    const listed = await postBackend(config, "/api/pto", {});
+    if (listed.ok && listed.data) {
+      if (listed.data.policy) state.ptoPolicy = listed.data.policy;
+      if (Array.isArray(listed.data.requests)) state.ptoRequests = mergePtoRequests(state.ptoRequests, listed.data.requests);
+    }
+  } catch { /* keep the phone copy */ }
+  await persist();
+}
+
+function shiftPtoMonth(delta) {
+  const parts = ptoMonth.split("-").map(Number);
+  const dt = new Date(Date.UTC(parts[0], parts[1] - 1 + delta, 1));
+  ptoMonth = dt.toISOString().slice(0, 7);
+  draw();
+  restoreTab();
+}
+
+async function onPtoDate(date, hours) {
+  const today = dutyDateOf(new Date());
+  const existing = (state.ptoRequests || []).find((row) => row.date === date && row.status !== "cancelled");
+  if (existing) {
+    if (date >= today) return onPtoCancel(existing.requestId);
+    ptoMessage = "That day is already recorded.";
+    draw();
+    restoreTab();
+    return;
+  }
+  const result = schedulePtoRequest(state.ptoRequests, { date, hours: Number(hours) }, today);
+  if (!result.ok) {
+    ptoMessage = result.reason === "past-date" ? "Pick today or a later day." : "That day is already scheduled.";
+    draw();
+    restoreTab();
+    return;
+  }
+  state.ptoRequests = result.requests;
+  ptoMessage = "Saved on this phone.";
+  await persist();
+  await syncPto();
+  const saved = (state.ptoRequests || []).find((row) => row.requestId === result.request.requestId);
+  ptoMessage = saved && saved.syncStatus === "uploaded"
+    ? "Synced. Joe's calendar has this day."
+    : "Saved on this phone. It will sync when the server is connected.";
+  draw();
+  restoreTab();
+}
+
+async function onPtoCancel(requestId) {
+  const result = cancelPtoRequest(state.ptoRequests, requestId, dutyDateOf(new Date()));
+  if (!result.ok) {
+    ptoMessage = "A past day stays on the record.";
+    draw();
+    restoreTab();
+    return;
+  }
+  state.ptoRequests = result.requests;
+  ptoMessage = "Cancelled on this phone.";
+  await persist();
+  await syncPto();
+  const saved = (state.ptoRequests || []).find((row) => row.requestId === requestId);
+  ptoMessage = saved && saved.syncStatus === "uploaded" ? "Cancelled and removed from Joe's calendar." : "Cancelled on this phone. It will sync when the server is connected.";
+  draw();
+  restoreTab();
+}
+
 function draw() {
   const root = $("crew_panels");
   if (!root) return;
@@ -419,6 +598,9 @@ function draw() {
         <h3>Or pick a job</h3>
         <div id="scope_jobs">${jobs.jobs.map((job) => '<button type="button" class="listpick" data-scope-job="' + esc(job.jobId) + '">' + esc(job.jobLabel) + "</button>").join("") || "<p>No jobs saved on this phone yet.</p>"}</div>
       </section>
+    </section>
+    <section id="pto_panel" class="crew" hidden>
+      ${ptoScreen()}
     </section>`;
   $("tc_name").addEventListener("change", async () => {
     state = setEmployeeName(state, $("tc_name").value).state;
@@ -526,6 +708,11 @@ function draw() {
   root.querySelectorAll("[data-scope-job]").forEach((button) => button.addEventListener("click", () => {
     findScopeByJob(button.getAttribute("data-scope-job"), button.textContent);
   }));
+  const ptoHours = $("pto_hours");
+  if ($("pto_prev")) $("pto_prev").addEventListener("click", () => { shiftPtoMonth(-1); });
+  if ($("pto_next")) $("pto_next").addEventListener("click", () => { shiftPtoMonth(1); });
+  root.querySelectorAll("[data-pto-date]").forEach((button) => button.addEventListener("click", () => onPtoDate(button.getAttribute("data-pto-date"), ptoHours ? ptoHours.value : "8")));
+  root.querySelectorAll("[data-pto-cancel]").forEach((button) => button.addEventListener("click", () => onPtoCancel(button.getAttribute("data-pto-cancel"))));
   $("ph_upload").addEventListener("click", async () => {
     photoMessage = "Not connected. Photos stay on this phone. Nothing was uploaded.";
     for (let i = 0; i < state.photos.length; i += 1) {
@@ -643,31 +830,42 @@ async function refreshServerHealth() {
   }
 }
 
+function holidayAttr(theme) {
+  if (!theme) return "";
+  if (theme === "fall") return "thanksgiving";
+  if (theme.startsWith("subtle-")) return theme.slice(7);
+  return theme;
+}
+
 function applyHoliday(root, theme) {
   if (!root) return;
-  root.setAttribute("data-holiday", theme || "");
+  const attr = holidayAttr(theme);
+  const mode = !theme ? "" : (theme === "fall" ? "fall" : (theme.startsWith("subtle-") ? "subtle" : (theme === "winter" || theme === "happy-holidays" ? theme : "full")));
+  root.setAttribute("data-holiday", attr);
+  root.setAttribute("data-holiday-mode", mode);
   const layer = root.querySelector(".logo-theme");
   const banner = root.querySelector(".holiday-banner");
   const greet = root.querySelector(".holiday-greet");
   const ring = root.querySelector(".light-ring");
   const tint = root.querySelector(".logo-tint");
+  const greeting = theme ? themeGreeting(theme) : "";
   if (layer) {
     layer.innerHTML = theme ? themeDecor(theme) : "";
     layer.hidden = !theme || !themeDecor(theme);
   }
   if (banner) {
     banner.innerHTML = theme ? themeBanner(theme) : "";
-    banner.hidden = !theme;
+    banner.hidden = !theme || !themeBanner(theme);
   }
   if (greet) {
-    greet.textContent = theme ? themeGreeting(theme) : "";
-    greet.hidden = !theme;
+    greet.textContent = greeting;
+    greet.hidden = !greeting;
   }
   if (ring) {
     ring.innerHTML = theme ? themeRing(theme) : "";
     ring.hidden = !theme || !themeRing(theme);
   }
-  if (tint) tint.hidden = theme !== "valentines";
+  if (tint) tint.hidden = attr !== "valentines";
   root.querySelectorAll(".santa-fly, .ghost").forEach((node) => {
     const extra = Math.random() * 8;
     const current = parseFloat(node.style.animationDelay) || 0;
@@ -686,7 +884,7 @@ function openHolidayPreview() {
   if (!panel || !list || !play) return;
   list.hidden = false;
   play.hidden = true;
-  list.innerHTML = THEME_IDS.map((id) => '<button type="button" class="listpick" data-preview="' + id + '">' + (THEME_LABELS[id] || id) + "</button>").join("");
+  list.innerHTML = PREVIEW_IDS.map((id) => '<button type="button" class="listpick" data-preview="' + id + '">' + previewLabel(id) + "</button>").join("");
   list.querySelectorAll("[data-preview]").forEach((button) => {
     button.addEventListener("click", () => playHolidayPreview(button.getAttribute("data-preview")));
   });
@@ -1047,13 +1245,25 @@ function show(tab) {
   const time = $("timecards_panel");
   const photos = $("photos_panel");
   const scope = $("scope_panel");
+  const pto = $("pto_panel");
   if (materials) materials.hidden = tab !== "materials";
   if (bar) bar.hidden = tab !== "materials";
   if (time) time.hidden = tab !== "timecards";
   if (photos) photos.hidden = tab !== "photos";
   if (scope) scope.hidden = tab !== "scope";
+  if (pto) pto.hidden = tab !== "pto";
   if (label) {
-    label.textContent = tab === "photos" ? "Job photos" : (tab === "timecards" ? "Time clock" : (tab === "scope" ? "Scope" : "Job Material List"));
+    const names = { photos: "Job photos", timecards: "Time clock", scope: "Scope", pto: "PTO Tracker" };
+    label.textContent = names[tab] || "Job Material List";
+  }
+  if (tab === "pto" && !ptoQuiet) {
+    syncPto().then(() => {
+      if (currentTab !== "pto") return;
+      ptoQuiet = true;
+      draw();
+      show("pto");
+      ptoQuiet = false;
+    }).catch(() => {});
   }
   document.querySelectorAll(".apptab").forEach((button) => {
     const on = button.getAttribute("data-tab") === tab;

@@ -13,6 +13,13 @@ var MATERIAL_HEADERS = [
 
 var SCOPE_HEADERS = ["jobId", "address", "lat", "lng", "contractor", "tasksJson", "updatedAt"];
 
+var PTO_HEADERS = [
+  "requestId", "employeeId", "employeeName", "date", "hours", "status",
+  "calendarEventId", "createdAt", "cancelledAt", "notifiedAt"
+];
+var PTO_OWNER_EMAIL = "RobinsonElectricalLlc@gmail.com";
+var PTO_DAY_HOURS = 8;
+
 var FORBIDDEN_KEYS = {
   payRate: true, wage: true, wages: true, loadedCost: true, loadedLabor: true,
   actualCost: true, bidAmount: true, bidPrice: true, bid: true, bids: true,
@@ -423,7 +430,224 @@ function publicTheme(value) {
   var raw = String(value == null ? "" : value).trim().toLowerCase();
   if (!raw || raw === "auto") return "auto";
   if (raw === "off") return "off";
+  if (raw === "fall" || raw === "winter" || raw === "happy-holidays") return raw;
+  if (raw.indexOf("subtle-") === 0 && THEME_IDS.indexOf(raw.slice(7)) !== -1) return raw;
   return THEME_IDS.indexOf(raw) === -1 ? "auto" : raw;
+}
+
+function ptoPolicyFromProps(props) {
+  props = props || {};
+  var allowance = Number(props.allowanceHours);
+  var holidays = Number(props.holidayHours);
+  var renewal = String(props.renewalDate || "").trim();
+  var set = /^\d{4}-\d{2}-\d{2}$/.test(renewal);
+  return {
+    allowanceHours: isFinite(allowance) && allowance > 0 ? allowance : 120,
+    holidayHours: isFinite(holidays) && holidays >= 0 ? holidays : 56,
+    dayHours: PTO_DAY_HOURS,
+    renewalDate: set ? renewal : "",
+    renewalDateSet: set,
+    renewalPlaceholder: set ? "" : "Not set. Joe must set PTO_RENEWAL_DATE (YYYY-MM-DD) in Script Properties."
+  };
+}
+
+function ptoAddDays(dutyDate, days) {
+  var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dutyDate || "");
+  if (!match) return "";
+  var dt = new Date(Date.UTC(+match[1], +match[2] - 1, +match[3] + days));
+  return dt.toISOString().slice(0, 10);
+}
+
+function ptoAddYear(dutyDate) {
+  var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dutyDate || "");
+  if (!match) return "";
+  var dt = new Date(Date.UTC(+match[1] + 1, +match[2] - 1, +match[3]));
+  return dt.toISOString().slice(0, 10);
+}
+
+function ptoYearWindow(renewalDate, asOf) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(renewalDate || "") || !/^\d{4}-\d{2}-\d{2}$/.test(asOf || "")) return null;
+  if (asOf < renewalDate) return null;
+  var monthDay = renewalDate.slice(5);
+  var year = +asOf.slice(0, 4);
+  var start = year + "-" + monthDay;
+  if (start > asOf) start = (year - 1) + "-" + monthDay;
+  if (start < renewalDate) start = renewalDate;
+  return { start: start, end: ptoAddYear(start) };
+}
+
+function ptoHoursOk(hours) {
+  var value = Number(hours);
+  if (!isFinite(value) || value < 0.5 || value > PTO_DAY_HOURS) return false;
+  return Math.round(value * 2) === value * 2;
+}
+
+function ptoTitle(employeeName) {
+  if (String(employeeName || "").trim().toLowerCase() === "jarred") return "Jarred's time scheduled off";
+  var name = String(employeeName || "").trim() || "Employee";
+  return name + "'s time scheduled off";
+}
+
+function ptoEventSpec(employee, date, hours) {
+  var amount = Number(hours);
+  return {
+    title: ptoTitle(employee && employee.name),
+    date: date,
+    hours: amount,
+    allDay: amount >= PTO_DAY_HOURS,
+    description: amount + " hours scheduled off."
+  };
+}
+
+function ptoNotice(employee, date, hours) {
+  var name = (employee && employee.name) || "Employee";
+  return {
+    to: PTO_OWNER_EMAIL,
+    subject: ptoTitle(name),
+    body: name + " has time scheduled off on " + date + " (" + hours + " hours). This note stays with Robinson Electrical. Nothing is sent to a customer."
+  };
+}
+
+function ptoBalance(rows, employeeId, policy, asOf) {
+  var rules = ptoPolicyFromProps(policy);
+  var window = rules.renewalDateSet ? ptoYearWindow(rules.renewalDate, asOf) : null;
+  var used = null;
+  if (window) {
+    used = 0;
+    (rows || []).forEach(function (row) {
+      if (!row || row.employeeId !== employeeId || row.status === "cancelled") return;
+      if (row.date < window.start || row.date >= window.end) return;
+      used += Number(row.hours) || 0;
+    });
+    used = Math.round(used * 100) / 100;
+  }
+  var remaining = used == null ? null : Math.round((rules.allowanceHours - used) * 100) / 100;
+  return {
+    allowanceHours: rules.allowanceHours,
+    holidayHours: rules.holidayHours,
+    dayHours: PTO_DAY_HOURS,
+    renewalDate: rules.renewalDate,
+    renewalDateSet: rules.renewalDateSet,
+    renewalPlaceholder: rules.renewalPlaceholder,
+    yearStart: window ? window.start : "",
+    yearEnd: window ? window.end : "",
+    usedHours: used,
+    remainingHours: remaining,
+    remainingDays: remaining == null ? null : Math.round((remaining / PTO_DAY_HOURS) * 100) / 100
+  };
+}
+
+function publicPtoRow(row) {
+  return {
+    requestId: row.requestId,
+    date: String(row.date || ""),
+    hours: Number(row.hours) || 0,
+    status: row.status === "cancelled" ? "cancelled" : "scheduled",
+    calendarEventId: row.calendarEventId || "",
+    createdAt: row.createdAt || "",
+    cancelledAt: row.cancelledAt || ""
+  };
+}
+
+function buildPtoSchedule(rows, employee, body, today) {
+  body = body || {};
+  var date = String(body.date || "");
+  var hours = Number(body.hours);
+  var requestId = String(body.requestId || "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, reason: "date-required" };
+  if (date < today) return { ok: false, reason: "past-date" };
+  if (!ptoHoursOk(hours)) return { ok: false, reason: "hours" };
+  if (!requestId) return { ok: false, reason: "request-required" };
+  var mine = (rows || []).filter(function (row) { return row && row.employeeId === employee.employeeId; });
+  for (var i = 0; i < mine.length; i++) {
+    if (mine[i].status !== "cancelled" && String(mine[i].date) === date && mine[i].requestId !== requestId) {
+      return { ok: false, reason: "already-scheduled" };
+    }
+  }
+  var row = {
+    requestId: requestId,
+    employeeId: employee.employeeId,
+    employeeName: employee.name,
+    date: date,
+    hours: hours,
+    status: "scheduled",
+    calendarEventId: "",
+    createdAt: new Date().toISOString(),
+    cancelledAt: "",
+    notifiedAt: ""
+  };
+  var next = (rows || []).filter(function (item) { return !item || item.requestId !== requestId; }).concat([row]);
+  var daysUntil = 0;
+  var cursor = today;
+  while (cursor < date) {
+    daysUntil += 1;
+    cursor = ptoAddDays(cursor, 1);
+    if (daysUntil > 400) break;
+  }
+  return {
+    ok: true,
+    rows: next,
+    row: row,
+    event: ptoEventSpec(employee, date, hours),
+    notifyNow: daysUntil < 14,
+    notice: ptoNotice(employee, date, hours)
+  };
+}
+
+function buildPtoCancel(rows, employee, requestId, today) {
+  var found = null;
+  var original = null;
+  var next = (rows || []).map(function (row) {
+    if (!row || row.requestId !== requestId) return row;
+    original = row;
+    found = {
+      requestId: row.requestId,
+      employeeId: row.employeeId,
+      employeeName: row.employeeName,
+      date: String(row.date || ""),
+      hours: Number(row.hours) || 0,
+      status: "cancelled",
+      calendarEventId: row.calendarEventId || "",
+      createdAt: row.createdAt || "",
+      cancelledAt: new Date().toISOString(),
+      notifiedAt: row.notifiedAt || ""
+    };
+    return found;
+  });
+  if (!found || found.employeeId !== employee.employeeId || original.status === "cancelled") return { ok: false, reason: "not-found" };
+  if (found.date < today) return { ok: false, reason: "past-date" };
+  return { ok: true, rows: next, row: found, deleteEventId: found.calendarEventId || "" };
+}
+
+function ptoRemindersDue(rows, today) {
+  var target = ptoAddDays(today, 14);
+  var due = [];
+  (rows || []).forEach(function (row) {
+    if (!row || row.status === "cancelled" || row.notifiedAt) return;
+    var date = String(row.date || "");
+    if (date < today) return;
+    if (date === target || date < target) {
+      due.push({
+        requestId: row.requestId,
+        to: PTO_OWNER_EMAIL,
+        subject: ptoTitle(row.employeeName),
+        body: (row.employeeName || "Employee") + " has time scheduled off on " + date + " (" + row.hours + " hours). This note stays with Robinson Electrical. Nothing is sent to a customer."
+      });
+    }
+  });
+  return due;
+}
+
+function markPtoNotified(rows, requestIds, at) {
+  var wanted = {};
+  (requestIds || []).forEach(function (id) { wanted[id] = true; });
+  return (rows || []).map(function (row) {
+    if (!row || !wanted[row.requestId]) return row;
+    var copy = {};
+    Object.keys(row).forEach(function (key) { copy[key] = row[key]; });
+    copy.notifiedAt = at;
+    return copy;
+  });
 }
 
 function handleRequest(req, deps) {
@@ -474,6 +698,49 @@ function handleRequest(req, deps) {
   }
 
   if (path.indexOf("/api/job-photos") === 0) return handlePhotoRoute(req, deps, employee, path);
+  if (path.indexOf("/api/pto") === 0) return handlePtoRoute(req, deps, employee, path);
+  return { status: 404, error: "not-found" };
+}
+
+function handlePtoRoute(req, deps, employee, path) {
+  var today = deps.today ? deps.today() : dutyDateInChicago(new Date());
+  var policy = ptoPolicyFromProps(deps.ptoPolicy ? deps.ptoPolicy() : {});
+  var rows = deps.listPto ? deps.listPto() : [];
+  if ((req.method === "GET" || req.method === "POST") && path === "/api/pto") {
+    var mine = rowsForEmployee(rows, employee.employeeId).map(publicPtoRow);
+    return { status: 200, ok: true, policy: policy, requests: mine, balance: ptoBalance(rows, employee.employeeId, policy, today) };
+  }
+  if (req.method === "POST" && path === "/api/pto/schedule") {
+    var built = buildPtoSchedule(rows, employee, req.body, today);
+    if (!built.ok) return { status: 400, error: built.reason };
+    var eventId = "";
+    if (deps.createPtoEvent) {
+      try { eventId = deps.createPtoEvent(built.event) || ""; }
+      catch (err) { eventId = ""; }
+    }
+    built.row.calendarEventId = eventId;
+    if (built.notifyNow && deps.notifyOwner) {
+      try {
+        deps.notifyOwner(built.notice);
+        built.row.notifiedAt = new Date().toISOString();
+      } catch (err) { built.row.notifiedAt = ""; }
+    }
+    var saved = built.rows.map(function (row) { return row.requestId === built.row.requestId ? built.row : row; });
+    deps.savePto(saved);
+    return { status: 202, acknowledged: true, request: publicPtoRow(built.row), policy: policy, balance: ptoBalance(saved, employee.employeeId, policy, today), calendarSaved: !!eventId };
+  }
+  if (req.method === "POST" && path === "/api/pto/cancel") {
+    var cancelled = buildPtoCancel(rows, employee, req.body && req.body.requestId, today);
+    if (!cancelled.ok) return { status: 400, error: cancelled.reason };
+    if (cancelled.deleteEventId && deps.deletePtoEvent) {
+      try { deps.deletePtoEvent(cancelled.deleteEventId); }
+      catch (err) { /* the row is still cancelled */ }
+    }
+    cancelled.row.calendarEventId = "";
+    var after = cancelled.rows.map(function (row) { return row.requestId === cancelled.row.requestId ? cancelled.row : row; });
+    deps.savePto(after);
+    return { status: 202, acknowledged: true, request: publicPtoRow(cancelled.row), policy: policy, balance: ptoBalance(after, employee.employeeId, policy, today) };
+  }
   return { status: 404, error: "not-found" };
 }
 

@@ -1,6 +1,9 @@
 /** Holiday marks for the logo. Dates are America/Chicago calendar days.
- * The logo file itself is never changed. A month is split at the midpoint
- * between consecutive holidays. A month with no holiday stays plain. */
+ * The logo file itself is never changed. A holiday's own date shows the full
+ * theme. The 14 days before are a quieter version with no greeting, except
+ * where Joe set a longer window: fall leaves after Veterans Day, full
+ * Thanksgiving through the Saturday after, Happy Holidays before Christmas,
+ * and winter snow filling December-through-February gaps. */
 
 import { dutyDateOf, weekdayOfDutyDate } from "./chicago-time.js";
 
@@ -162,23 +165,81 @@ export function monthWindows(year, month) {
   });
 }
 
+function shiftDuty(dutyDate, days) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dutyDate || "");
+  if (!match) return "";
+  const dt = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + days));
+  return dt.toISOString().slice(0, 10);
+}
+
+function winterEnd(year) {
+  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  return year + "-02-" + (leap ? "29" : "28");
+}
+
+function datedHolidays(centerYear) {
+  const rows = [];
+  for (let year = centerYear - 1; year <= centerYear + 1; year += 1) {
+    THEME_IDS.forEach((id) => {
+      const date = holidayDate(id, year);
+      if (date) rows.push({ id, date });
+    });
+  }
+  return rows;
+}
+
 export function themeForDutyDate(dutyDate) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dutyDate || "");
   if (!match) return null;
   const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const windows = monthWindows(year, month);
-  for (let i = 0; i < windows.length; i += 1) {
-    if (day >= windows[i].startDay && day <= windows[i].endDay) return windows[i].theme;
+  const holidays = datedHolidays(year);
+  const onDate = holidays.filter((row) => row.date === dutyDate);
+  if (onDate.length) {
+    onDate.sort((a, b) => THEME_IDS.indexOf(a.id) - THEME_IDS.indexOf(b.id));
+    return onDate[0].id;
   }
-  return null;
+  const thanksgiving = holidayDate("thanksgiving", year);
+  if (dutyDate >= shiftDuty(thanksgiving, -4) && dutyDate <= shiftDuty(thanksgiving, 2)) return "thanksgiving";
+  if (dutyDate >= year + "-11-12" && dutyDate <= shiftDuty(thanksgiving, -5)) return "fall";
+  if (dutyDate >= year + "-12-11" && dutyDate <= year + "-12-24") return "happy-holidays";
+  const lead = holidays.filter((row) => {
+    if (row.id === "thanksgiving" || row.id === "christmas") return false;
+    return dutyDate >= shiftDuty(row.date, -14) && dutyDate < row.date;
+  });
+  if (lead.length) {
+    lead.sort((a, b) => (a.date < b.date ? -1 : 1));
+    return "subtle-" + lead[0].id;
+  }
+  const inWinter = [holidayDate("thanksgiving", year), holidayDate("thanksgiving", year - 1)].some((date) => {
+    if (!date) return false;
+    const endYear = Number(date.slice(0, 4)) + 1;
+    return dutyDate >= shiftDuty(date, 3) && dutyDate <= winterEnd(endYear);
+  });
+  return inWinter ? "winter" : null;
+}
+
+export function knownTheme(raw) {
+  if (THEME_IDS.includes(raw)) return true;
+  if (raw === "fall" || raw === "winter" || raw === "happy-holidays") return true;
+  return raw.startsWith("subtle-") && THEME_IDS.includes(raw.slice(7));
+}
+
+export const PREVIEW_IDS = ["fall", "winter", "happy-holidays"].concat(
+  THEME_IDS.flatMap((id) => [id, "subtle-" + id])
+);
+
+export function previewLabel(id) {
+  if (id === "fall") return "Fall leaves (no greeting)";
+  if (id === "winter") return "Winter snow";
+  if (id === "happy-holidays") return "Happy Holidays";
+  if (id.startsWith("subtle-")) return "Subtle · " + (THEME_LABELS[id.slice(7)] || id.slice(7));
+  return THEME_LABELS[id] || id;
 }
 
 export function resolveTheme(date, override) {
   const raw = String(override == null ? "" : override).trim().toLowerCase();
   if (raw === "off") return null;
-  if (raw && raw !== "auto" && THEME_IDS.includes(raw)) return raw;
+  if (raw && raw !== "auto" && knownTheme(raw)) return raw;
   const duty = typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)
     ? date
     : dutyDateOf(date || new Date());
@@ -701,23 +762,74 @@ const SCENES = {
   )
 };
 
+function snowField() {
+  const spots = [
+    [1020, 16, 7, 0], [1160, 42, 5, 0.8], [1300, 10, 8, 1.4], [1440, 36, 6, 0.3],
+    [1548, 14, 7, 1.8], [1088, 88, 5, 2.2], [1248, 110, 6, 0.6], [1408, 78, 5, 1.6],
+    [1510, 120, 6, 2.6], [1128, 150, 4, 1.1]
+  ];
+  return '<g fill="#8ea4c0">' + spots.map((spot) => {
+    return '<g transform="translate(' + spot[0] + " " + spot[1] + ')"><circle class="snow" style="animation-delay:' + spot[3] + 's" r="' + spot[2] + '"/></g>';
+  }).join("") + "</g>";
+}
+
+function subtleScene(id) {
+  const bits = {
+    "new-year": firework(1380, 90, 0) + art("new-year/party.webp", 8, 390, 160, 120),
+    mlk: art("mlk/dove.webp", 1200, 36, 160, 148, "bob"),
+    groundhog: art("groundhog/pop.webp", 8, 390, 150, 120, "groundhog"),
+    valentines: art("valentines/roses.webp", 8, 380, 130, 130) + art("valentines/heart.webp", 1280, 24, 70, 68, "float-up"),
+    presidents: art("presidents/hat.webp", 8, 390, 120, 114),
+    "st-patricks": art("st-patricks/leprechaun.webp", 4, 360, 110, 150) + art("st-patricks/shamrock.webp", 1400, 30, 48, 52, "drift"),
+    easter: art("easter/bunny.webp", 4, 380, 120, 126, "hopper") + art("easter/egg-1.webp", 140, 460, 36, 48, "egg-wobble"),
+    "arbor-day": art("arbor-day/tree.webp", 8, 360, 100, 150),
+    "earth-day": art("earth-day/globe.webp", 1240, 140, 140, 140, "earth-globe"),
+    "mothers-day": art("mothers-day/flower-2.webp", 8, 390, 110, 100, "bloom"),
+    "memorial-day": art("memorial-day/poppies.webp", 8, 380, 120, 132),
+    "fathers-day": art("fathers-day/grill.webp", 8, 380, 120, 130),
+    juneteenth: art("juneteenth/flag.webp", 1240, 48, 220, 122, "ripple"),
+    "july-4": art("july-4/sparkler.webp", 8, 360, 110, 150) + firework(1400, 80, 0.4),
+    "labor-day": art("labor-day/electrician.webp", 1120, 240, 100, 196, "labor-work"),
+    columbus: art("columbus/ship.webp", 8, 390, 180, 122, "bob"),
+    halloween: art("halloween/yard.webp", 8, 390, 160, 124) + art("halloween/ghost.webp", 1280, 24, 70, 82, "ghost"),
+    veterans: art("veterans/folded-flag.webp", 12, 400, 140, 100),
+    thanksgiving: autumnLeaves(2) + art("thanksgiving/walk.webp", 8, 380, 140, 126, "turkey-body"),
+    christmas: roofLights() + snowField()
+  };
+  return bits[id] ? sceneSvg(bits[id]) : "";
+}
+
 export function themeGreeting(themeId) {
+  if (!themeId || themeId === "fall" || themeId === "winter" || String(themeId).startsWith("subtle-")) return "";
+  if (themeId === "happy-holidays") return "Happy Holidays";
   return GREETING[themeId] || "";
 }
 
 export function themeTint(themeId) {
+  if (themeId === "fall") return TINT.thanksgiving;
+  if (themeId === "happy-holidays") return "#e3f2e6";
+  if (themeId === "winter") return "#e7eef6";
+  if (themeId && String(themeId).startsWith("subtle-")) return TINT[themeId.slice(7)] || "";
   return TINT[themeId] || "";
 }
 
 export function themeBanner(themeId) {
+  if (themeId === "fall") return BANNERS.thanksgiving;
+  if (themeId === "winter") return bannerSvg(winterBanner());
+  if (themeId === "happy-holidays") return bannerSvg(scallops(["#145c30", "#f7f7fb", "#b4232a", "#d4af37"]));
+  if (themeId && String(themeId).startsWith("subtle-")) return BANNERS[themeId.slice(7)] || "";
   return BANNERS[themeId] || "";
 }
 
 export function themeDecor(themeId) {
+  if (themeId === "fall") return SCENES.thanksgiving;
+  if (themeId === "winter") return sceneSvg(snowField());
+  if (themeId === "happy-holidays") return sceneSvg(snowField() + roofLights());
+  if (themeId && String(themeId).startsWith("subtle-")) return subtleScene(themeId.slice(7));
   return SCENES[themeId] || "";
 }
 
 export function nextPreviewTheme(current) {
-  const index = THEME_IDS.indexOf(current);
-  return THEME_IDS[(index + 1) % THEME_IDS.length];
+  const index = PREVIEW_IDS.indexOf(current);
+  return PREVIEW_IDS[(index + 1) % PREVIEW_IDS.length];
 }
