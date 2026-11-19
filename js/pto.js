@@ -1,6 +1,6 @@
 /** Vacation PTO for one employee. Paid holidays are a separate hour total.
- * Jarred started October 27, 2025. The year renews on that anniversary unless
- * PTO_RENEWAL_DATE overrides it. */
+ * Allowance and the anniversary live on that employee's record. A missing
+ * policy is not filled in from anyone else's dates. */
 
 import { createId } from "./ids.js";
 
@@ -17,31 +17,48 @@ export function formatPtoDay(iso) {
   return MONTHS[Number(match[2]) - 1] + " " + Number(match[3]) + ", " + match[1];
 }
 
-export function defaultPtoPolicy() {
+export function unsetPtoPolicy() {
   return {
-    allowanceHours: DEFAULT_ALLOWANCE_HOURS,
-    holidayHours: DEFAULT_HOLIDAY_HOURS,
+    configured: false,
+    allowanceHours: null,
+    holidayHours: null,
     dayHours: DAY_HOURS,
-    renewalDate: DEFAULT_RENEWAL_DATE,
+    renewalDate: "",
+    renewalDateSet: false,
+    renewalPlaceholder: "PTO not set up yet, ask Joe"
+  };
+}
+
+export function defaultPtoPolicy() {
+  return unsetPtoPolicy();
+}
+
+export function normalizePolicy(raw) {
+  if (!raw || raw.configured === false) return unsetPtoPolicy();
+  const allowance = Number(raw.allowanceHours);
+  const holidays = Number(raw.holidayHours);
+  const renewal = String(raw.renewalDate || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(renewal) || !Number.isFinite(allowance) || allowance <= 0) return unsetPtoPolicy();
+  return {
+    configured: true,
+    allowanceHours: allowance,
+    holidayHours: Number.isFinite(holidays) && holidays >= 0 ? holidays : 0,
+    dayHours: DAY_HOURS,
+    renewalDate: renewal,
     renewalDateSet: true,
     renewalPlaceholder: ""
   };
 }
 
-export function normalizePolicy(raw) {
-  const base = defaultPtoPolicy();
-  const allowance = Number(raw && raw.allowanceHours);
-  const holidays = Number(raw && raw.holidayHours);
-  const renewal = String((raw && raw.renewalDate) || "").trim();
-  const override = /^\d{4}-\d{2}-\d{2}$/.test(renewal) ? renewal : DEFAULT_RENEWAL_DATE;
-  return {
-    allowanceHours: Number.isFinite(allowance) && allowance > 0 ? allowance : base.allowanceHours,
-    holidayHours: Number.isFinite(holidays) && holidays >= 0 ? holidays : base.holidayHours,
-    dayHours: DAY_HOURS,
-    renewalDate: override,
-    renewalDateSet: true,
-    renewalPlaceholder: ""
-  };
+export function forgetEmployeeSession(state) {
+  const next = state ? Object.assign({}, state) : {};
+  next.entries = [];
+  next.confirmations = [];
+  next.queue = [];
+  next.audit = [];
+  next.ptoRequests = [];
+  next.ptoPolicy = unsetPtoPolicy();
+  return next;
 }
 
 export function ptoYearWindow(renewalDate, asOf) {
@@ -73,12 +90,13 @@ export function activeHours(requests, window) {
 
 export function summarizePto(requests, policy, asOf) {
   const rules = normalizePolicy(policy);
-  const window = ptoYearWindow(rules.renewalDate, asOf);
+  const window = rules.configured ? ptoYearWindow(rules.renewalDate, asOf) : null;
   const used = window ? activeHours(requests, window) : null;
   const remaining = used == null ? null : Math.round((rules.allowanceHours - used) * 100) / 100;
   return {
+    configured: rules.configured,
     allowanceHours: rules.allowanceHours,
-    allowanceDays: rules.allowanceHours / DAY_HOURS,
+    allowanceDays: rules.configured ? rules.allowanceHours / DAY_HOURS : null,
     holidayHours: rules.holidayHours,
     dayHours: DAY_HOURS,
     renewalDate: rules.renewalDate,

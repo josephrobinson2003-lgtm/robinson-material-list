@@ -22,20 +22,10 @@ function liveDeps() {
     theme: function () { return themeOverride_(); },
     listPto: function () { return readPto_(); },
     savePto: function (rows) { savePto_(rows); },
-    ptoPolicy: function () { return ptoPolicyProps_(); },
     today: function () { return dutyDateInChicago(new Date()); },
     createPtoEvent: function (spec) { return createPtoEvent_(spec); },
     deletePtoEvent: function (eventId) { deletePtoEvent_(eventId); },
     notifyOwner: function (notice) { notifyPtoOwner_(notice); }
-  };
-}
-
-function ptoPolicyProps_() {
-  var props = scriptProperties_();
-  return {
-    allowanceHours: props.getProperty("PTO_ALLOWANCE_HOURS") || "",
-    holidayHours: props.getProperty("PTO_HOLIDAY_HOURS") || "",
-    renewalDate: props.getProperty("PTO_RENEWAL_DATE") || ""
   };
 }
 
@@ -151,16 +141,27 @@ function authCallback(request) {
 }
 
 function addJarred() {
-  return addEmployee("Jarred");
+  return addEmployee("Jarred", { startDate: "2025-10-27", allowanceHours: 120, holidayHours: 56 });
 }
 
-function addEmployee(name) {
+function addEmployee(name, policy) {
   var token = Utilities.getUuid().replace(/-/g, "") + Utilities.getUuid().replace(/-/g, "");
   var directory = readEmployees_();
-  var added = addEmployeeRecord(directory, name, token);
+  var added = addEmployeeRecord(directory, name, token, policy);
   if (!added.ok) return added;
   writeEmployees_(added.directory);
   return { employeeId: added.employee.employeeId, name: added.employee.name, token: token };
+}
+
+function setEmployeePtoPolicy(who, startDate, allowanceHours, holidayHours) {
+  var updated = assignEmployeePtoPolicy(readEmployees_(), who, startDate, allowanceHours, holidayHours);
+  if (!updated.ok) return updated;
+  writeEmployees_(updated.directory);
+  return { ok: true, employeeId: updated.employeeId };
+}
+
+function setJarredPtoPolicy() {
+  return setEmployeePtoPolicy("Jarred", "2025-10-27", 120, 56);
 }
 
 function revokeEmployeeToken(employeeId) {
@@ -188,7 +189,18 @@ function sundayTriggerSpec() {
 }
 
 function showPtoPolicy() {
-  return ptoPolicyFromProps(ptoPolicyProps_());
+  return readEmployees_().map(function (row) {
+    var policy = employeePtoPolicy(row);
+    return {
+      employeeId: row.employeeId,
+      name: row.name,
+      revoked: !!row.revoked,
+      configured: policy.configured,
+      ptoStartDate: policy.renewalDate || "",
+      allowanceHours: policy.allowanceHours,
+      holidayHours: policy.holidayHours
+    };
+  });
 }
 
 function installPtoReminderTrigger() {

@@ -99,11 +99,11 @@ The phone posts JSON with header `content-type: text/plain;charset=utf-8`. Apps 
 
 ## 9. PTO
 
-Vacation time is separate from the 56 paid holiday hours. The phone shows 120 hours (15 days of 8 hours) until you change it. Jarred started October 27, 2025, and the year renews every October 27. A blank `PTO_RENEWAL_DATE` uses that anniversary. As of late 2026 the year is October 27, 2026 through October 26, 2027, and the next renewal is October 27, 2027.
+Vacation time is separate from paid holiday hours. Each employee's allowance, holiday hours, and anniversary are stored on that employee's record. They are not Script Properties, and a new employee does not inherit Jarred's dates. `PTO_RENEWAL_DATE`, `PTO_ALLOWANCE_HOURS`, and `PTO_HOLIDAY_HOURS` are ignored.
 
-- `PTO_RENEWAL_DATE` — optional override, `YYYY-MM-DD`. Leave it blank to keep October 27, 2025.
-- `PTO_ALLOWANCE_HOURS` — optional. Blank uses 120.
-- `PTO_HOLIDAY_HOURS` — optional. Blank uses 56. Those hours are not subtracted from vacation.
+Jarred's record, if he was added before this change, does not get those numbers by itself. In the Apps Script editor run `setJarredPtoPolicy`, or `setEmployeePtoPolicy("Jarred", "2025-10-27", 120, 56)`. `addJarred` sets the same policy when it creates his token. For anyone else, run `setEmployeePtoPolicy(name or employeeId, "YYYY-MM-DD", allowanceHours, holidayHours)`. Until that runs, their phone says PTO is not set up yet. `showPtoPolicy` lists each person and does not include tokens.
+
+A revoked or unknown token is rejected on timecards, materials, photos, and PTO. The phone signs out and clears the cached hours and PTO. The PTO rows stay in the Pto sheet.
 
 Run `installPtoReminderTrigger` once. It emails RobinsonElectricalLlc@gmail.com each morning when scheduled PTO is 14 days away, and also if a request inside that window was not already announced. Each new PTO day is an event on the deploying account's Google Calendar titled `Jarred's time scheduled off`, with an email and popup reminder 14 days before. A request made with less than 14 days' notice emails immediately. Cancelling a future day deletes that event. The event text is the date and the hours only.
 

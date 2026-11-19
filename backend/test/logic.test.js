@@ -257,7 +257,7 @@ test("theme override is a name, auto, or off and is public", () => {
 });
 
 test("pto balance counts scheduled hours and keeps holiday hours separate", () => {
-  const policy = logic.ptoPolicyFromProps({ allowanceHours: "120", holidayHours: "56", renewalDate: "2026-01-15" });
+  const policy = logic.employeePtoPolicy({ ptoStartDate: "2026-01-15", ptoAllowanceHours: 120, ptoHolidayHours: 56 });
   const rows = [
     { employeeId: "emp_j", date: "2026-04-02", hours: 8, status: "scheduled" },
     { employeeId: "emp_j", date: "2026-05-04", hours: 4, status: "scheduled" },
@@ -272,35 +272,39 @@ test("pto balance counts scheduled hours and keeps holiday hours separate", () =
   assert.equal(balance.holidayHours, 56);
   assert.equal(balance.allowanceHours, 120);
   assert.equal(balance.renewalDate, "2026-01-15");
-  const blank = logic.ptoBalance([], "emp_j", logic.ptoPolicyFromProps({}), "2026-11-19");
-  assert.equal(blank.renewalDate, "2025-10-27");
-  assert.equal(blank.yearStart, "2026-10-27");
-  assert.equal(blank.yearEnd, "2027-10-27");
-  assert.equal(blank.usedHours, 0);
-  assert.equal(blank.remainingHours, 120);
+  const blank = logic.employeePtoPolicy({ name: "New" });
+  assert.equal(blank.configured, false);
+  assert.equal(blank.renewalDate, "");
+  assert.equal(logic.ptoBalance([], "emp_new", blank, "2026-11-19").usedHours, null);
+  const jarred = logic.employeePtoPolicy({ ptoStartDate: "2025-10-27", ptoAllowanceHours: 120, ptoHolidayHours: 56 });
+  const other = logic.employeePtoPolicy({ ptoStartDate: "2024-06-01", ptoAllowanceHours: 40, ptoHolidayHours: 8 });
+  assert.equal(other.renewalDate, "2024-06-01");
+  assert.equal(other.allowanceHours, 40);
+  assert.notEqual(other.renewalDate, jarred.renewalDate);
   const before = logic.ptoBalance([
     { employeeId: "emp_j", date: "2026-10-26", hours: 8, status: "scheduled" }
-  ], "emp_j", logic.ptoPolicyFromProps({}), "2026-10-26");
+  ], "emp_j", jarred, "2026-10-26");
   assert.equal(before.yearStart, "2025-10-27");
   assert.equal(before.usedHours, 8);
   const rolled = logic.ptoBalance([
     { employeeId: "emp_j", date: "2026-10-26", hours: 8, status: "scheduled" },
     { employeeId: "emp_j", date: "2026-10-27", hours: 4, status: "scheduled" }
-  ], "emp_j", logic.ptoPolicyFromProps({}), "2026-10-27");
+  ], "emp_j", jarred, "2026-10-27");
   assert.equal(rolled.yearStart, "2026-10-27");
   assert.equal(rolled.yearEnd, "2027-10-27");
   assert.equal(rolled.usedHours, 4);
-  const override = logic.ptoPolicyFromProps({ renewalDate: "2024-03-01" });
-  assert.equal(override.renewalDate, "2024-03-01");
+  const stored = logic.persistableEmployee({ employeeId: "emp_j", name: "Jarred", tokenHash: "abc", revoked: false, ptoStartDate: "2025-10-27", ptoAllowanceHours: 120, ptoHolidayHours: 56 });
+  assert.equal(stored.ptoStartDate, "2025-10-27");
+  assert.equal(stored.tokenHash, "abc");
+  assert.equal(logic.persistableEmployee({ employeeId: "emp_n", name: "New", tokenHash: "def", revoked: false }).ptoStartDate, undefined);
 });
 
 test("scheduling and cancelling PTO stays on one employee and writes no wages", () => {
-  const directory = logic.addEmployeeRecord([], "Jarred", "jarred-token-123456");
-  const both = logic.addEmployeeRecord(directory.directory, "Joe", "joe-token-123456789");
+  const directory = logic.addEmployeeRecord([], "Jarred", "jarred-token-123456", { startDate: "2025-10-27", allowanceHours: 120, holidayHours: 56 });
+  const both = logic.addEmployeeRecord(directory.directory, "Joe", "joe-token-123456789", { startDate: "2024-06-01", allowanceHours: 40, holidayHours: 8 });
   const data = { rows: [], events: [], deleted: [], mail: [] };
   const deps = {
     employees: () => both.directory,
-    ptoPolicy: () => ({ allowanceHours: 120, holidayHours: 56, renewalDate: "2026-01-15" }),
     today: () => "2026-03-10",
     listPto: () => data.rows,
     savePto: (rows) => { data.rows = rows; },
@@ -336,7 +340,18 @@ test("scheduling and cancelling PTO stays on one employee and writes no wages", 
   const blocked = logic.handleRequest({
     method: "POST", path: "/api/pto/cancel", token: "joe-token-123456789", body: { requestId: "pto_1" }
   }, deps);
-  assert.equal(blocked.status, 400);
+  assert.equal(blocked.status, 403);
+  assert.equal(blocked.error, "employee-isolation");
+  assert.equal(data.rows.filter((row) => row.requestId === "pto_1" && row.status !== "cancelled").length, 1);
+  const joeList = logic.handleRequest({ method: "POST", path: "/api/pto", token: "joe-token-123456789", body: {} }, deps);
+  assert.equal(joeList.balance.allowanceHours, 40);
+  assert.equal(joeList.balance.renewalDate, "2024-06-01");
+  assert.equal(joeList.balance.usedHours, 0);
+  const mismatch = logic.handleRequest({
+    method: "POST", path: "/api/pto/schedule", token: "jarred-token-123456",
+    body: { requestId: "pto_x", date: "2026-05-01", hours: 8, employeeId: "someone-else" }
+  }, deps);
+  assert.equal(mismatch.status, 403);
   const cancelled = logic.handleRequest({
     method: "POST", path: "/api/pto/cancel", token: "jarred-token-123456", body: { requestId: "pto_1" }
   }, deps);
@@ -347,4 +362,37 @@ test("scheduling and cancelling PTO stays on one employee and writes no wages", 
     body: { requestId: "pto_3", date: "2026-03-01", hours: 8 }
   }, deps);
   assert.equal(past.status, 400);
+  const joeDay = logic.handleRequest({
+    method: "POST", path: "/api/pto/schedule", token: "joe-token-123456789",
+    body: { requestId: "pto_joe", date: "2026-04-03", hours: 8 }
+  }, deps);
+  assert.equal(joeDay.acknowledged, true);
+  assert.equal(data.events[data.events.length - 1].title, "Joe's time scheduled off");
+});
+
+test("a revoked or unknown token is rejected on every employee endpoint and PTO rows stay", () => {
+  const added = logic.addEmployeeRecord([], "Jarred", "jarred-token-123456", { startDate: "2025-10-27", allowanceHours: 120, holidayHours: 56 });
+  const revoked = logic.revokeEmployee(added.directory, added.employee.employeeId);
+  const rows = [{ requestId: "keep", employeeId: added.employee.employeeId, employeeName: "Jarred", date: "2026-12-01", hours: 8, status: "scheduled" }];
+  const deps = {
+    employees: () => revoked.directory,
+    today: () => "2026-11-19",
+    listTimecards: () => [],
+    listMaterials: () => [],
+    listPto: () => rows,
+    savePto: () => { throw new Error("should-not-save"); },
+    graphConfigured: () => true,
+    graphList: () => []
+  };
+  for (const path of ["/api/timecards", "/api/timecards/confirm", "/api/materials", "/api/job-photos/contractors", "/api/pto", "/api/pto/schedule", "/api/pto/cancel", "/api/scope"]) {
+    const denied = logic.handleRequest({ method: "POST", path, token: "jarred-token-123456", body: { requestId: "keep" } }, deps);
+    assert.equal(denied.status, 401, path);
+    assert.equal(denied.error, "unauthenticated", path);
+  }
+  const unknown = logic.handleRequest({ method: "POST", path: "/api/pto", token: "missing-token-123456", body: {} }, deps);
+  assert.equal(unknown.status, 401);
+  assert.equal(rows[0].status, "scheduled");
+  const unnamed = logic.addEmployeeRecord([], "Sam", "sam-token-1234567890");
+  assert.equal(logic.employeePtoPolicy(unnamed.directory[0]).configured, false);
+  assert.equal(logic.employeePtoPolicy(unnamed.directory[0]).renewalDate, "");
 });

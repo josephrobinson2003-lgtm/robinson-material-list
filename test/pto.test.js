@@ -1,9 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { cancelPtoRequest, defaultPtoPolicy, schedulePtoRequest, summarizePto } from "../js/pto.js";
+import { cancelPtoRequest, defaultPtoPolicy, forgetEmployeeSession, schedulePtoRequest, summarizePto } from "../js/pto.js";
+
+const jarredPolicy = { configured: true, allowanceHours: 120, holidayHours: 56, renewalDate: "2025-10-27" };
 
 test("pto math uses the October 27 anniversary and rolls the year that day", () => {
-  const open = summarizePto([], defaultPtoPolicy(), "2026-11-19");
+  const missing = summarizePto([], defaultPtoPolicy(), "2026-11-19");
+  assert.equal(missing.configured, false);
+  assert.equal(missing.renewalDate, "");
+  assert.equal(missing.usedHours, null);
+  assert.equal(missing.remainingHours, null);
+  assert.equal(missing.renewalPlaceholder, "PTO not set up yet, ask Joe");
+
+  const open = summarizePto([], jarredPolicy, "2026-11-19");
   assert.equal(open.allowanceHours, 120);
   assert.equal(open.allowanceDays, 15);
   assert.equal(open.holidayHours, 56);
@@ -14,9 +23,15 @@ test("pto math uses the October 27 anniversary and rolls the year that day", () 
   assert.equal(open.remainingHours, 120);
   assert.equal(open.remainingDays, 15);
 
+  const other = summarizePto([], { configured: true, allowanceHours: 40, holidayHours: 0, renewalDate: "2024-06-01" }, "2026-11-19");
+  assert.equal(other.allowanceHours, 40);
+  assert.equal(other.renewalDate, "2024-06-01");
+  assert.equal(other.yearStart, "2026-06-01");
+  assert.notEqual(other.renewalDate, open.renewalDate);
+
   const before = summarizePto([
     { requestId: "edge", date: "2026-10-26", hours: 8, status: "scheduled" }
-  ], {}, "2026-10-26");
+  ], jarredPolicy, "2026-10-26");
   assert.equal(before.yearStart, "2025-10-27");
   assert.equal(before.yearEnd, "2026-10-27");
   assert.equal(before.usedHours, 8);
@@ -25,7 +40,7 @@ test("pto math uses the October 27 anniversary and rolls the year that day", () 
   const rolled = summarizePto([
     { requestId: "edge", date: "2026-10-26", hours: 8, status: "scheduled" },
     { requestId: "next", date: "2026-10-27", hours: 4, status: "scheduled" }
-  ], {}, "2026-10-27");
+  ], jarredPolicy, "2026-10-27");
   assert.equal(rolled.yearStart, "2026-10-27");
   assert.equal(rolled.yearEnd, "2027-10-27");
   assert.equal(rolled.usedHours, 4);
@@ -64,4 +79,8 @@ test("scheduling and cancelling stays on the phone until it syncs", () => {
   assert.equal(kept.usedHours, 4);
   const tooLate = cancelPtoRequest(partial.requests, partial.request.requestId, "2026-04-04");
   assert.equal(tooLate.reason, "past-date");
+  const cleared = forgetEmployeeSession({ entries: [{ id: 1 }], confirmations: [{}], queue: [{}], audit: [{}], ptoRequests: [{}], ptoPolicy: jarredPolicy });
+  assert.deepEqual(cleared.entries, []);
+  assert.deepEqual(cleared.ptoRequests, []);
+  assert.equal(cleared.ptoPolicy.configured, false);
 });

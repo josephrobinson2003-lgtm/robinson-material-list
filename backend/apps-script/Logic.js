@@ -55,14 +55,58 @@ function findEmployee(directory, token) {
   return null;
 }
 
-function addEmployeeRecord(directory, name, token) {
+function addEmployeeRecord(directory, name, token, policy) {
   var clean = String(name || "").trim();
   if (!clean) return { ok: false, reason: "name-required" };
   if (!token || String(token).length < 16) return { ok: false, reason: "token-too-short" };
   var next = (directory || []).slice();
   var employeeId = "emp_" + hashToken(clean + "|" + token).slice(0, 12);
-  next.push({ employeeId: employeeId, name: clean, tokenHash: hashToken(token), revoked: false });
+  var row = { employeeId: employeeId, name: clean, tokenHash: hashToken(token), revoked: false };
+  var assigned = applyPtoFields(row, policy);
+  if (policy && !assigned.ok) return assigned;
+  next.push(assigned.row || row);
   return { ok: true, directory: next, employee: { employeeId: employeeId, name: clean, revoked: false } };
+}
+
+function applyPtoFields(row, policy) {
+  if (!policy) return { ok: true, row: row };
+  var start = String(policy.startDate || policy.ptoStartDate || policy.renewalDate || "").trim();
+  var allowance = Number(policy.allowanceHours != null ? policy.allowanceHours : policy.ptoAllowanceHours);
+  var holidays = Number(policy.holidayHours != null ? policy.holidayHours : policy.ptoHolidayHours);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start)) return { ok: false, reason: "date-required" };
+  if (!isFinite(allowance) || allowance <= 0) return { ok: false, reason: "allowance" };
+  if (!isFinite(holidays) || holidays < 0) return { ok: false, reason: "holiday-hours" };
+  var copy = {};
+  Object.keys(row || {}).forEach(function (key) { copy[key] = row[key]; });
+  copy.ptoStartDate = start;
+  copy.ptoAllowanceHours = allowance;
+  copy.ptoHolidayHours = holidays;
+  return { ok: true, row: copy };
+}
+
+function assignEmployeePtoPolicy(directory, who, startDate, allowanceHours, holidayHours) {
+  var key = String(who || "").trim();
+  var matches = (directory || []).filter(function (row) {
+    return row && (row.employeeId === key || String(row.name || "").toLowerCase() === key.toLowerCase());
+  });
+  if (matches.length !== 1) return { ok: false, reason: matches.length ? "ambiguous" : "unknown-employee" };
+  var applied = applyPtoFields(matches[0], { startDate: startDate, allowanceHours: allowanceHours, holidayHours: holidayHours });
+  if (!applied.ok) return applied;
+  var next = (directory || []).map(function (row) {
+    return row && row.employeeId === matches[0].employeeId ? applied.row : row;
+  });
+  return { ok: true, directory: next, employeeId: matches[0].employeeId };
+}
+
+function persistableEmployee(row) {
+  var copy = { employeeId: row.employeeId, name: row.name, tokenHash: row.tokenHash, revoked: !!row.revoked };
+  var policy = employeePtoPolicy(row);
+  if (policy.configured) {
+    copy.ptoStartDate = policy.renewalDate;
+    copy.ptoAllowanceHours = policy.allowanceHours;
+    copy.ptoHolidayHours = policy.holidayHours;
+  }
+  return copy;
 }
 
 function revokeEmployee(directory, employeeId) {
@@ -436,17 +480,19 @@ function publicTheme(value) {
   return THEME_IDS.indexOf(raw) === -1 ? "auto" : raw;
 }
 
-function ptoPolicyFromProps(props) {
-  props = props || {};
-  var allowance = Number(props.allowanceHours);
-  var holidays = Number(props.holidayHours);
-  var renewal = String(props.renewalDate || "").trim();
-  var override = /^\d{4}-\d{2}-\d{2}$/.test(renewal) ? renewal : PTO_DEFAULT_RENEWAL;
+function employeePtoPolicy(employee) {
+  var start = String((employee && (employee.ptoStartDate || employee.renewalDate)) || "").trim();
+  var allowance = Number(employee && (employee.ptoAllowanceHours != null ? employee.ptoAllowanceHours : employee.allowanceHours));
+  var holidays = Number(employee && (employee.ptoHolidayHours != null ? employee.ptoHolidayHours : employee.holidayHours));
+  if (!employee || !/^\d{4}-\d{2}-\d{2}$/.test(start) || !isFinite(allowance) || allowance <= 0 || !isFinite(holidays) || holidays < 0) {
+    return { configured: false, allowanceHours: null, holidayHours: null, dayHours: PTO_DAY_HOURS, renewalDate: "", renewalDateSet: false };
+  }
   return {
-    allowanceHours: isFinite(allowance) && allowance > 0 ? allowance : 120,
-    holidayHours: isFinite(holidays) && holidays >= 0 ? holidays : 56,
+    configured: true,
+    allowanceHours: allowance,
+    holidayHours: holidays,
     dayHours: PTO_DAY_HOURS,
-    renewalDate: override,
+    renewalDate: start,
     renewalDateSet: true,
     renewalPlaceholder: ""
   };
@@ -510,8 +556,15 @@ function ptoNotice(employee, date, hours) {
 }
 
 function ptoBalance(rows, employeeId, policy, asOf) {
-  var rules = ptoPolicyFromProps(policy);
-  var window = ptoYearWindow(rules.renewalDate, asOf);
+  var rules = policy && policy.configured ? policy : { configured: false };
+  var window = rules.configured ? ptoYearWindow(rules.renewalDate, asOf) : null;
+  if (!rules.configured) {
+    return {
+      configured: false, allowanceHours: null, holidayHours: null, dayHours: PTO_DAY_HOURS,
+      renewalDate: "", renewalDateSet: false, yearStart: "", yearEnd: "",
+      usedHours: null, remainingHours: null, remainingDays: null
+    };
+  }
   var used = null;
   if (window) {
     used = 0;
@@ -524,6 +577,7 @@ function ptoBalance(rows, employeeId, policy, asOf) {
   }
   var remaining = used == null ? null : Math.round((rules.allowanceHours - used) * 100) / 100;
   return {
+    configured: true,
     allowanceHours: rules.allowanceHours,
     holidayHours: rules.holidayHours,
     dayHours: PTO_DAY_HOURS,
@@ -615,7 +669,8 @@ function buildPtoCancel(rows, employee, requestId, today) {
     };
     return found;
   });
-  if (!found || found.employeeId !== employee.employeeId || original.status === "cancelled") return { ok: false, reason: "not-found" };
+  if (!found || original.status === "cancelled") return { ok: false, status: 404, reason: "not-found" };
+  if (found.employeeId !== employee.employeeId) return { ok: false, status: 403, reason: "employee-isolation" };
   if (found.date < today) return { ok: false, reason: "past-date" };
   return { ok: true, rows: next, row: found, deleteEventId: found.calendarEventId || "" };
 }
@@ -705,8 +760,9 @@ function handleRequest(req, deps) {
 
 function handlePtoRoute(req, deps, employee, path) {
   var today = deps.today ? deps.today() : dutyDateInChicago(new Date());
-  var policy = ptoPolicyFromProps(deps.ptoPolicy ? deps.ptoPolicy() : {});
+  var policy = employeePtoPolicy(employee);
   var rows = deps.listPto ? deps.listPto() : [];
+  if (!policy.configured && path === "/api/pto/schedule") return { status: 400, error: "pto-not-set" };
   if ((req.method === "GET" || req.method === "POST") && path === "/api/pto") {
     var mine = rowsForEmployee(rows, employee.employeeId).map(publicPtoRow);
     return { status: 200, ok: true, policy: policy, requests: mine, balance: ptoBalance(rows, employee.employeeId, policy, today) };
@@ -732,7 +788,7 @@ function handlePtoRoute(req, deps, employee, path) {
   }
   if (req.method === "POST" && path === "/api/pto/cancel") {
     var cancelled = buildPtoCancel(rows, employee, req.body && req.body.requestId, today);
-    if (!cancelled.ok) return { status: 400, error: cancelled.reason };
+    if (!cancelled.ok) return { status: cancelled.status || 400, error: cancelled.reason };
     if (cancelled.deleteEventId && deps.deletePtoEvent) {
       try { deps.deletePtoEvent(cancelled.deleteEventId); }
       catch (err) { /* the row is still cancelled */ }

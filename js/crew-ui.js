@@ -1,5 +1,5 @@
 import { unconfiguredBackend } from "./backend.js";
-import { materialPayload, postBackend, readDeviceConfig, saveDeviceConfig } from "./device-config.js";
+import { clearDeviceConfig, materialPayload, postBackend, readDeviceConfig, saveDeviceConfig } from "./device-config.js";
 import { readableLines, toCsv, buildEmployeeExport } from "./export-contract.js";
 import { jobIdForLabel } from "./ids.js";
 import { loadJobBook, rememberJob, saveJobBook } from "./jobs.js";
@@ -7,7 +7,7 @@ import { photoManifest, planPhoto, uploadPhoto, STAGES, KNOWN_CONTRACTORS } from
 import { photoServiceStatus } from "./photo-backend.js";
 import { armTracking, geofenceCapabilities, getNativeGeofence, suggestJobFromFix } from "./native-bridge.js";
 import { resolveTheme, themeBanner, themeDecor, themeGreeting, themeRing, PREVIEW_IDS, previewLabel } from "./holiday-theme.js";
-import { cancelPtoRequest, formatPtoDay, mergePtoRequests, normalizePolicy, schedulePtoRequest, summarizePto } from "./pto.js";
+import { cancelPtoRequest, forgetEmployeeSession, formatPtoDay, mergePtoRequests, normalizePolicy, schedulePtoRequest, summarizePto } from "./pto.js";
 import { markPrivacyNoticeRead, privacyNoticeSeen, privacyParagraphs } from "./privacy-notice.js";
 import { createWebSecureStore } from "./secure-store.js";
 import { createBrowserBlobStore, createBrowserStore } from "./storage.js";
@@ -33,6 +33,7 @@ let scopeMessage = "";
 let ptoMessage = "";
 let ptoMonth = "";
 let ptoQuiet = false;
+let signedOutMessage = "";
 let privacyOpen = false;
 let serverHealthy = false;
 let serverOpen = false;
@@ -89,7 +90,7 @@ export async function startCrewApp() {
     submitMaterial(list) {
       const config = readDeviceConfig(localStorage);
       if (!config.configured) return Promise.resolve({ ok: false, reason: "not-configured" });
-      return postBackend(config, "/api/materials", materialPayload(list));
+      return callBackend("/api/materials", materialPayload(list));
     }
   };
   window.RobinsonJobs = {
@@ -352,12 +353,39 @@ function ptoStatusWord(row) {
   return "Pending on this phone";
 }
 
+async function callBackend(path, body) {
+  const remote = await postBackend(readDeviceConfig(localStorage), path, body);
+  if (remote.status === 401 || (remote.data && remote.data.error === "unauthenticated")) {
+    await rejectToken();
+    return Object.assign({ signedOut: true }, remote);
+  }
+  return remote;
+}
+
+async function rejectToken() {
+  clearDeviceConfig(localStorage);
+  state = forgetEmployeeSession(state);
+  serverHealthy = false;
+  signedOutMessage = "Signed out. This token is no longer accepted. Ask Joe for a new one.";
+  timeMessage = signedOutMessage;
+  ptoMessage = signedOutMessage;
+  await persist();
+  draw();
+  restoreTab();
+}
+
 function ptoScreen() {
   state.ptoRequests = state.ptoRequests || [];
   const today = dutyDateOf(new Date());
   if (!ptoMonth) ptoMonth = today.slice(0, 7);
   const policy = normalizePolicySafe();
   const summary = summarizePto(state.ptoRequests, policy, today);
+  if (signedOutMessage) {
+    return `<section class="card"><h2>PTO for this year</h2><p class="warn">${esc(signedOutMessage)}</p></section>`;
+  }
+  if (!summary.configured) {
+    return `<section class="card"><h2>PTO for this year</h2><p class="warn">PTO not set up yet, ask Joe</p></section>`;
+  }
   const used = summary.usedHours == null ? "—" : summary.usedHours + " hours";
   const remainingHours = summary.remainingHours == null ? "—" : summary.remainingHours + " hours";
   const remainingDays = summary.remainingDays == null ? "—" : summary.remainingDays + " days";
@@ -442,7 +470,13 @@ async function syncPto() {
     if (row.syncStatus === "uploaded") continue;
     const path = row.status === "cancelled" ? "/api/pto/cancel" : "/api/pto/schedule";
     try {
-      const remote = await postBackend(config, path, { requestId: row.requestId, date: row.date, hours: row.hours });
+      const remote = await callBackend(path, { requestId: row.requestId, date: row.date, hours: row.hours });
+      if (remote.signedOut) return { signedOut: true };
+      if (remote.data && remote.data.error === "pto-not-set") {
+        state.ptoPolicy = { configured: false };
+        ptoMessage = "PTO not set up yet, ask Joe";
+        return { notSet: true };
+      }
       if (remote.acknowledged) {
         row.syncStatus = "uploaded";
         if (remote.data && remote.data.request) Object.assign(row, remote.data.request, { syncStatus: "uploaded" });
@@ -453,13 +487,15 @@ async function syncPto() {
     }
   }
   try {
-    const listed = await postBackend(config, "/api/pto", {});
+    const listed = await callBackend("/api/pto", {});
+    if (listed.signedOut) return { signedOut: true };
     if (listed.ok && listed.data) {
       if (listed.data.policy) state.ptoPolicy = listed.data.policy;
       if (Array.isArray(listed.data.requests)) state.ptoRequests = mergePtoRequests(state.ptoRequests, listed.data.requests);
     }
   } catch { /* keep the phone copy */ }
   await persist();
+  return { signedOut: false };
 }
 
 function shiftPtoMonth(delta) {
@@ -490,7 +526,12 @@ async function onPtoDate(date, hours) {
   state.ptoRequests = result.requests;
   ptoMessage = "Saved on this phone.";
   await persist();
-  await syncPto();
+  const synced = await syncPto();
+  if (synced && (synced.signedOut || synced.notSet)) {
+    draw();
+    restoreTab();
+    return;
+  }
   const saved = (state.ptoRequests || []).find((row) => row.requestId === result.request.requestId);
   ptoMessage = saved && saved.syncStatus === "uploaded"
     ? "Synced. Joe's calendar has this day."
@@ -510,7 +551,12 @@ async function onPtoCancel(requestId) {
   state.ptoRequests = result.requests;
   ptoMessage = "Cancelled on this phone.";
   await persist();
-  await syncPto();
+  const synced = await syncPto();
+  if (synced && (synced.signedOut || synced.notSet)) {
+    draw();
+    restoreTab();
+    return;
+  }
   const saved = (state.ptoRequests || []).find((row) => row.requestId === requestId);
   ptoMessage = saved && saved.syncStatus === "uploaded" ? "Cancelled and removed from Joe's calendar." : "Cancelled on this phone. It will sync when the server is connected.";
   draw();
@@ -650,12 +696,13 @@ function draw() {
     if (result.ok) {
       state = result.state;
       try {
-        const remote = await postBackend(readDeviceConfig(localStorage), "/api/timecards/confirm", {
+        const remote = await callBackend("/api/timecards/confirm", {
           dutyDate: today,
           confirmedAt: new Date().toISOString(),
           entries: buildEmployeeExport(state).entries.concat(buildEmployeeExport(state).outsidePayWeek || []).filter((row) => row.dutyDate === today && row.confirmationState === "confirmed" && !row.superseded)
         });
-        timeMessage = remote.acknowledged
+        if (remote.signedOut) timeMessage = signedOutMessage;
+        else timeMessage = remote.acknowledged
           ? "Your day is confirmed and the server accepted it. Sunday email is sent by the server, not this phone."
           : "Your day is confirmed on this phone. The server is not connected, so nothing was emailed.";
       } catch (err) {
@@ -806,9 +853,11 @@ function serverCard() {
   if (config.configured && serverHealthy && !serverOpen) {
     return '<section class="card"><p class="connectedline">Connected to Robinson Electrical ✓ <button type="button" class="textlink" id="server_change">Change</button></p></section>';
   }
-  const hint = config.configured
+  const hint = signedOutMessage
+    ? signedOutMessage
+    : (config.configured
     ? "The address is saved on this phone. The token stays hidden."
-    : "No server is configured. Time and photos stay on this phone.";
+    : "No server is configured. Time and photos stay on this phone.");
   const tokenHint = config.hasToken ? "Token saved. Paste a new one to replace it." : "Paste the token Joe gives you";
   return '<section class="card"><h2>Server</h2><p class="hint">' + esc(hint) + '</p><div class="fields"><div class="full"><label class="f" for="cfg_url">Backend web app URL</label><input class="t" id="cfg_url" value="' + esc(config.url) + '" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div><div class="full"><label class="f" for="cfg_token">Employee token</label><input class="t" id="cfg_token" type="password" value="" placeholder="' + esc(tokenHint) + '" autocomplete="off"></div></div><button type="button" class="btn secondary" id="cfg_save">Save server setup</button></section>';
 }
@@ -951,7 +1000,14 @@ async function loadScope(query) {
     return;
   }
   try {
-    const remote = await postBackend(config, "/api/scope", query);
+    const remote = await callBackend("/api/scope", query);
+    if (remote.signedOut) {
+      scopeView = null;
+      scopeMessage = signedOutMessage;
+      draw();
+      show("scope");
+      return;
+    }
     const scope = remote.data && remote.data.scope;
     if (scope && scope.tasks && scope.tasks.length) {
       scopeView = { jobId: scope.jobId, address: scope.address, tasks: scope.tasks };

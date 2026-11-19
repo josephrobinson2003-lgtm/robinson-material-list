@@ -103,8 +103,6 @@ function readEmployees_() {
 }
 
 function writeEmployees_(directory) {
-  var stored = (directory || []).map(function (row) {
-    return { employeeId: row.employeeId, name: row.name, tokenHash: row.tokenHash, revoked: !!row.revoked };
-  });
+  var stored = (directory || []).map(persistableEmployee);
   scriptProperties_().setProperty("EMPLOYEE_DIRECTORY", JSON.stringify(stored));
 }
