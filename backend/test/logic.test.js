@@ -396,3 +396,34 @@ test("a revoked or unknown token is rejected on every employee endpoint and PTO 
   assert.equal(logic.employeePtoPolicy(unnamed.directory[0]).configured, false);
   assert.equal(logic.employeePtoPolicy(unnamed.directory[0]).renewalDate, "");
 });
+
+test("admin log lines show a new token once and never a token hash", () => {
+  const lines = logic.adminResultLines("addJarred", {
+    ok: true,
+    name: "Jarred",
+    employeeId: "emp_j",
+    token: "plain-token-once",
+    ptoStartDate: "2025-10-27",
+    allowanceHours: 120,
+    holidayHours: 56
+  }, "https://script.google.com/macros/s/abc/exec");
+  const text = lines.join("\n");
+  assert.match(text, /NEW TOKEN for Jarred \(copy now, shown only once\): plain-token-once/);
+  assert.match(text, /Web app address: https:\/\/script\.google\.com\/macros\/s\/abc\/exec/);
+  assert.equal(text.includes("tokenHash"), false);
+  const listed = logic.adminResultLines("showPtoPolicy", [
+    { name: "Jarred", employeeId: "emp_j", revoked: false, ptoStartDate: "2025-10-27", allowanceHours: 120, holidayHours: 56 },
+    { name: "Sam", employeeId: "emp_s", revoked: false, configured: false, ptoStartDate: "", allowanceHours: null, holidayHours: null }
+  ], "");
+  assert.match(listed.join("\n"), /Jarred  id emp_j  PTO starts 2025-10-27/);
+  assert.match(listed.join("\n"), /Sam  id emp_s  PTO not set up/);
+  assert.equal(listed.join("\n").includes("tokenHash"), false);
+  const missing = logic.adminResultLines("adminAddNewEmployee", { ok: false, reason: "fill in NEW_EMPLOYEE_NAME at the top of Code.js" }, "");
+  assert.match(missing[0], /NEW_EMPLOYEE_NAME/);
+  const added = logic.addEmployeeRecord([], "Ada", "ada-token-123456789", { startDate: "2024-06-01", allowanceHours: 40, holidayHours: 8 });
+  const revoked = logic.revokeEmployee(added.directory, "Ada");
+  assert.equal(revoked.ok, true);
+  assert.equal(revoked.directory[0].revoked, true);
+  assert.equal(revoked.directory[0].ptoStartDate, "2024-06-01");
+  assert.equal(logic.findEmployee(revoked.directory, "ada-token-123456789"), null);
+});

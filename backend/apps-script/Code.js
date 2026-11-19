@@ -1,4 +1,63 @@
-/** Apps Script entry points. Secrets stay in Script Properties, not in this file. */
+/** Apps Script entry points. Secrets stay in Script Properties, not in this file.
+ *
+ * ADMIN SETTINGS — edit the values below, then choose a function and press Run.
+ * Open Executions, or View > Execution log, to read the result. A new token
+ * is printed once. The script does not keep the token itself.
+ *
+ *   adminAddNewEmployee   uses NEW_EMPLOYEE_NAME and the three PTO values
+ *   adminRevokeEmployee   uses EMPLOYEE_TO_REVOKE (name or employee id)
+ *   adminListEmployees    no values needed
+ *   addJarred             creates Jarred with his October 27, 2025 policy
+ *   setJarredPtoPolicy    sets that policy on the Jarred who already exists
+ *   showPtoPolicy         lists each person's PTO, no tokens
+ */
+var NEW_EMPLOYEE_NAME = "";
+var NEW_EMPLOYEE_START_DATE = "";
+var NEW_EMPLOYEE_VACATION_HOURS = "";
+var NEW_EMPLOYEE_HOLIDAY_HOURS = "";
+var EMPLOYEE_TO_REVOKE = "";
+
+function logAdmin(lines) {
+  (lines || []).forEach(function (line) {
+    Logger.log(line);
+    console.log(line);
+  });
+}
+
+function webAppUrl_() {
+  try {
+    var service = ScriptApp.getService();
+    if (service && service.getUrl) return service.getUrl() || "";
+  } catch (err) { /* not deployed yet */ }
+  return "";
+}
+
+function reportAdmin(kind, result) {
+  logAdmin(adminResultLines(kind, result, webAppUrl_()));
+  return result;
+}
+
+function adminAddNewEmployee() {
+  var name = String(NEW_EMPLOYEE_NAME || "").trim();
+  var start = String(NEW_EMPLOYEE_START_DATE || "").trim();
+  if (!name) return reportAdmin("adminAddNewEmployee", { ok: false, reason: "fill in NEW_EMPLOYEE_NAME at the top of Code.js" });
+  if (!start) return reportAdmin("adminAddNewEmployee", { ok: false, reason: "fill in NEW_EMPLOYEE_START_DATE as YYYY-MM-DD" });
+  return addEmployee(name, {
+    startDate: start,
+    allowanceHours: NEW_EMPLOYEE_VACATION_HOURS,
+    holidayHours: NEW_EMPLOYEE_HOLIDAY_HOURS
+  });
+}
+
+function adminRevokeEmployee() {
+  var who = String(EMPLOYEE_TO_REVOKE || "").trim();
+  if (!who) return reportAdmin("adminRevokeEmployee", { ok: false, reason: "fill in EMPLOYEE_TO_REVOKE with a name or employee id" });
+  return revokeEmployeeToken(who);
+}
+
+function adminListEmployees() {
+  return listEmployees();
+}
 
 function scriptProperties_() {
   return PropertiesService.getScriptProperties();
@@ -141,38 +200,65 @@ function authCallback(request) {
 }
 
 function addJarred() {
-  return addEmployee("Jarred", { startDate: "2025-10-27", allowanceHours: 120, holidayHours: 56 });
+  return reportAdmin("addJarred", createEmployee_("Jarred", { startDate: "2025-10-27", allowanceHours: 120, holidayHours: 56 }));
 }
 
 function addEmployee(name, policy) {
+  return reportAdmin("addEmployee", createEmployee_(name, policy));
+}
+
+function createEmployee_(name, policy) {
   var token = Utilities.getUuid().replace(/-/g, "") + Utilities.getUuid().replace(/-/g, "");
   var directory = readEmployees_();
   var added = addEmployeeRecord(directory, name, token, policy);
   if (!added.ok) return added;
   writeEmployees_(added.directory);
-  return { employeeId: added.employee.employeeId, name: added.employee.name, token: token };
+  var result = { ok: true, employeeId: added.employee.employeeId, name: added.employee.name, token: token };
+  if (policy && policy.startDate) {
+    result.ptoStartDate = String(policy.startDate);
+    result.allowanceHours = Number(policy.allowanceHours);
+    result.holidayHours = Number(policy.holidayHours);
+  }
+  return result;
 }
 
 function setEmployeePtoPolicy(who, startDate, allowanceHours, holidayHours) {
   var updated = assignEmployeePtoPolicy(readEmployees_(), who, startDate, allowanceHours, holidayHours);
-  if (!updated.ok) return updated;
+  if (!updated.ok) return reportAdmin("setEmployeePtoPolicy", updated);
   writeEmployees_(updated.directory);
-  return { ok: true, employeeId: updated.employeeId };
+  return reportAdmin("setEmployeePtoPolicy", {
+    ok: true,
+    employeeId: updated.employeeId,
+    name: String(who || ""),
+    ptoStartDate: String(startDate || ""),
+    allowanceHours: Number(allowanceHours),
+    holidayHours: Number(holidayHours)
+  });
 }
 
 function setJarredPtoPolicy() {
-  return setEmployeePtoPolicy("Jarred", "2025-10-27", 120, 56);
+  var updated = assignEmployeePtoPolicy(readEmployees_(), "Jarred", "2025-10-27", 120, 56);
+  if (!updated.ok) return reportAdmin("setJarredPtoPolicy", updated);
+  writeEmployees_(updated.directory);
+  return reportAdmin("setJarredPtoPolicy", {
+    ok: true,
+    name: "Jarred",
+    employeeId: updated.employeeId,
+    ptoStartDate: "2025-10-27",
+    allowanceHours: 120,
+    holidayHours: 56
+  });
 }
 
-function revokeEmployeeToken(employeeId) {
-  var updated = revokeEmployee(readEmployees_(), employeeId);
-  if (!updated.ok) return updated;
+function revokeEmployeeToken(who) {
+  var updated = revokeEmployee(readEmployees_(), who);
+  if (!updated.ok) return reportAdmin("revokeEmployeeToken", updated);
   writeEmployees_(updated.directory);
-  return { ok: true };
+  return reportAdmin("revokeEmployeeToken", { ok: true, employeeId: updated.employeeId, name: updated.name });
 }
 
 function listEmployees() {
-  return publicEmployees(readEmployees_());
+  return reportAdmin("listEmployees", ptoPolicyRows_());
 }
 
 function installSundayTrigger() {
@@ -188,7 +274,7 @@ function sundayTriggerSpec() {
   return { handler: "sendWeeklyReports", weekday: "SUNDAY", hour: 8, timezone: "America/Chicago" };
 }
 
-function showPtoPolicy() {
+function ptoPolicyRows_() {
   return readEmployees_().map(function (row) {
     var policy = employeePtoPolicy(row);
     return {
@@ -201,6 +287,10 @@ function showPtoPolicy() {
       holidayHours: policy.holidayHours
     };
   });
+}
+
+function showPtoPolicy() {
+  return reportAdmin("showPtoPolicy", ptoPolicyRows_());
 }
 
 function installPtoReminderTrigger() {

@@ -45,8 +45,8 @@ Do not add employee tokens here. The script stores only hashes after step 4.
 
 1. In the editor, select `ensureCompanySheet` and Run. Approve the spreadsheet permission. The sheet is created in this Google account. Copy is not required. The script saves the spreadsheet id.
 2. Select `installSundayTrigger` and Run. Approve the trigger permission. This schedules `sendWeeklyReports` for Sunday around 8:00 America/Chicago. Google can start weekly triggers a little late. The subject line is `Robinson Electrical Weekly Timecards YYYY-MM-DD to YYYY-MM-DD`.
-3. Select the function `addJarred` and Run. The execution log shows Jarred's token once. Copy it into a password note and give it to Jarred. The script stores only a hash. For Joe's own phone, select `addEmployee` and run it from the editor after setting the name, or add another small function the same way as `addJarred`. Do not paste the token into git.
-4. To revoke someone, run `revokeEmployeeToken("emp_...")` using the id from `listEmployees`. `listEmployees` does not show tokens.
+3. Select the function `addJarred` and Run. Open Executions, or View > Execution log. The log prints `NEW TOKEN for Jarred (copy now, shown only once):` and the web app address. Copy the token into a password note and give it to Jarred. The script stores only a hash. For another person, edit `NEW_EMPLOYEE_NAME`, `NEW_EMPLOYEE_START_DATE`, `NEW_EMPLOYEE_VACATION_HOURS`, and `NEW_EMPLOYEE_HOLIDAY_HOURS` at the top of `Code.js`, then Run `adminAddNewEmployee`. Do not paste the token into git.
+4. To see people, Run `adminListEmployees` or `showPtoPolicy`. To revoke someone, put their name or employee id in `EMPLOYEE_TO_REVOKE` and Run `adminRevokeEmployee`. The log does not show tokens.
 
 ## 5. Microsoft app for Job Photos
 

@@ -109,16 +109,61 @@ function persistableEmployee(row) {
   return copy;
 }
 
-function revokeEmployee(directory, employeeId) {
-  var found = false;
-  var next = (directory || []).map(function (row) {
-    if (row && row.employeeId === employeeId) {
-      found = true;
-      return { employeeId: row.employeeId, name: row.name, tokenHash: row.tokenHash, revoked: true };
-    }
-    return row;
+function revokeEmployee(directory, who) {
+  var key = String(who || "").trim();
+  var matches = (directory || []).filter(function (row) {
+    return row && (row.employeeId === key || String(row.name || "").toLowerCase() === key.toLowerCase());
   });
-  return found ? { ok: true, directory: next } : { ok: false, reason: "unknown-employee" };
+  if (!key || matches.length !== 1) return { ok: false, reason: !key || !matches.length ? "unknown-employee" : "ambiguous" };
+  var next = (directory || []).map(function (row) {
+    if (!row || row.employeeId !== matches[0].employeeId) return row;
+    var copy = persistableEmployee(row);
+    copy.revoked = true;
+    return copy;
+  });
+  return { ok: true, directory: next, employeeId: matches[0].employeeId, name: matches[0].name };
+}
+
+function adminResultLines(kind, result, webAppUrl) {
+  var lines = [];
+  if (webAppUrl) lines.push("Web app address: " + webAppUrl);
+  if (!result) {
+    lines.push(kind + " returned nothing.");
+    return lines;
+  }
+  if (result.ok === false) {
+    lines.push(kind + " did not finish: " + (result.reason || "failed") + ".");
+    return lines;
+  }
+  if (result.token) {
+    lines.push("NEW TOKEN for " + (result.name || "employee") + " (copy now, shown only once): " + result.token);
+    lines.push("Employee id: " + (result.employeeId || ""));
+    if (result.ptoStartDate) lines.push("PTO start " + result.ptoStartDate + ". Vacation hours " + result.allowanceHours + ". Holiday hours " + result.holidayHours + ".");
+    else lines.push("PTO is not set yet. Run setEmployeePtoPolicy or fill in the ADMIN SETTINGS dates and hours.");
+    lines.push("The script stores only a hash of this token. This log is the only copy.");
+    return lines;
+  }
+  if (Object.prototype.toString.call(result) === "[object Array]") {
+    if (!result.length) {
+      lines.push(kind + ": no employees yet.");
+      return lines;
+    }
+    result.forEach(function (row) {
+      var line = (row.name || "") + "  id " + (row.employeeId || "");
+      if (row.revoked) line += "  REVOKED";
+      if (row.ptoStartDate) line += "  PTO starts " + row.ptoStartDate + ", vacation " + row.allowanceHours + " hours, holidays " + row.holidayHours + " hours";
+      else if (row.configured === false || row.allowanceHours == null) line += "  PTO not set up";
+      lines.push(line);
+    });
+    return lines;
+  }
+  if (result.ok === true) {
+    lines.push(kind + " ok" + (result.name ? " for " + result.name : "") + (result.employeeId ? " (" + result.employeeId + ")" : "") + ".");
+    if (result.ptoStartDate) lines.push("PTO start " + result.ptoStartDate + ". Vacation hours " + result.allowanceHours + ". Holiday hours " + result.holidayHours + ".");
+    return lines;
+  }
+  lines.push(kind + " finished.");
+  return lines;
 }
 
 function publicEmployees(directory) {
