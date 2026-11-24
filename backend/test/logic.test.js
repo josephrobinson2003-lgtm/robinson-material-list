@@ -446,3 +446,19 @@ test("admin log never hands out the /dev test address as the phone server", () =
   assert.equal(lines.some((line) => /macros\/s\/ABC\/dev/.test(line)), false);
   assert.equal(lines.some((line) => /\/exec address/.test(line)), true);
 });
+
+test("job addresses are geocoded for phone suggestions without the phone sending its position", () => {
+  const added = logic.addEmployeeRecord([], "Ada", "ada-token-12345678");
+  const deps = memoryDeps({ employees: added.directory });
+  const asked = [];
+  deps.geocode = (address) => { asked.push(address); return address === "1509 Mautenne Dr" ? { lat: 38.5951, lng: -90.5462 } : { lat: "", lng: "" }; };
+  deps.listScopes = () => [{ address: "7500 Amherst", lat: 38.66, lng: -90.33 }, { address: "No Fix", lat: "", lng: "" }];
+  const res = logic.handleRequest({ method: "POST", path: "/api/jobs/locate", token: "ada-token-12345678", body: { addresses: ["1509 Mautenne Dr", "Nowhere", "7500 Amherst", "1509 Mautenne Dr"] } }, deps);
+  assert.equal(res.status, 200);
+  assert.equal(JSON.stringify(res.jobs.map((j) => j.address).sort()), JSON.stringify(["1509 Mautenne Dr", "7500 Amherst"]));
+  assert.deepEqual(asked, ["1509 Mautenne Dr", "Nowhere"]);
+  const withPosition = logic.handleRequest({ method: "POST", path: "/api/jobs/locate", token: "ada-token-12345678", body: { addresses: [], lat: 38 } }, deps);
+  assert.equal(withPosition.status, 400);
+  assert.equal(logic.handleRequest({ method: "POST", path: "/api/jobs/locate", token: "nope-nope-nope-nope", body: { addresses: [] } }, deps).status, 401);
+  assert.equal(logic.handleRequest({ method: "POST", path: "/api/jobs/locate", token: "ada-token-12345678", body: { addresses: "x" } }, deps).status, 400);
+});

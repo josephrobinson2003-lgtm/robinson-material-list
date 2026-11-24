@@ -801,6 +801,7 @@ function handleRequest(req, deps) {
   }
 
   if (path.indexOf("/api/job-photos") === 0) return handlePhotoRoute(req, deps, employee, path);
+  if ((req.method === "POST" || req.method === "GET") && path === "/api/jobs/locate") return locateJobs(req, deps);
   if (path.indexOf("/api/pto") === 0) return handlePtoRoute(req, deps, employee, path);
   return { status: 404, error: "not-found" };
 }
@@ -931,4 +932,37 @@ function handlePhotoRoute(req, deps, employee, path) {
     return { status: 202, acknowledged: true, path: placedCheck.path, fileName: fileName, remoteItemId: stored.id || placedCheck.path, uploadedAt: stored.uploadedAt || new Date().toISOString(), employeeId: employee.employeeId, employeeMicrosoftSignIn: false };
   }
   return { status: 404, error: "not-found" };
+}
+
+/** Job addresses to map points, so the phone can suggest a job near where it is.
+ * The phone sends addresses only, never its own position. */
+var LOCATE_LIMIT = 60;
+
+function validPoint(lat, lng) {
+  lat = Number(lat); lng = Number(lng);
+  if (!isFinite(lat) || !isFinite(lng) || (lat === 0 && lng === 0)) return null;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return { latitude: lat, longitude: lng };
+}
+
+function locateJobs(req, deps) {
+  var asked = (req.body && req.body.addresses) || [];
+  if (Object.prototype.toString.call(asked) !== "[object Array]") return { status: 400, error: "addresses-required" };
+  var seen = {};
+  var out = [];
+  (deps.listScopes ? deps.listScopes() : []).forEach(function (row) {
+    var point = row && row.address && validPoint(row.lat, row.lng);
+    if (!point || seen[row.address]) return;
+    seen[row.address] = true;
+    out.push({ address: row.address, latitude: point.latitude, longitude: point.longitude, source: "scope" });
+  });
+  asked.slice(0, LOCATE_LIMIT).forEach(function (raw) {
+    var address = String(raw || "").replace(/\s+/g, " ").trim().slice(0, 160);
+    if (!address || seen[address]) return;
+    seen[address] = true;
+    var geo = deps.geocode ? (deps.geocode(address) || {}) : {};
+    var point = validPoint(geo.lat, geo.lng);
+    if (point) out.push({ address: address, latitude: point.latitude, longitude: point.longitude, source: "geocode" });
+  });
+  return { status: 200, ok: true, jobs: out };
 }

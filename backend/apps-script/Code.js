@@ -24,7 +24,14 @@ function logAdmin(lines) {
   });
 }
 
+/** The address phones save. Run from the editor, getUrl() gives the /dev test
+ * address, which only the script owner can open, so prefer the /exec one. */
 function webAppUrl_() {
+  var fixed = typeof PHONE_SERVER_URL === "string" ? PHONE_SERVER_URL : "";
+  if (/\/exec$/.test(fixed)) return fixed;
+  var saved = "";
+  try { saved = scriptProperties_().getProperty("WEB_APP_URL") || ""; } catch (err) { saved = ""; }
+  if (/\/exec$/.test(saved)) return saved;
   try {
     var service = ScriptApp.getService();
     if (service && service.getUrl) return service.getUrl() || "";
@@ -133,11 +140,20 @@ function themeOverride_() {
 
 function geocodeAddress_(address) {
   if (!address) return { lat: "", lng: "" };
+  var cache = null;
+  var key = "geo:" + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, String(address).toLowerCase()));
+  try { cache = CacheService.getScriptCache(); } catch (err) { cache = null; }
+  if (cache) {
+    var hit = cache.get(key);
+    if (hit) { try { return JSON.parse(hit); } catch (err) { /* refetch */ } }
+  }
   try {
-    var result = Maps.newGeocoder().geocode(address);
+    /* Bias to the St. Louis area so "1509 Mautenne Dr" finds Ballwin, not another state. */
+    var result = Maps.newGeocoder().setRegion("us").setBounds(38.2, -91.3, 39.2, -89.8).geocode(address);
     var loc = result && result.results && result.results[0] && result.results[0].geometry && result.results[0].geometry.location;
-    if (!loc) return { lat: "", lng: "" };
-    return { lat: loc.lat, lng: loc.lng };
+    var found = loc ? { lat: loc.lat, lng: loc.lng } : { lat: "", lng: "" };
+    if (cache) cache.put(key, JSON.stringify(found), loc ? 21600 : 3600);
+    return found;
   } catch (err) {
     return { lat: "", lng: "" };
   }

@@ -10,13 +10,23 @@ import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
+import com.getcapacitor.PermissionState
 import com.getcapacitor.annotation.CapacitorPlugin
+import com.getcapacitor.annotation.Permission
+import com.getcapacitor.annotation.PermissionCallback
+import android.os.Build
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingRequest
 import com.google.android.gms.location.LocationServices
 import org.json.JSONArray
 
-@CapacitorPlugin(name = "RobinsonGeofence")
+@CapacitorPlugin(
+    name = "RobinsonGeofence",
+    permissions = [
+        Permission(alias = "location", strings = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION]),
+        Permission(alias = "background", strings = [Manifest.permission.ACCESS_BACKGROUND_LOCATION])
+    ]
+)
 class RobinsonGeofencePlugin : Plugin() {
     @PluginMethod
     fun getCapabilities(call: PluginCall) {
@@ -27,7 +37,46 @@ class RobinsonGeofencePlugin : Plugin() {
         result.put("coordinatesPersisted", false)
         result.put("secureStorage", true)
         result.put("deviceTested", false)
+        result.put("authorization", authorization())
         call.resolve(result)
+    }
+
+    /** Foreground location first. Android only lets the app ask for background after that. */
+    @PluginMethod
+    fun requestLocation(call: PluginCall) {
+        if (!fineLocationGranted() && !coarseLocationGranted()) {
+            requestPermissionForAlias("location", call, "afterLocation")
+            return
+        }
+        afterLocation(call)
+    }
+
+    @PermissionCallback
+    private fun afterLocation(call: PluginCall) {
+        if ((fineLocationGranted() || coarseLocationGranted()) && !backgroundLocationGranted() &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && call.getBoolean("background", false) == true &&
+            getPermissionState("background") != PermissionState.DENIED) {
+            requestPermissionForAlias("background", call, "afterBackground")
+            return
+        }
+        afterBackground(call)
+    }
+
+    @PermissionCallback
+    private fun afterBackground(call: PluginCall) {
+        val result = JSObject()
+        result.put("authorization", authorization())
+        call.resolve(result)
+    }
+
+    private fun authorization(): String {
+        if (fineLocationGranted()) return if (backgroundLocationGranted()) "always" else "foreground"
+        if (coarseLocationGranted()) return "approximate"
+        return "denied"
+    }
+
+    private fun coarseLocationGranted(): Boolean {
+        return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
     }
 
     @PluginMethod

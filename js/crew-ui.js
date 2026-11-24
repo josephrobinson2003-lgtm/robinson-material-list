@@ -5,7 +5,8 @@ import { jobIdForLabel } from "./ids.js";
 import { loadJobBook, rememberJob, saveJobBook } from "./jobs.js";
 import { photoManifest, planPhoto, uploadPhoto, STAGES, KNOWN_CONTRACTORS } from "./job-photos.js";
 import { photoServiceStatus } from "./photo-backend.js";
-import { armTracking, geofenceCapabilities, getNativeGeofence, suggestJobFromFix } from "./native-bridge.js";
+import { armTracking, geofenceCapabilities, getNativeGeofence, requestNativeLocation, suggestJobFromFix } from "./native-bridge.js";
+import { addressPinsFromServer, combinePins } from "./geofence-policy.js";
 import { resolveTheme, themeBanner, themeDecor, themeGreeting, themeRing, PREVIEW_IDS, previewLabel } from "./holiday-theme.js";
 import { cancelPtoRequest, forgetEmployeeSession, formatPtoDay, mergePtoRequests, normalizePolicy, schedulePtoRequest, summarizePto } from "./pto.js";
 import { markPrivacyNoticeRead, privacyNoticeSeen, privacyParagraphs } from "./privacy-notice.js";
@@ -687,8 +688,17 @@ function draw() {
   }));
   $("tc_spot").addEventListener("click", () => saveCurrentSpot());
   $("tc_arm").addEventListener("click", async () => {
-    const result = await armTracking(state.pins || [], dutyDateOf(new Date()));
-    timeMessage = result.ok ? "Armed." : "Job-site suggestions stay off in this browser. " + (result.reason || "");
+    await refreshAddressPins();
+    const result = await armTracking(matchPins(), dutyDateOf(new Date()));
+    const armWhy = {
+      "background-unavailable": "This browser cannot watch job sites. Use the Android app.",
+      "location-denied": "Location permission is off. Settings > Apps > Robinson Electrical > Location > Allow.",
+      "background-location-not-granted": "Set Location to \"Allow all the time\" in Settings > Apps > Robinson Electrical > Location, then tap again.",
+      "no-job-locations": "No job locations yet. Connect the server or save a spot on site.",
+      "too-many-sites": "Too many job sites to watch at once."
+    }[result.reason] || ("Could not turn on job-site alerts (" + (result.reason || "unknown") + ").");
+    timeMessage = result.ok ? "Armed for today. Job-site alerts are on." : armWhy;
+    tracking = await geofenceCapabilities();
     draw(); restoreTab();
   });
   $("tc_confirm").addEventListener("click", async () => {
@@ -1030,7 +1040,7 @@ async function findScopeFromHere() {
     scopeMessage = "Location was denied. Pick the job below.";
     scopeView = null;
     draw(); show("scope");
-  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+  }, FIX_OPTIONS);
 }
 
 async function findScopeByJob(jobId) {
@@ -1121,9 +1131,9 @@ function beginClockIn() {
   timeMessage = "Checking saved job spots…";
   draw();
   restoreTab();
-  navigator.geolocation.getCurrentPosition((pos) => {
+  requestNativeLocation().then(() => refreshAddressPins()).then(() => currentFix()).then((pos) => {
     punchBusy = false;
-    const found = suggestJobFromFix(state.pins || [], {
+    const found = suggestJobFromFix(matchPins(), {
       latitude: pos.coords.latitude,
       longitude: pos.coords.longitude,
       accuracyMeters: pos.coords.accuracy
@@ -1137,14 +1147,14 @@ function beginClockIn() {
       draw();
       restoreTab();
     }
-  }, () => {
+  }).catch((err) => {
     punchBusy = false;
     jobPickerOpen = true;
-    pickerNote = "Location was unavailable. Pick the job, then punch in.";
+    pickerNote = fixError(err) + " Pick the job, then punch in.";
     timeMessage = pickerNote;
     draw();
     restoreTab();
-  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+  });
 }
 
 function finishClockIn(label) {
@@ -1237,10 +1247,59 @@ function saveCurrentSpot() {
   }, () => {
     timeMessage = "Location was denied. The spot was not saved.";
     draw(); restoreTab();
-  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+  }, FIX_OPTIONS);
 }
 
-function suggestJob(tab) {
+const FIX_OPTIONS = { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 };
+
+/** One position read. A slow precise fix falls back once to the network fix. */
+function currentFix() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject({ code: 2, message: "no-geolocation" }); return; }
+    navigator.geolocation.getCurrentPosition(resolve, (err) => {
+      if (err && err.code === 1) { reject(err); return; }
+      navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 15000, maximumAge: 120000 });
+    }, FIX_OPTIONS);
+  });
+}
+
+function fixError(err) {
+  if (err && err.code === 1) return "Location permission is off for Robinson Electrical. In phone Settings > Apps > Robinson Electrical > Location, choose Allow and turn on Use precise location.";
+  if (err && err.code === 3) return "The phone could not get a location in time. Step outside or turn on Wi-Fi, then try again.";
+  return "Location was unavailable on this phone.";
+}
+
+function knownJobLabels() {
+  const labels = new Set((jobs.jobs || []).map((job) => job.jobLabel));
+  if (state.jobDraft) labels.add(state.jobDraft);
+  return Array.from(labels).filter(Boolean).slice(-60);
+}
+
+/** Ask the server to geocode job addresses the phone knows. Only new addresses are asked for. */
+async function refreshAddressPins() {
+  const config = readDeviceConfig(localStorage);
+  if (!config.configured) return;
+  const have = new Set((state.addressPins || []).map((pin) => pin.jobLabel));
+  const missing = knownJobLabels().filter((label) => !have.has(label));
+  const stale = !state.addressPinsAt || (Date.now() - new Date(state.addressPinsAt).getTime()) > 7 * 86400000;
+  if (!missing.length && !stale) return;
+  try {
+    const remote = await callBackend("/api/jobs/locate", { addresses: stale ? knownJobLabels() : missing });
+    if (!remote.ok || !remote.data || !Array.isArray(remote.data.jobs)) return;
+    const fresh = addressPinsFromServer(remote.data.jobs, jobIdForLabel);
+    const byId = new Map((stale ? [] : state.addressPins || []).map((pin) => [pin.jobId, pin]));
+    fresh.forEach((pin) => byId.set(pin.jobId, pin));
+    state.addressPins = Array.from(byId.values()).slice(-200);
+    state.addressPinsAt = new Date().toISOString();
+    await persist();
+  } catch { /* keep what the phone already has */ }
+}
+
+function matchPins() {
+  return combinePins(state.pins || [], state.addressPins || []);
+}
+
+async function suggestJob(tab) {
   if (!state.locationOptIn) {
     timeMessage = "Turn on location suggestions first. Nothing was read.";
     photoMessage = timeMessage;
@@ -1250,25 +1309,37 @@ function suggestJob(tab) {
     timeMessage = "This phone did not provide location.";
     draw(); show(tab); return;
   }
-  navigator.geolocation.getCurrentPosition(async (pos) => {
-    const found = suggestJobFromFix(state.pins || [], {
-      latitude: pos.coords.latitude,
-      longitude: pos.coords.longitude,
-      accuracyMeters: pos.coords.accuracy
-    });
-    suggestion = found;
-    const text = found.match
-      ? "Suggested job: " + found.match.jobLabel + ". Tap Use this job. This does not clock you in, and it does not place an older photo."
-      : "No saved job was a clear match (" + found.reason + "). Type the job yourself.";
-    timeMessage = text;
-    photoMessage = text;
-    if (found.match) state = setJobDraft(state, found.match.jobLabel).state;
-    draw(); show(tab);
-  }, () => {
-    timeMessage = "Location was denied or unavailable. Type the job yourself.";
+  timeMessage = "Finding your location…";
+  photoMessage = timeMessage;
+  draw(); show(tab);
+  await requestNativeLocation();
+  await refreshAddressPins();
+  let pos;
+  try { pos = await currentFix(); }
+  catch (err) {
+    timeMessage = fixError(err) + " Type the job yourself.";
     photoMessage = timeMessage;
-    draw(); show(tab);
-  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+    draw(); show(tab); return;
+  }
+  const found = suggestJobFromFix(matchPins(), {
+    latitude: pos.coords.latitude,
+    longitude: pos.coords.longitude,
+    accuracyMeters: pos.coords.accuracy
+  });
+  suggestion = found;
+  const why = {
+    "none-nearby": "no job address is within about 250 m",
+    "ambiguous": "more than one job is close" + (found.candidates ? ": " + found.candidates.join(", ") : ""),
+    "accuracy-worse-than-150m": "the location is too rough (" + Math.round(pos.coords.accuracy) + " m). Turn on precise location",
+    "accuracy-unavailable": "the phone did not say how accurate the location is"
+  }[found.reason] || found.reason;
+  const text = found.match
+    ? "Suggested job: " + found.match.jobLabel + ". Tap Use this job. This does not clock you in, and it does not place an older photo."
+    : (matchPins().length ? "No clear job match (" + why + "). Type the job yourself." : "No job locations yet. Connect the server, or type the job and tap Save this spot while you are there.");
+  timeMessage = text;
+  photoMessage = text;
+  if (found.match) state = setJobDraft(state, found.match.jobLabel).state;
+  draw(); show(tab);
 }
 
 async function addFiles(fileList) {

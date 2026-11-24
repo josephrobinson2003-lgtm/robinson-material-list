@@ -1,6 +1,8 @@
 /** On-device job matching. Raw coordinates are not a route and are not an export. */
 
 export const MIN_RADIUS_METERS = 150;
+/** A geocoded street address is the parcel centre, not where the truck parks. */
+export const ADDRESS_RADIUS_METERS = 250;
 export const MAX_ACCURACY_METERS = 150;
 export const IOS_REGION_LIMIT = 20;
 export const ANDROID_REGION_LIMIT = 100;
@@ -54,15 +56,29 @@ export function suggestPin(pins, fix) {
     return { match: null, reason: accuracy.reason, accuracyMeters: accuracy.accuracyMeters ?? null };
   }
   const hits = [];
+  const seen = new Set();
   for (const pin of pins || []) {
-    const radius = Math.max(MIN_RADIUS_METERS, Number(pin.radiusMeters) || MIN_RADIUS_METERS);
-    const distance = distanceMeters(fix.latitude, fix.longitude, pin.latitude, pin.longitude);
-    if (distance + accuracy.accuracyMeters <= radius) hits.push({ pin, distance });
+    const lat = Number(pin && pin.latitude);
+    const lon = Number(pin && pin.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || (lat === 0 && lon === 0)) continue;
+    if (seen.has(pin.jobId)) continue;
+    const address = pin.source === "address";
+    const floor = address ? ADDRESS_RADIUS_METERS : MIN_RADIUS_METERS;
+    const radius = Math.max(floor, Number(pin.radiusMeters) || floor);
+    const distance = distanceMeters(Number(fix.latitude), Number(fix.longitude), lat, lon);
+    /* A spot saved on site must fit inside the circle with its error bar.
+       A geocoded address only needs the fix itself inside the wider circle. */
+    const inside = address ? distance <= radius : distance + accuracy.accuracyMeters <= radius;
+    if (inside) { hits.push({ pin, distance }); seen.add(pin.jobId); }
   }
+  hits.sort((a, b) => a.distance - b.distance);
   if (hits.length === 1) {
-    return { match: { jobId: hits[0].pin.jobId, jobLabel: hits[0].pin.jobLabel }, reason: "one-saved-job" };
+    return { match: { jobId: hits[0].pin.jobId, jobLabel: hits[0].pin.jobLabel }, reason: hits[0].pin.source === "address" ? "job-address" : "one-saved-job", distanceMeters: Math.round(hits[0].distance) };
   }
-  if (hits.length > 1) return { match: null, reason: "ambiguous" };
+  if (hits.length > 1 && hits[0].distance * 2 < hits[1].distance) {
+    return { match: { jobId: hits[0].pin.jobId, jobLabel: hits[0].pin.jobLabel }, reason: "nearest-job", distanceMeters: Math.round(hits[0].distance) };
+  }
+  if (hits.length > 1) return { match: null, reason: "ambiguous", candidates: hits.slice(0, 3).map((hit) => hit.pin.jobLabel) };
   return { match: null, reason: "none-nearby" };
 }
 
@@ -77,7 +93,7 @@ export function regionsForArm(pins, platform) {
       jobLabel: pin.jobLabel,
       latitude: pin.latitude,
       longitude: pin.longitude,
-      radiusMeters: Math.max(MIN_RADIUS_METERS, Number(pin.radiusMeters) || MIN_RADIUS_METERS)
+      radiusMeters: Math.max(pin.source === "address" ? ADDRESS_RADIUS_METERS : MIN_RADIUS_METERS, Number(pin.radiusMeters) || MIN_RADIUS_METERS)
     }))
   };
 }
@@ -85,11 +101,29 @@ export function regionsForArm(pins, platform) {
 export function stripCoordinates(value) {
   if (Array.isArray(value)) return value.map(stripCoordinates);
   if (!value || typeof value !== "object") return value;
-  const blocked = new Set(["latitude", "longitude", "lat", "lon", "lng", "coords", "coordinates", "pins", "accuracyMeters"]);
+  const blocked = new Set(["latitude", "longitude", "lat", "lon", "lng", "coords", "coordinates", "pins", "addressPins", "accuracyMeters"]);
   const out = {};
   for (const [key, item] of Object.entries(value)) {
     if (blocked.has(key)) continue;
     out[key] = stripCoordinates(item);
   }
   return out;
+}
+
+/** Saved on-site spots win over a geocoded address for the same job. */
+export function combinePins(savedPins, addressPins) {
+  const saved = (savedPins || []).filter(Boolean);
+  const have = new Set(saved.map((pin) => pin.jobId));
+  return saved.concat((addressPins || []).filter((pin) => pin && !have.has(pin.jobId)));
+}
+
+/** Turn the server's geocode answer into pins kept only on this phone. */
+export function addressPinsFromServer(rows, jobIdFor) {
+  return (rows || []).map((row) => {
+    const lat = Number(row && row.latitude);
+    const lon = Number(row && row.longitude);
+    if (!row || !row.address || !Number.isFinite(lat) || !Number.isFinite(lon) || (lat === 0 && lon === 0)) return null;
+    if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+    return { jobId: jobIdFor(row.address), jobLabel: row.address, latitude: lat, longitude: lon, radiusMeters: ADDRESS_RADIUS_METERS, source: "address" };
+  }).filter((pin) => pin && pin.jobId);
 }
