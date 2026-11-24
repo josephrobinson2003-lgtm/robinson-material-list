@@ -224,12 +224,15 @@ test("photos keep local bytes and do not claim an upload", async () => {
   });
   assert.equal(failed.photo.status, "failed");
   assert.equal(failed.photo.bytesKeptLocally, true);
+  let sentArg = null;
   const sent = await uploadPhoto(planned.photo, {
     configured: true,
     folder: { verified: true, driveId: "drive", folderId: "folder", jobId: job.jobId, stage: "rough-in" },
-    async send() { return { acknowledged: true, remoteItemId: "item", uploadedAt: "2026-11-11T18:00:00Z" }; }
+    async send(arg) { sentArg = arg; return { acknowledged: true, remoteItemId: "item", uploadedAt: "2026-11-11T18:00:00Z" }; }
   });
   assert.equal(sent.photo.status, "uploaded");
+  assert.equal(sentArg.photo.photoId, planned.photo.photoId);
+  assert.equal(planned.photo.dateStamp, "2026-11-01");
   assert.equal(sent.photo.bytesKeptLocally, true);
   let blockedSent = false;
   const blocked = await uploadPhoto(planned.photo, {

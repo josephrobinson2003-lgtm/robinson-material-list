@@ -126,7 +126,9 @@ function revokeEmployee(directory, who) {
 
 function adminResultLines(kind, result, webAppUrl) {
   var lines = [];
-  if (webAppUrl) lines.push("Web app address: " + webAppUrl);
+  if (webAppUrl && /\/dev$/.test(webAppUrl)) {
+    lines.push("Web app address: this run only knows the /dev test address, which phones cannot use. Give phones the /exec address from Deploy > Manage deployments.");
+  } else if (webAppUrl) lines.push("Web app address: " + webAppUrl);
   if (!result) {
     lines.push(kind + " returned nothing.");
     return lines;
@@ -922,8 +924,11 @@ function handlePhotoRoute(req, deps, employee, path) {
     if (req.body && req.body.fileName && req.body.fileName !== fileName) {
       /* The phone may send a name. The stored name is the one built here. */
     }
-    deps.graphUpload(placedCheck.path, req.body && req.body.contentBase64);
-    return { status: 202, acknowledged: true, path: placedCheck.path, fileName: fileName, employeeId: employee.employeeId, employeeMicrosoftSignIn: false };
+    if (!req.body || !req.body.contentBase64) return { status: 400, error: "empty-file" };
+    var stored;
+    try { stored = deps.graphUpload(placedCheck.path, req.body.contentBase64) || {}; }
+    catch (err) { return { status: 502, error: "upload-failed", detail: String((err && err.message) || err).slice(0, 80) }; }
+    return { status: 202, acknowledged: true, path: placedCheck.path, fileName: fileName, remoteItemId: stored.id || placedCheck.path, uploadedAt: stored.uploadedAt || new Date().toISOString(), employeeId: employee.employeeId, employeeMicrosoftSignIn: false };
   }
   return { status: 404, error: "not-found" };
 }

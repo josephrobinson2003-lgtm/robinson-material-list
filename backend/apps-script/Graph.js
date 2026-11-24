@@ -32,11 +32,14 @@ function graphChildren_(path) {
   var check = assertJobPhotosPrefix(path);
   if (!check.ok) throw new Error(check.reason);
   var encoded = check.path.split("/").map(encodeURIComponent).join("/");
-  var listed = graphFetch_("https://graph.microsoft.com/v1.0/me/drive/root:/" + encoded + ":/children", {
+  var response = UrlFetchApp.fetch("https://graph.microsoft.com/v1.0/me/drive/root:/" + encoded + ":/children", {
     headers: { Authorization: "Bearer " + microsoftService_().getAccessToken() },
     muteHttpExceptions: true
   });
-  return namesFromGraph_(listed);
+  var code = response.getResponseCode();
+  if (code === 404) return []; /* folder not created yet: the first upload creates it */
+  if (code < 200 || code >= 300) throw new Error("graph-" + code);
+  return namesFromGraph_(JSON.parse(response.getContentText() || "{}"));
 }
 
 function namesFromGraph_(listed) {
@@ -73,12 +76,16 @@ function graphPut_(path, contentBase64) {
   if (!check.ok) throw new Error(check.reason);
   var encoded = check.path.split("/").map(encodeURIComponent).join("/");
   var url = "https://graph.microsoft.com/v1.0/me/drive/root:/" + encoded + ":/content";
-  UrlFetchApp.fetch(url, {
+  if (!contentBase64) throw new Error("empty-file");
+  var response = UrlFetchApp.fetch(url + "?@microsoft.graph.conflictBehavior=rename", {
     method: "put",
     contentType: "image/jpeg",
-    payload: Utilities.base64Decode(contentBase64 || ""),
+    payload: Utilities.base64Decode(contentBase64),
     headers: { Authorization: "Bearer " + microsoftService_().getAccessToken() },
     muteHttpExceptions: true
   });
-  return { ok: true, path: check.path };
+  var code = response.getResponseCode();
+  if (code < 200 || code >= 300) throw new Error("graph-" + code);
+  var item = JSON.parse(response.getContentText() || "{}");
+  return { ok: true, path: check.path, id: item.id || "", uploadedAt: item.createdDateTime || new Date().toISOString() };
 }

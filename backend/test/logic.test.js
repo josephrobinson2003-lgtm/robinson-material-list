@@ -43,7 +43,10 @@ function memoryDeps(seed) {
     graphConfigured() { return !!seed.graph; },
     graphList(path) { data.graphCalls.push(path); return [{ id: "1", name: "sample" }]; },
     graphGet(id, size) { data.graphCalls.push(id + ":" + size); return { id, size }; },
-    graphUpload(path) { data.graphCalls.push(path); return { ok: true }; }
+    graphUpload(path, content) {
+      if (content === "FAIL") throw new Error("graph-401");
+      data.graphCalls.push(path); return { ok: true, id: "item-1", uploadedAt: "2026-11-24T14:00:00Z" };
+    }
   };
 }
 
@@ -153,9 +156,19 @@ test("material save drops billing rates and photo paths cannot leave Job Photos"
     method: "POST",
     path: "/api/job-photos/contractors/BluSky/jobs/123%20Main%20St/stages/rough-in",
     token: "ada-token-12345678",
-    body: { dateStamp: "2026-11-01", uniqueId: "abc12345", fileName: "../../Accounting/secret.jpg" }
+    body: { dateStamp: "2026-11-01", uniqueId: "abc12345", fileName: "../../Accounting/secret.jpg", contentBase64: "/9j/2Q==" }
   }, deps);
   assert.equal(named.status, 202);
+  assert.equal(named.acknowledged, true);
+  assert.equal(named.remoteItemId, "item-1");
+  assert.equal(named.uploadedAt, "2026-11-24T14:00:00Z");
+  const uploadPath = "/api/job-photos/contractors/BluSky/jobs/123%20Main%20St/stages/rough-in";
+  const empty = logic.handleRequest({ method: "POST", path: uploadPath, token: "ada-token-12345678", body: { uniqueId: "x1" } }, deps);
+  assert.equal(empty.status, 400);
+  assert.equal(empty.error, "empty-file");
+  const graphDown = logic.handleRequest({ method: "POST", path: uploadPath, token: "ada-token-12345678", body: { uniqueId: "x2", contentBase64: "FAIL" } }, deps);
+  assert.equal(graphDown.status, 502);
+  assert.equal(graphDown.acknowledged, undefined);
   assert.equal(named.fileName, "123 Main St - Rough-In - 2026-11-01 - abc12345.jpg");
   assert.equal(named.path.startsWith("Job Photos/BluSky/123 Main St/Rough-In/"), true);
   assert.equal(deps.data.graphCalls[0], named.path);
@@ -426,4 +439,10 @@ test("admin log lines show a new token once and never a token hash", () => {
   assert.equal(revoked.directory[0].revoked, true);
   assert.equal(revoked.directory[0].ptoStartDate, "2024-06-01");
   assert.equal(logic.findEmployee(revoked.directory, "ada-token-123456789"), null);
+});
+
+test("admin log never hands out the /dev test address as the phone server", () => {
+  const lines = logic.adminResultLines("addJarred", { token: "t".repeat(20), name: "Jarred", employeeId: "emp_x" }, "https://script.google.com/macros/s/ABC/dev");
+  assert.equal(lines.some((line) => /macros\/s\/ABC\/dev/.test(line)), false);
+  assert.equal(lines.some((line) => /\/exec address/.test(line)), true);
 });

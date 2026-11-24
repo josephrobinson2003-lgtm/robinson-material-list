@@ -36,6 +36,7 @@ let ptoQuiet = false;
 let signedOutMessage = "";
 let privacyOpen = false;
 let serverHealthy = false;
+let photosConnected = false;
 let serverOpen = false;
 let themeOverride = "";
 let logoTaps = 0;
@@ -607,8 +608,8 @@ function draw() {
       ${serverCard()}
     </section>
     <section id="photos_panel" class="crew" hidden>
-      <p class="pilot">Job photos are not connected. Employees do not sign in to Microsoft.</p>
-      <div class="statusline"><b>Not connected</b><span>Joe connects the private photo server once. Browsing and upload stay off until then. Pictures you pick stay on this phone.</span></div>
+      <p class="pilot">${photosConnected ? "Job photos upload to Joe's Job Photos folder." : "Job photos are not connected."} Employees do not sign in to Microsoft.</p>
+      <div class="statusline"><b>${photosConnected ? "Connected" : "Not connected"}</b><span>${photosConnected ? "Tap Upload to send the photos saved on this phone. Copies stay on the phone." : "Joe connects the private photo server once. Browsing and upload stay off until then. Pictures you pick stay on this phone."}</span></div>
       <section class="card"><h2>Look up a past job</h2>
         <p class="hint">Contractor, then job address, then Rough-In, Trim, or Finished. No photos are loaded while the server is off. Nothing here can be deleted or renamed.</p>
         <p id="ph_browse">${esc(auth.reason === "not-connected" ? "Past photos are not loaded." : "")}</p>
@@ -726,7 +727,8 @@ function draw() {
     if (saved.ok) {
       try {
         const health = await postBackend(readDeviceConfig(localStorage), "/api/health", {});
-        serverHealthy = !!(health.ok && health.data && health.data.ok !== false);
+        serverHealthy = !!(health.ok && health.data && health.data.ok === true);
+        photosConnected = !!(serverHealthy && health.data.photos === true);
         if (health.data && typeof health.data.theme === "string") themeOverride = health.data.theme;
         serverOpen = !serverHealthy;
         timeMessage = serverHealthy ? "Connected to Robinson Electrical." : "Saved on this phone. The server did not answer.";
@@ -759,11 +761,19 @@ function draw() {
   root.querySelectorAll("[data-pto-date]").forEach((button) => button.addEventListener("click", () => onPtoDate(button.getAttribute("data-pto-date"), ptoHours ? ptoHours.value : "8")));
   root.querySelectorAll("[data-pto-cancel]").forEach((button) => button.addEventListener("click", () => onPtoCancel(button.getAttribute("data-pto-cancel"))));
   $("ph_upload").addEventListener("click", async () => {
-    photoMessage = "Not connected. Photos stay on this phone. Nothing was uploaded.";
+    if (!photosConnected) await refreshServerHealth();
+    const transport = photoTransport();
+    let sent = 0;
+    let failed = 0;
     for (let i = 0; i < state.photos.length; i += 1) {
-      const result = await uploadPhoto(state.photos[i], { configured: false });
+      if (state.photos[i].status === "uploaded") continue;
+      const result = await uploadPhoto(state.photos[i], transport);
       state.photos[i] = result.photo;
+      if (result.ok) sent += 1; else if (transport.configured) failed += 1;
     }
+    photoMessage = !transport.configured
+      ? "Not connected. Photos stay on this phone. Nothing was uploaded."
+      : sent + " uploaded." + (failed ? " " + failed + " did not upload and stay on this phone." : "");
     await persist(); draw(); show("photos");
   });
   root.querySelectorAll("[data-accept]").forEach((button) => button.addEventListener("click", async () => {
@@ -862,6 +872,41 @@ function serverCard() {
   return '<section class="card"><h2>Server</h2><p class="hint">' + esc(hint) + '</p><div class="fields"><div class="full"><label class="f" for="cfg_url">Backend web app URL</label><input class="t" id="cfg_url" value="' + esc(config.url) + '" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div><div class="full"><label class="f" for="cfg_token">Employee token</label><input class="t" id="cfg_token" type="password" value="" placeholder="' + esc(tokenHint) + '" autocomplete="off"></div></div><button type="button" class="btn secondary" id="cfg_save">Save server setup</button></section>';
 }
 
+function bytesToBase64(bytes) {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  return btoa(binary);
+}
+
+function photoDateStamp(photo) {
+  if (photo.dateStamp) return photo.dateStamp;
+  const m = String(photo.fileName || "").match(/ - (\d{4}-\d{2}-\d{2}) - /);
+  return m ? m[1] : "";
+}
+
+function photoTransport() {
+  const config = readDeviceConfig(localStorage);
+  if (!config.configured || !serverHealthy || !photosConnected) return { configured: false };
+  return {
+    configured: true,
+    async send({ photo }) {
+      const stored = await blobStore.get(photo.photoId);
+      if (!stored) throw new Error("bytes-missing");
+      const bytes = stored instanceof Uint8Array ? stored : new Uint8Array(stored);
+      const route = "/api/job-photos/contractors/" + encodeURIComponent(photo.contractor)
+        + "/jobs/" + encodeURIComponent(photo.jobLabel)
+        + "/stages/" + encodeURIComponent(photo.stage);
+      const remote = await callBackend(route, {
+        contentBase64: bytesToBase64(bytes),
+        dateStamp: photoDateStamp(photo),
+        uniqueId: String(photo.photoId).slice(-8)
+      });
+      return remote && remote.ok ? remote.data : { acknowledged: false };
+    }
+  };
+}
+
 async function refreshServerHealth() {
   const config = readDeviceConfig(localStorage);
   if (!config.configured) {
@@ -870,7 +915,8 @@ async function refreshServerHealth() {
   }
   try {
     const health = await postBackend(config, "/api/health", {});
-    serverHealthy = !!(health.ok && health.data && health.data.ok !== false);
+    serverHealthy = !!(health.ok && health.data && health.data.ok === true);
+        photosConnected = !!(serverHealthy && health.data.photos === true);
     if (health.data && typeof health.data.theme === "string") themeOverride = health.data.theme;
   } catch {
     serverHealthy = false;
@@ -1256,7 +1302,7 @@ async function addFiles(fileList) {
     state.photos.push(planned.photo);
     added += 1;
   }
-  photoMessage = added + " photo" + (added === 1 ? "" : "s") + " saved on this phone." + (duplicates ? " " + duplicates + " duplicate skipped." : "") + " Not uploaded.";
+  photoMessage = added + " photo" + (added === 1 ? "" : "s") + " saved on this phone." + (duplicates ? " " + duplicates + " duplicate skipped." : "") + (photosConnected ? " Tap Upload to send." : " Not uploaded.");
   await persist();
   draw(); show("photos");
 }

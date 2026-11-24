@@ -39,6 +39,7 @@ export async function planPhoto({ employeeId, job, contractor, stageId, bytes, a
   const photo = {
     photoId,
     employeeId,
+    dateStamp,
     contractor,
     jobId: job.jobId,
     jobLabel: job.jobLabel,
@@ -85,7 +86,7 @@ export async function uploadPhoto(photo, transport) {
   const pending = { ...photo, status: "pending-upload", path: placed.path, attempts: (photo.attempts || 0) + 1 };
   let ack;
   try {
-    ack = await transport.send({ path: placed.path, fileName: photo.fileName, employeeId: photo.employeeId });
+    ack = await transport.send({ path: placed.path, fileName: photo.fileName, employeeId: photo.employeeId, photo });
   } catch {
     return { ok: false, photo: { ...pending, status: "failed", lastError: "send-failed", bytesKeptLocally: true }, reason: "send-failed" };
   }

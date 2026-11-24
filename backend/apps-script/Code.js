@@ -169,14 +169,22 @@ function jsonOut(result) {
   return ContentService.createTextOutput(JSON.stringify(copy)).setMimeType(ContentService.MimeType.JSON);
 }
 
+function safeHandle_(e, method) {
+  try { return handleRequest(parseRequest_(e, method), liveDeps()); }
+  catch (err) {
+    console.error("request failed: " + ((err && err.message) || err));
+    return { status: 502, error: "server-error", detail: String((err && err.message) || err).slice(0, 80) };
+  }
+}
+
 function doGet(e) {
   var params = (e && e.parameter) || {};
   if (params.adminKey && adminKeyOk_(params.adminKey)) return HtmlService.createHtmlOutput(adminPage_());
-  return jsonOut(handleRequest(parseRequest_(e, "GET"), liveDeps()));
+  return jsonOut(safeHandle_(e, "GET"));
 }
 
 function doPost(e) {
-  return jsonOut(handleRequest(parseRequest_(e, "POST"), liveDeps()));
+  return jsonOut(safeHandle_(e, "POST"));
 }
 
 function adminKeyOk_(given) {
